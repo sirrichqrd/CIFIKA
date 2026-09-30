@@ -24,7 +24,7 @@
 </style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>City Fitness Karate Club - Fixed</title>
+<title>City Fitness Karate Club — CIFKA | Abuja</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/svg" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
@@ -36,37 +36,20 @@
   @keyframes pulse { 50% { opacity: .5; } }
   .animate-pulse { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
 
-  /* === FIXED: Match React Artifact Exactly === */
+  /* === Hero slideshow (unchanged) === */
   .slideshow-wrapper {
-    /* Exact same responsive sizing as React artifact image */
     width: 88%;
     max-width: 640px;
     height: auto;
-    /* For fade stacking - use grid */
     display: grid;
-    /* Match original image transform */
     transform: translateY(2%);
   }
-  @media (min-width: 640px) { 
-    .slideshow-wrapper { 
-      width: 72%; 
-    } 
+  @media (min-width: 640px) { .slideshow-wrapper { width: 72%; } }
+  @media (min-width: 1024px) {
+    .slideshow-wrapper { width: 108%; max-width: 760px; margin-right: -2rem; }
   }
-  @media (min-width: 1024px) { 
-    .slideshow-wrapper { 
-      width: 108%; 
-      max-width: 760px;
-      margin-right: -2rem;
-    } 
-  }
-  @media (min-width: 1280px) { 
-    .slideshow-wrapper { 
-      width: 116%; 
-    } 
-  }
-
+  @media (min-width: 1280px) { .slideshow-wrapper { width: 116%; } }
   .slideshow-img {
-    /* Stack all images in same grid cell */
     grid-area: 1 / 1;
     width: 100%;
     height: auto;
@@ -78,129 +61,548 @@
     user-select: none;
     filter: drop-shadow(0 18px 30px rgba(0,0,0,0.12));
   }
-  .slideshow-img.active {
-    opacity: 1;
-    z-index: 2;
-  }
+  .slideshow-img.active { opacity: 1; z-index: 2; }
 
-  .hero-title {
-    display: flex;
-    flex-direction: column;
-    gap: 0.06em;
-    line-height: 0.9;
-  }
-  .hero-word {
-    display: block;
-    line-height: 0.9;
-    margin: 0 !important;
-    padding: 0;
-    transform: translateZ(0);
-  }
+  .hero-title { display: flex; flex-direction: column; gap: 0.06em; line-height: 0.9; }
+  .hero-word { display: block; line-height: 0.9; margin: 0 !important; padding: 0; transform: translateZ(0); }
   .hero-word-tight { letter-spacing: -0.02em; }
   @media (max-width: 375px) {
     .hero-title { gap: 0.08em; line-height: 0.92; }
     .hero-word { line-height: 0.92; }
   }
-  @media (min-width: 1024px) {
-    .hero-title { gap: 0.05em; }
+  @media (min-width: 1024px) { .hero-title { gap: 0.05em; } }
+
+  /* ===== Section tabs ===== */
+  .tab-nav {
+    display: flex; align-items: center; gap: 2px;
+    background: #f5f5f5; border: 1px solid rgba(17,17,17,.06);
+    border-radius: 999px; padding: 4px;
   }
+  .tab-btn {
+    flex: 1 1 auto; text-align: center;
+    font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase;
+    color: rgba(17,17,17,.45); padding: 9px 14px; border-radius: 999px; white-space: nowrap;
+    transition: color .25s ease, background-color .25s ease;
+  }
+  @media (min-width: 640px) { .tab-btn { flex: 0 0 auto; padding: 9px 20px; } }
+  .tab-btn:hover { color: #111; }
+  .tab-btn.is-active { background: #111; color: #fff; }
+
+  /* ===== Icons & chips ===== */
+  .ic { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; border-radius: 999px; padding: 5px 11px; white-space: nowrap; }
+
+  /* ===== Page transitions ===== */
+  .page-enter { animation: pageIn .55s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .page-enter { animation: none; } }
+
+  /* ===== Map ===== */
+  .map-embed { filter: grayscale(1) contrast(1.05); transition: filter .5s ease; }
+  .map-wrap:hover .map-embed { filter: grayscale(0); }
+
+  /* ===== Scroll-end navigation popup ===== */
+  .scroll-nav {
+    position: fixed; left: 50%; bottom: 18px; z-index: 60;
+    transform: translateX(-50%); pointer-events: none;
+    max-width: calc(100vw - 20px);
+  }
+  .scroll-nav-track {
+    display: flex; align-items: center; gap: 2px; padding: 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.85);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    border: 1px solid rgba(17,17,17,.09);
+    box-shadow: 0 24px 55px -14px rgba(0,0,0,.32), 0 2px 10px rgba(0,0,0,.05);
+    transform: translateY(150%) scale(.95); opacity: 0;
+    transition: transform .6s cubic-bezier(.22,1,.36,1), opacity .4s ease;
+  }
+  .scroll-nav.show .scroll-nav-track { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+  .nav-lead { font-size: 9.5px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: rgba(17,17,17,.35); padding: 0 6px 0 10px; }
+  .nav-divider { width: 1px; height: 18px; background: rgba(17,17,17,.12); margin: 0 4px; }
+  .nav-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(17,17,17,.65); white-space: nowrap;
+    transition: background-color .22s ease, color .22s ease, transform .22s ease;
+  }
+  .nav-chip:hover { background: #111; color: #fff; transform: translateY(-1px); }
+  .nav-chip .chip-arrow { transition: transform .25s ease; }
+  .nav-chip:hover .chip-arrow { transform: translateX(3px); }
+  @media (max-width: 480px) { .nav-lead, .nav-divider { display: none; } .nav-chip { padding: 10px 13px; gap: 6px; } }
 </style>
 </head>
-<body class="min-h-screen w-full bg-[#f5f5f5] flex flex-col items-center justify-start lg:justify-center py-6 lg:py-10 px-4 selection:bg-[#FF6A00] selection:text-white">
+<body class="min-h-screen w-full bg-[#f5f5f5] flex flex-col items-center justify-start py-6 lg:py-10 px-4 selection:bg-[#FF6A00] selection:text-white">
 
-<div class="relative w-full max-w-[1120px] bg-white rounded-[28px] lg:rounded-[32px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
-  
+<!-- Reusable icons -->
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10.5 9-7.5 9 7.5"/><path d="M5 9.5V21h14V9.5"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M16 2.5v4M8 2.5v4M3 10.5h18"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8Z"/><path d="M7 7h.01"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 6.5V12l3.5 2"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </defs>
+</svg>
+
+<div class="relative w-full max-w-[1120px] my-auto bg-white rounded-[28px] lg:rounded-[32px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
+
   <div class="h-[6px] w-full bg-[#111] flex">
     <div class="h-full w-[34%] bg-[#FF6A00]"></div>
   </div>
 
-  <header class="relative z-20 flex items-center justify-between px-6 sm:px-10 lg:px-14 pt-8 lg:pt-10 pb-4">
-    <div class="flex items-center gap-3">
-      <img src="assets/logo/cifika-b-logo.png" height="auto" width="200px">
-    </div>
-    <div class="hidden sm:flex items-center gap-3">
-      <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-[#111]/60 border border-[#111]/10 rounded-full px-3 py-1.5">Suncity • Abuja</span>
-      <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-white bg-[#111] rounded-full px-3 py-1.5">All Levels</span>
+  <!-- ===== HEADER + TAB NAV ===== -->
+  <header class="relative z-20 px-6 sm:px-10 lg:px-14 pt-7 lg:pt-9 pb-4">
+    <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+      <img src="assets/logo/cifika-b-logo.png" alt="City Fitness Karate Club" width="200" height="auto" class="w-[140px] sm:w-[170px] lg:w-[200px] h-auto">
+     
+      <div class="order-2 sm:order-3 hidden lg:flex items-center gap-3">
+        <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-[#111]/60 border border-[#111]/10 rounded-full px-3 py-1.5">Suncity • Abuja</span>
+        <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-white bg-[#111] rounded-full px-3 py-1.5">All Levels</span>
+      </div>
     </div>
   </header>
 
-  <div class="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-0">
-    
-    <div class="order-2 lg:order-1 px-6 sm:px-10 lg:px-14 pt-2 lg:pt-6 pb-8 lg:pb-14 flex flex-col justify-center">
-      
-      <div class="flex items-center gap-3 mb-6 lg:mb-8">
+  <!-- ============================================================ -->
+  <!-- PAGE 1 — HOME (unchanged)                                    -->
+  <!-- ============================================================ -->
+  <section id="page-home" class="page flex-1 flex flex-col">
+
+    <div class="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-0">
+
+      <div class="order-2 lg:order-1 px-6 sm:px-10 lg:px-14 pt-2 lg:pt-6 pb-8 lg:pb-14 flex flex-col justify-center">
+
+        <div class="flex items-center gap-3 mb-6 lg:mb-8">
+          <div class="h-px w-8 bg-[#FF6A00]"></div>
+          <p class="text-[11px] font-bold tracking-[0.22em] uppercase text-[#111]/40">Elite Training Program</p>
+        </div>
+
+        <h1 class="display hero-title">
+          <span class="hero-word hero-word-tight text-[46px] sm:text-[64px] lg:text-[84px] xl:text-[92px] font-black text-[#FF6A00]">CITY</span>
+          <span class="hero-word hero-word-tight text-[46px] sm:text-[64px] lg:text-[84px] xl:text-[92px] font-black text-[#FF6A00]">FITNESS</span>
+          <span class="hero-word hero-word-tight text-[44px] sm:text-[60px] lg:text-[78px] xl:text-[84px] font-black text-[#111] mt-[0.08em]">KARATE</span>
+          <span class="hero-word hero-word-tight text-[44px] sm:text-[60px] lg:text-[78px] xl:text-[84px] font-black text-[#111]">CLUB</span>
+        </h1>
+
+        <div class="mt-6 lg:mt-8">
+          <p class="text-[13px] sm:text-[14px] font-medium tracking-[0.12em] uppercase text-[#111]/50 leading-[1.7]">
+            Fitness <span class="text-[#111]/20 mx-1">+</span> Karate <span class="text-[#111]/20 mx-1">+</span> Discipline <span class="text-[#111]/20 mx-1">+</span> Personal Development
+          </p>
+        </div>
+
+        <div class="mt-6 flex items-center gap-4">
+          <div class="h-[4px] w-[72px] bg-[#FF6A00] rounded-full"></div>
+          <div class="h-px flex-1 max-w-[140px] bg-[#111]/10"></div>
+        </div>
+
+        <div class="mt-8 lg:mt-10 grid grid-cols-3 gap-4 max-w-[420px]">
+          <div class="border-l border-[#111]/10 pl-3">
+            <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">01</p>
+            <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Strength &<br>Conditioning</p>
+          </div>
+          <div class="border-l border-[#111]/10 pl-3">
+            <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">02</p>
+            <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Traditional<br>Karate</p>
+          </div>
+          <div class="border-l border-[#111]/10 pl-3">
+            <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">03</p>
+            <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Mind &<br>Discipline</p>
+          </div>
+        </div>
+
+        <div class="sm:hidden mt-8 flex items-center gap-2">
+          <span class="text-[10px] font-bold tracking-[0.14em] uppercase text-[#111]/60 border border-[#111]/10 rounded-full px-3 py-1.5">Suncity • Abuja</span>
+          <span class="text-[10px] font-bold tracking-[0.14em] uppercase text-white bg-[#111] rounded-full px-3 py-1.5">All Levels Welcome</span>
+        </div>
+      </div>
+
+      <!-- Right Column - Slideshow -->
+      <div class="order-1 lg:order-2 relative flex items-end justify-center lg:justify-end overflow-hidden lg:overflow-visible bg-gradient-to-b from-[#fcfcfc] to-white lg:bg-none min-h-[460px] sm:min-h-[560px] lg:min-h-0">
+
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center lg:justify-end overflow-hidden select-none">
+          <span class="display text-[140px] sm:text-[200px] lg:text-[320px] leading-none font-black text-[#f5f5f5] tracking-[-0.08em] translate-x-[6%] lg:translate-x-[8%] translate-y-[-6%]">KICK</span>
+        </div>
+
+        <div class="pointer-events-none absolute left-1/2 lg:left-auto lg:right-[14%] top-[52%] -translate-x-1/2 lg:translate-x-0 -translate-y-1/2 w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] lg:w-[520px] lg:h-[520px] rounded-full bg-[#FFF0E6]"></div>
+
+        <div class="relative z-10 w-full h-full flex items-end justify-center lg:justify-end lg:pr-2 xl:pr-6 max-w-full">
+          <div class="slideshow-wrapper">
+            <img src="images/art_kick.png" alt="Karate kick 1" class="slideshow-img active" onerror="this.src='https://images.unsplash.com/photo-1555597673-b21d5c935865?w=800&q=80'">
+            <img src="images/pose3.png" alt="Karate kick 3" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
+            <img src="images/pose4.png" alt="Karate kick 4" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
+          </div>
+        </div>
+
+        <button type="button" data-goto="pricing" class="absolute z-20 bottom-6 right-6 sm:bottom-8 sm:right-8 lg:bottom-[84px] lg:right-[28px] bg-[#FF6A00] hover:bg-[#ff7d1f] text-left text-white rounded-[14px] px-4 py-3 shadow-[0_12px_24px_rgba(255,106,0,0.35)] transition-colors duration-200 cursor-pointer">
+          <span class="block text-[10px] font-black tracking-[0.18em] uppercase leading-none opacity-80">Join Now</span>
+          <span class="block display text-[22px] leading-none mt-1 font-black tracking-[-0.02em]">TRAIN HARD.</span>
+        </button>
+
+        <div class="pointer-events-none absolute top-0 right-0 w-[140px] h-[140px] bg-gradient-to-br from-[#FF6A00]/[0.08] to-transparent rounded-bl-[100px]"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- PAGE 2 — SCHEDULE                                            -->
+  <!-- ============================================================ -->
+  <section id="page-schedule" class="page hidden flex-1 flex flex-col">
+    <div class="px-6 sm:px-10 lg:px-14 pt-2 lg:pt-6 pb-10 lg:pb-14 flex-1 flex flex-col">
+
+      <div class="flex items-center gap-3 mb-5 lg:mb-6">
         <div class="h-px w-8 bg-[#FF6A00]"></div>
-        <p class="text-[11px] font-bold tracking-[0.22em] uppercase text-[#111]/40">Elite Training Program</p>
+        <p class="text-[11px] font-bold tracking-[0.22em] uppercase text-[#111]/40">Training Days & Location</p>
       </div>
 
-      <h1 class="display hero-title">
-        <span class="hero-word hero-word-tight text-[46px] sm:text-[64px] lg:text-[84px] xl:text-[92px] font-black text-[#FF6A00]">CITY</span>
-        <span class="hero-word hero-word-tight text-[46px] sm:text-[64px] lg:text-[84px] xl:text-[92px] font-black text-[#FF6A00]">FITNESS</span>
-        <span class="hero-word hero-word-tight text-[44px] sm:text-[60px] lg:text-[78px] xl:text-[84px] font-black text-[#111] mt-[0.08em]">KARATE</span>
-        <span class="hero-word hero-word-tight text-[44px] sm:text-[60px] lg:text-[78px] xl:text-[84px] font-black text-[#111]">CLUB</span>
-      </h1>
+      <h2 class="display text-[42px] sm:text-[60px] lg:text-[72px] font-black leading-[0.92] tracking-[-0.02em]">
+        <span class="text-[#FF6A00]">TRAIN</span> <span class="text-[#111]">SCHEDULE</span>
+      </h2>
+      <p class="mt-4 text-[13px] sm:text-[14px] font-medium text-[#111]/50 leading-relaxed max-w-[540px]">
+        Two structured sessions every week — Friday and Sunday, 4:30 PM to 6:00 PM — at City Fitness, Sun City Estate, Galadimawa, Abuja. Open to children and adults, all levels.
+      </p>
 
-      <div class="mt-6 lg:mt-8">
-        <p class="text-[13px] sm:text-[14px] font-medium tracking-[0.12em] uppercase text-[#111]/50 leading-[1.7]">
-          Fitness <span class="text-[#111]/20 mx-1">+</span> Karate <span class="text-[#111]/20 mx-1">+</span> Discipline <span class="text-[#111]/20 mx-1">+</span> Personal Development
-        </p>
-      </div>
-
-      <div class="mt-6 flex items-center gap-4">
-        <div class="h-[4px] w-[72px] bg-[#FF6A00] rounded-full"></div>
-        <div class="h-px flex-1 max-w-[140px] bg-[#111]/10"></div>
-      </div>
-
-      <div class="mt-8 lg:mt-10 grid grid-cols-3 gap-4 max-w-[420px]">
-        <div class="border-l border-[#111]/10 pl-3">
-          <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">01</p>
-          <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Strength &<br>Conditioning</p>
+      <!-- Day cards -->
+      <div class="mt-8 lg:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-2xl border border-[#111]/10 bg-white p-6 sm:p-7 transition-shadow duration-300 hover:shadow-[0_20px_45px_-18px_rgba(0,0,0,0.18)]">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-[10px] font-black tracking-[0.2em] text-[#FF6A00]">01</p>
+              <h3 class="display text-[30px] sm:text-[36px] font-black tracking-[-0.01em] text-[#111] mt-1 leading-none">FRIDAY</h3>
+            </div>
+            <span class="chip border border-[#111]/10 text-[#111]/50">Weekly</span>
+          </div>
+          <div class="mt-6 flex items-center gap-3">
+            <svg class="ic w-[18px] h-[18px] text-[#FF6A00]"><use href="#i-clock"/></svg>
+            <p class="text-[20px] font-black text-[#111] tracking-[-0.01em]">4:30 <span class="text-[14px] font-bold text-[#111]/35">PM – 6:00 PM</span></p>
+          </div>
+          <div class="mt-5 pt-5 border-t border-[#111]/[0.07] flex items-center justify-between">
+            <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">90-minute session</p>
+            <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">All levels</p>
+          </div>
         </div>
-        <div class="border-l border-[#111]/10 pl-3">
-          <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">02</p>
-          <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Traditional<br>Karate</p>
-        </div>
-        <div class="border-l border-[#111]/10 pl-3">
-          <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">03</p>
-          <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Mind &<br>Discipline</p>
+
+        <div class="rounded-2xl border border-[#111]/10 bg-white p-6 sm:p-7 transition-shadow duration-300 hover:shadow-[0_20px_45px_-18px_rgba(0,0,0,0.18)]">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-[10px] font-black tracking-[0.2em] text-[#FF6A00]">02</p>
+              <h3 class="display text-[30px] sm:text-[36px] font-black tracking-[-0.01em] text-[#111] mt-1 leading-none">SUNDAY</h3>
+            </div>
+            <span class="chip border border-[#111]/10 text-[#111]/50">Weekly</span>
+          </div>
+          <div class="mt-6 flex items-center gap-3">
+            <svg class="ic w-[18px] h-[18px] text-[#FF6A00]"><use href="#i-clock"/></svg>
+            <p class="text-[20px] font-black text-[#111] tracking-[-0.01em]">4:30 <span class="text-[14px] font-bold text-[#111]/35">PM – 6:00 PM</span></p>
+          </div>
+          <div class="mt-5 pt-5 border-t border-[#111]/[0.07] flex items-center justify-between">
+            <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">90-minute session</p>
+            <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">All levels</p>
+          </div>
         </div>
       </div>
 
-      <div class="sm:hidden mt-8 flex items-center gap-2">
-        <span class="text-[10px] font-bold tracking-[0.14em] uppercase text-[#111]/60 border border-[#111]/10 rounded-full px-3 py-1.5">Suncity • Abuja</span>
-        <span class="text-[10px] font-bold tracking-[0.14em] uppercase text-white bg-[#111] rounded-full px-3 py-1.5">All Levels Welcome</span>
+      <!-- Location + Map -->
+      <div class="mt-4 sm:mt-6 grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-4">
+        <div class="relative overflow-hidden rounded-2xl bg-[#111] text-white p-6 sm:p-8 flex flex-col">
+          <div class="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#FF6A00]/[0.14]"></div>
+          <div class="pointer-events-none absolute -bottom-20 -left-10 w-44 h-44 rounded-full bg-[#FF6A00]/[0.08]"></div>
+          <div class="relative">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#FF6A00] animate-pulse"></span>
+              <p class="text-[10px] font-black tracking-[0.22em] uppercase text-white/45">Dojo Location</p>
+            </div>
+            <h3 class="display text-[30px] sm:text-[34px] font-black leading-[0.95] tracking-[-0.01em] mt-4">CITY FITNESS</h3>
+            <div class="mt-5 space-y-0 text-[13px]">
+              <p class="flex items-center justify-between gap-4 border-b border-white/10 py-2.5"><span class="text-white/45 font-medium">Venue</span><span class="font-bold text-right">City Fitness & Aerobics</span></p>
+              <p class="flex items-center justify-between gap-4 border-b border-white/10 py-2.5"><span class="text-white/45 font-medium">Area</span><span class="font-bold text-right">Sun City Estate, Galadimawa</span></p>
+              <p class="flex items-center justify-between gap-4 py-2.5"><span class="text-white/45 font-medium">City</span><span class="font-bold text-right">Abuja, FCT — Nigeria</span></p>
+            </div>
+          </div>
+          <div class="relative mt-7">
+            <a href="https://www.google.com/maps/dir/?api=1&destination=City+Fitness+Sun+City+Galadimawa+Abuja" target="_blank" rel="noopener" class="inline-flex items-center gap-2.5 bg-[#FF6A00] hover:bg-[#ff7d1f] active:scale-[0.98] text-white rounded-xl px-5 py-3.5 text-[11px] font-black tracking-[0.16em] uppercase transition-all duration-200 shadow-[0_14px_30px_-10px_rgba(255,106,0,0.55)]">
+              <svg class="ic w-4 h-4"><use href="#i-pin"/></svg>
+              Get Directions
+            </a>
+          </div>
+        </div>
+
+        <div class="map-wrap relative rounded-2xl overflow-hidden border border-[#111]/10 min-h-[300px] bg-[#f5f5f5]">
+          <iframe title="Map — City Fitness, Sun City Estate, Galadimawa, Abuja" src="https://www.google.com/maps?q=City%20Fitness%20Sun%20City%20Estate%20Galadimawa%20Abuja&output=embed" class="map-embed absolute inset-0 w-full h-full" style="border:0" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <div class="absolute top-3 left-3 chip bg-white/90 backdrop-blur-md border border-[#111]/10 text-[#111]/70 pointer-events-none">
+            <svg class="ic w-3 h-3 text-[#FF6A00]"><use href="#i-pin"/></svg>
+            Sun City • Galadimawa
+          </div>
+        </div>
+      </div>
+
+      <!-- Good to know -->
+      <div class="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-2xl border border-[#111]/10 p-5 sm:p-6">
+          <p class="text-[10px] font-black tracking-[0.18em] uppercase text-[#FF6A00]">Before class</p>
+          <h4 class="text-[13px] font-black uppercase tracking-wide text-[#111] mt-2">Arrive early</h4>
+          <p class="text-[12.5px] text-[#111]/55 leading-relaxed mt-1.5">Please arrive 10–15 minutes before your session to change, warm up and settle in before class begins.</p>
+        </div>
+        <div class="rounded-2xl border border-[#111]/10 p-5 sm:p-6">
+          <p class="text-[10px] font-black tracking-[0.18em] uppercase text-[#FF6A00]">Come prepared</p>
+          <h4 class="text-[13px] font-black uppercase tracking-wide text-[#111] mt-2">What to bring</h4>
+          <p class="text-[12.5px] text-[#111]/55 leading-relaxed mt-1.5">Comfortable sportswear, water and a small towel. New members receive their Karate Gi through the Start Pack.</p>
+        </div>
+        <div class="rounded-2xl border border-[#111]/10 p-5 sm:p-6 flex flex-col">
+          <p class="text-[10px] font-black tracking-[0.18em] uppercase text-[#FF6A00]">New here?</p>
+          <h4 class="text-[13px] font-black uppercase tracking-wide text-[#111] mt-2">Start Pack</h4>
+          <p class="text-[12.5px] text-[#111]/55 leading-relaxed mt-1.5 flex-1">Your Gi, registration and first month of training are bundled into one New Member Start Pack.</p>
+          <button type="button" data-goto="pricing" class="mt-4 inline-flex items-center gap-1.5 self-start text-[11px] font-black tracking-[0.14em] uppercase text-[#FF6A00] hover:text-[#111] transition-colors duration-200">
+            See pricing
+            <svg class="ic w-3.5 h-3.5"><use href="#i-arrow"/></svg>
+          </button>
+        </div>
       </div>
     </div>
+  </section>
 
-    <!-- Right Column - FIXED SLIDESHOW -->
-    <div class="order-1 lg:order-2 relative flex items-end justify-center lg:justify-end overflow-hidden lg:overflow-visible bg-gradient-to-b from-[#fcfcfc] to-white lg:bg-none min-h-[460px] sm:min-h-[560px] lg:min-h-0">
-      
-      <div class="pointer-events-none absolute inset-0 flex items-center justify-center lg:justify-end overflow-hidden select-none">
-        <span class="display text-[140px] sm:text-[200px] lg:text-[320px] leading-none font-black text-[#f5f5f5] tracking-[-0.08em] translate-x-[6%] lg:translate-x-[8%] translate-y-[-6%]">KICK</span>
+  <!-- ============================================================ -->
+  <!-- PAGE 3 — PRICING                                             -->
+  <!-- ============================================================ -->
+  <section id="page-pricing" class="page hidden flex-1 flex flex-col">
+    <div class="px-6 sm:px-10 lg:px-14 pt-2 lg:pt-6 pb-10 lg:pb-14 flex-1 flex flex-col">
+
+      <div class="flex items-center gap-3 mb-5 lg:mb-6">
+        <div class="h-px w-8 bg-[#FF6A00]"></div>
+        <p class="text-[11px] font-bold tracking-[0.22em] uppercase text-[#111]/40">Fees, Plans & Discounts</p>
       </div>
 
-      <div class="pointer-events-none absolute left-1/2 lg:left-auto lg:right-[14%] top-[52%] -translate-x-1/2 lg:translate-x-0 -translate-y-1/2 w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] lg:w-[520px] lg:h-[520px] rounded-full bg-[#FFF0E6]"></div>
+      <h2 class="display text-[42px] sm:text-[60px] lg:text-[72px] font-black leading-[0.92] tracking-[-0.02em]">
+        <span class="text-[#111]">CLUB</span> <span class="text-[#FF6A00]">PRICING</span>
+      </h2>
+      <p class="mt-4 text-[13px] sm:text-[14px] font-medium text-[#111]/50 leading-relaxed max-w-[560px]">
+        Simple, transparent pricing — monthly training, a one-time Start Pack for new members, and discounted advance-payment plans.
+      </p>
 
-      <!-- This container now matches React artifact exactly -->
-      <div class="relative z-10 w-full h-full flex items-end justify-center lg:justify-end lg:pr-2 xl:pr-6 max-w-full">
-        <div class="slideshow-wrapper">
-          <img src="images/art_kick.png" alt="Karate kick 1" class="slideshow-img active" onerror="this.src='https://images.unsplash.com/photo-1555597673-b21d5c935865?w=800&q=80'">
-          <img src="images/pose3.png" alt="Karate kick 3" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
-          <img src="images/pose4.png" alt="Karate kick 4" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
+      <!-- 01 Membership & Training -->
+      <div class="mt-10 lg:mt-12">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <p class="text-[11px] font-black tracking-[0.18em] text-[#FF6A00]">01</p>
+          <h3 class="display text-[20px] sm:text-[26px] font-black tracking-[-0.01em] text-[#111] uppercase">Membership & Training</h3>
+          <div class="h-px flex-1 bg-[#111]/[0.08]"></div>
+        </div>
+        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="rounded-2xl border border-[#111]/10 p-6 sm:p-7 transition-shadow duration-300 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,0.15)]">
+            <div class="flex items-center justify-between">
+              <p class="text-[10px] font-black tracking-[0.2em] uppercase text-[#111]/45">Adults</p>
+              <span class="chip border border-[#111]/10 text-[#111]/50">Per month</span>
+            </div>
+            <div class="mt-4 flex items-baseline gap-1.5">
+              <span class="text-[34px] sm:text-[38px] font-black tracking-[-0.02em] text-[#111]">₦25,000</span>
+              <span class="text-[12px] font-bold text-[#111]/35 uppercase tracking-wide">/ month</span>
+            </div>
+            <p class="mt-2.5 text-[13px] text-[#111]/55 leading-relaxed">Full training membership — access to both weekly sessions.</p>
+          </div>
+          <div class="rounded-2xl border border-[#111]/10 p-6 sm:p-7 transition-shadow duration-300 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,0.15)]">
+            <div class="flex items-center justify-between">
+              <p class="text-[10px] font-black tracking-[0.2em] uppercase text-[#111]/45">Children</p>
+              <span class="chip border border-[#111]/10 text-[#111]/50">Per month</span>
+            </div>
+            <div class="mt-4 flex items-baseline gap-1.5">
+              <span class="text-[34px] sm:text-[38px] font-black tracking-[-0.02em] text-[#111]">₦15,000</span>
+              <span class="text-[12px] font-bold text-[#111]/35 uppercase tracking-wide">/ month</span>
+            </div>
+            <p class="mt-2.5 text-[13px] text-[#111]/55 leading-relaxed">Full training membership for children — access to both weekly sessions.</p>
+          </div>
+        </div>
+        <p class="mt-4 text-[12px] font-bold tracking-[0.08em] uppercase text-[#111]/40">Friday + Sunday • 4:30 – 6:00 PM • City Fitness, Sun City, Galadimawa</p>
+      </div>
+
+      <!-- 02 New Member Start Pack -->
+      <div class="mt-12 lg:mt-14">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <p class="text-[11px] font-black tracking-[0.18em] text-[#FF6A00]">02</p>
+          <h3 class="display text-[20px] sm:text-[26px] font-black tracking-[-0.01em] text-[#111] uppercase">New Member Start Pack</h3>
+          <div class="h-px flex-1 bg-[#111]/[0.08]"></div>
+          <span class="chip bg-[#FF6A00] text-white hidden sm:inline-flex">One-time</span>
+        </div>
+        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="relative overflow-hidden rounded-2xl bg-[#111] text-white p-6 sm:p-7">
+            <div class="pointer-events-none absolute -top-14 -right-14 w-48 h-48 rounded-full bg-[#FF6A00]/[0.16]"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between">
+                <p class="text-[10px] font-black tracking-[0.2em] uppercase text-white/45">Adult Start Pack</p>
+                <span class="chip bg-[#FF6A00] text-white sm:hidden">One-time</span>
+              </div>
+              <div class="mt-4 text-[34px] sm:text-[38px] font-black tracking-[-0.02em]">₦55,000</div>
+              <ul class="mt-5 text-[13px]">
+                <li class="flex items-center justify-between gap-4 border-b border-white/10 py-2.5"><span class="text-white/55 font-medium">Karate Gi (uniform)</span><span class="font-black">₦25,000</span></li>
+                <li class="flex items-center justify-between gap-4 border-b border-white/10 py-2.5"><span class="text-white/55 font-medium">Club registration</span><span class="font-black">₦5,000</span></li>
+                <li class="flex items-center justify-between gap-4 py-2.5"><span class="text-white/55 font-medium">First month training</span><span class="font-black">₦25,000</span></li>
+              </ul>
+              <div class="mt-3 flex items-center justify-between">
+                <span class="text-[10px] font-black tracking-[0.2em] uppercase text-white/45">Total</span>
+                <span class="font-black text-[#FF6A00] text-[18px]">₦55,000</span>
+              </div>
+            </div>
+          </div>
+          <div class="relative overflow-hidden rounded-2xl bg-[#111] text-white p-6 sm:p-7">
+            <div class="pointer-events-none absolute -top-14 -right-14 w-48 h-48 rounded-full bg-[#FF6A00]/[0.16]"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between">
+                <p class="text-[10px] font-black tracking-[0.2em] uppercase text-white/45">Child Start Pack</p>
+                <span class="chip bg-[#FF6A00] text-white sm:hidden">One-time</span>
+              </div>
+              <div class="mt-4 text-[34px] sm:text-[38px] font-black tracking-[-0.02em]">₦45,000</div>
+              <ul class="mt-5 text-[13px]">
+                <li class="flex items-center justify-between gap-4 border-b border-white/10 py-2.5"><span class="text-white/55 font-medium">Karate Gi (uniform)</span><span class="font-black">₦25,000</span></li>
+                <li class="flex items-center justify-between gap-4 border-b border-white/10 py-2.5"><span class="text-white/55 font-medium">Club registration</span><span class="font-black">₦5,000</span></li>
+                <li class="flex items-center justify-between gap-4 py-2.5"><span class="text-white/55 font-medium">First month training</span><span class="font-black">₦15,000</span></li>
+              </ul>
+              <div class="mt-3 flex items-center justify-between">
+                <span class="text-[10px] font-black tracking-[0.2em] uppercase text-white/45">Total</span>
+                <span class="font-black text-[#FF6A00] text-[18px]">₦45,000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="mt-4 text-[12px] leading-relaxed text-[#111]/50 max-w-[660px]">Everything a new member needs to step on the mat — uniform, registration and the first month of training, in one payment. After the first month, training continues at the standard monthly rate.</p>
+      </div>
+
+      <!-- 03 Advance Payment Plans -->
+      <div class="mt-12 lg:mt-14">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <p class="text-[11px] font-black tracking-[0.18em] text-[#FF6A00]">03</p>
+          <h3 class="display text-[20px] sm:text-[26px] font-black tracking-[-0.01em] text-[#111] uppercase">Advance Payment Plans</h3>
+          <div class="h-px flex-1 bg-[#111]/[0.08]"></div>
+          <span class="chip border border-[#111]/10 text-[#111]/50 hidden sm:inline-flex">Training fees only</span>
+        </div>
+        <div class="mt-5 rounded-2xl border border-[#111]/10 overflow-hidden">
+          <table class="w-full">
+            <thead>
+              <tr class="bg-[#111] text-white">
+                <th class="px-3 sm:px-6 py-4 text-left text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Period</th>
+                <th class="px-3 sm:px-4 py-4 text-left text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Discount</th>
+                <th class="px-3 sm:px-6 py-4 text-right text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Adult</th>
+                <th class="px-3 sm:px-6 py-4 text-right text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Child</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="bg-[#fafafa] border-b border-[#111]/[0.06]">
+                <td class="px-3 sm:px-6 py-4 text-[13px] font-black text-[#111]">Monthly</td>
+                <td class="px-3 sm:px-4 py-4 text-[11px] font-bold text-[#111]/35">Base rate</td>
+                <td class="px-3 sm:px-6 py-4 text-right text-[13px] sm:text-[15px] font-black text-[#111]/70">₦25,000</td>
+                <td class="px-3 sm:px-6 py-4 text-right text-[13px] sm:text-[15px] font-black text-[#111]/70">₦15,000</td>
+              </tr>
+              <tr class="border-b border-[#111]/[0.06]">
+                <td class="px-3 sm:px-6 py-4 text-[13px] sm:text-[14px] font-black text-[#111]">3 Months</td>
+                <td class="px-3 sm:px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 5%</span></td>
+                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦75,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦71,250</span></td>
+                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦45,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦42,750</span></td>
+              </tr>
+              <tr class="border-b border-[#111]/[0.06]">
+                <td class="px-3 sm:px-6 py-4 text-[13px] sm:text-[14px] font-black text-[#111]">6 Months</td>
+                <td class="px-3 sm:px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 8%</span></td>
+                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦150,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦138,000</span></td>
+                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦90,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦82,800</span></td>
+              </tr>
+              <tr class="bg-[#FFFBF6]">
+                <td class="px-3 sm:px-6 py-4">
+                  <span class="text-[13px] sm:text-[14px] font-black text-[#111]">12 Months</span>
+                  <span class="chip bg-[#FF6A00] text-white hidden sm:inline-flex ml-2">Best value</span>
+                </td>
+                <td class="px-3 sm:px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 10%</span></td>
+                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦300,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦270,000</span></td>
+                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦180,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦162,000</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="mt-4 text-[12px] leading-relaxed text-[#111]/50 max-w-[660px]">Advance-payment plans cover training fees only. Registration and Gi charges apply separately for new members. After the prepaid period expires, membership simply returns to the standard monthly rate.</p>
+      </div>
+
+      <!-- 04 Family Discount -->
+      <div class="mt-12 lg:mt-14">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <p class="text-[11px] font-black tracking-[0.18em] text-[#FF6A00]">04</p>
+          <h3 class="display text-[20px] sm:text-[26px] font-black tracking-[-0.01em] text-[#111] uppercase">Family Discount</h3>
+          <div class="h-px flex-1 bg-[#111]/[0.08]"></div>
+        </div>
+        <div class="mt-5 rounded-2xl bg-[#FFF0E6] border border-[#FF6A00]/15 p-6 sm:p-7">
+          <div class="flex flex-col sm:flex-row gap-5 sm:gap-8">
+            <div class="shrink-0">
+              <p class="display text-[46px] font-black text-[#FF6A00] leading-none">10%</p>
+              <p class="text-[10px] font-black tracking-[0.16em] uppercase text-[#111]/50 mt-1.5">Family discount</p>
+            </div>
+            <div class="hidden sm:block w-px self-stretch bg-[#FF6A00]/20"></div>
+            <ul class="space-y-3 text-[13px] text-[#111]/75 leading-relaxed">
+              <li class="flex gap-2.5"><svg class="ic w-4 h-4 text-[#FF6A00] mt-0.5"><use href="#i-check"/></svg><span>10% off registration and training fees when two or more children are registered under the same parent/guardian.</span></li>
+              <li class="flex gap-2.5"><svg class="ic w-4 h-4 text-[#FF6A00] mt-0.5"><use href="#i-check"/></svg><span>Applies to registration and training fees only — Gi purchases are excluded.</span></li>
+              <li class="flex gap-2.5"><svg class="ic w-4 h-4 text-[#FF6A00] mt-0.5"><use href="#i-check"/></svg><span>Family discounts and advance-payment discounts cannot be combined. Where more than one discount applies, the discount with the greater benefit will be used.</span></li>
+            </ul>
+          </div>
         </div>
       </div>
 
-      <a href="cifika.html">
-        <div class="absolute z-20 bottom-6 right-6 sm:bottom-8 sm:right-8 lg:bottom-[84px] lg:right-[28px] bg-[#FF6A00] text-white rounded-[14px] px-4 py-3 shadow-[0_12px_24px_rgba(255,106,0,0.35)]">
-          <p class="text-[10px] font-black tracking-[0.18em] uppercase leading-none opacity-80">Join Now</p>
-          <p class="display text-[22px] leading-none mt-1 font-black tracking-[-0.02em]">TRAIN HARD.</p>
+      <!-- 05 Grading & Examination -->
+      <div class="mt-12 lg:mt-14">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <p class="text-[11px] font-black tracking-[0.18em] text-[#FF6A00]">05</p>
+          <h3 class="display text-[20px] sm:text-[26px] font-black tracking-[-0.01em] text-[#111] uppercase">Grading & Examination</h3>
+          <div class="h-px flex-1 bg-[#111]/[0.08]"></div>
         </div>
-      </a>
+        <div class="mt-5 relative rounded-2xl border border-[#111]/10 bg-[#fafafa] p-6 sm:p-8">
+          <div class="absolute left-0 top-7 bottom-7 w-[3px] rounded-full bg-[#FF6A00]"></div>
+          <p class="text-[13px] sm:text-[14.5px] leading-[1.85] text-[#111]/70 font-medium pl-2 sm:pl-4">
+            Grading is conducted periodically for eligible students based on training attendance, technical readiness and instructor recommendation. Grading fees are separate from monthly training fees and will be communicated before each grading exercise. Fees may cover examination, certificate and official examiner/invigilator-related costs.
+          </p>
+        </div>
+      </div>
 
-      <div class="pointer-events-none absolute top-0 right-0 w-[140px] h-[140px] bg-gradient-to-br from-[#FF6A00]/[0.08] to-transparent rounded-bl-[100px]"></div>
+      <!-- 06 Other Fees -->
+      <div class="mt-12 lg:mt-14">
+        <div class="flex items-center gap-3 sm:gap-4">
+          <p class="text-[11px] font-black tracking-[0.18em] text-[#FF6A00]">06</p>
+          <h3 class="display text-[20px] sm:text-[26px] font-black tracking-[-0.01em] text-[#111] uppercase">Other Fees</h3>
+          <div class="h-px flex-1 bg-[#111]/[0.08]"></div>
+        </div>
+        <div class="mt-5 rounded-2xl border border-[#111]/10 overflow-hidden">
+          <div class="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-[#111]/[0.06]">
+            <span class="text-[13px] sm:text-[14px] font-bold text-[#111]">Replacement Karate Gi</span>
+            <span class="text-[13px] font-black text-[#111]">₦25,000</span>
+          </div>
+          <div class="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-[#111]/[0.06]">
+            <span class="text-[13px] sm:text-[14px] font-bold text-[#111]">Seminars & workshops</span>
+            <span class="text-[10.5px] font-black tracking-[0.12em] uppercase text-[#111]/35 text-right">Announced separately</span>
+          </div>
+          <div class="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-[#111]/[0.06]">
+            <span class="text-[13px] sm:text-[14px] font-bold text-[#111]">Competition fees</span>
+            <span class="text-[10.5px] font-black tracking-[0.12em] uppercase text-[#111]/35 text-right">Announced separately</span>
+          </div>
+          <div class="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 border-b border-[#111]/[0.06]">
+            <span class="text-[13px] sm:text-[14px] font-bold text-[#111]">Protective equipment</span>
+            <span class="text-[10.5px] font-black tracking-[0.12em] uppercase text-[#111]/35 text-right">Where required</span>
+          </div>
+          <div class="flex items-center justify-between gap-4 px-5 sm:px-6 py-4">
+            <span class="text-[13px] sm:text-[14px] font-bold text-[#111]">Special events & programmes</span>
+            <span class="text-[10.5px] font-black tracking-[0.12em] uppercase text-[#111]/35 text-right">Announced separately</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="mt-12 lg:mt-14 relative overflow-hidden rounded-2xl bg-[#111] text-white p-7 sm:p-9 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="pointer-events-none absolute -top-16 -right-10 w-56 h-56 rounded-full bg-[#FF6A00]/[0.15]"></div>
+        <div class="relative">
+          <h4 class="display text-[28px] sm:text-[34px] font-black tracking-[-0.01em] leading-none">READY TO <span class="text-[#FF6A00]">START?</span></h4>
+          <p class="mt-2.5 text-[13px] text-white/55 font-medium leading-relaxed max-w-[440px]">Begin with the New Member Start Pack — Gi, registration and your first month of training included.</p>
+        </div>
+        <a href="cifika.html" class="relative shrink-0 inline-flex items-center gap-2.5 bg-[#FF6A00] hover:bg-[#ff7d1f] active:scale-[0.98] text-white rounded-xl px-6 py-4 text-[11px] font-black tracking-[0.16em] uppercase transition-all duration-200 shadow-[0_14px_30px_-10px_rgba(255,106,0,0.55)]">
+          Register Now
+          <svg class="ic w-4 h-4"><use href="#i-arrow"/></svg>
+        </a>
+      </div>
     </div>
-  </div>
+  </section>
 
+  <!-- ===== SHARED FOOTER ===== -->
   <div class="relative z-20 mt-auto border-t border-[#111]/[0.06] bg-white px-6 sm:px-10 lg:px-14 py-5 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <div class="bg-[#111] rounded-full px-4 py-[8px] flex items-center gap-2">
@@ -211,7 +613,7 @@
       <span class="text-[11px] sm:text-[12px] font-medium tracking-[-0.01em] text-[#111]/60">City Fitness & Aerobics | Suncity, Abuja</span>
     </div>
     <div class="flex items-center gap-6">
-      <p class="text-[10px] font-bold tracking-[0.16em] uppercase text-[#111]/30">Est. 2025 • #CFKC</p>
+      <p class="text-[10px] font-bold tracking-[0.16em] uppercase text-[#111]/30">Est. 2025 • #CIFIKA</p>
       <div class="hidden sm:flex items-center gap-1.5">
         <div class="w-[18px] h-[2px] bg-[#111]"></div>
         <div class="w-[18px] h-[2px] bg-[#FF6A00]"></div>
@@ -223,18 +625,145 @@
 
 <p class="mt-6 text-[11px] tracking-[0.14em] uppercase font-medium text-[#111]/30 text-center">Premium promotional poster • 1080 x 1350 • Ready for print & social</p>
 
+<!-- ===== Scroll-end navigation popup ===== -->
+<div id="scrollNav" class="scroll-nav" aria-hidden="true">
+  <div id="scrollNavTrack" class="scroll-nav-track" role="navigation" aria-label="Explore other sections">
+    <span class="nav-lead">Explore</span>
+    <span class="nav-divider"></span>
+    <!-- chips injected by JS (active tab excluded) -->
+  </div>
+</div>
+
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const slides = document.querySelectorAll('.slideshow-img');
-    if (slides.length <= 1) return;
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* Slideshow (unchanged) */
+  const slides = document.querySelectorAll('.slideshow-img');
+  if (slides.length > 1) {
     let current = 0;
-    function showNext() {
+    setInterval(() => {
       slides[current].classList.remove('active');
       current = (current + 1) % slides.length;
       slides[current].classList.add('active');
-    }
-    setInterval(showNext, 4000);
+    }, 4000);
+  }
+
+  /* ===== Tabs / pages ===== */
+  const PAGES = ['home', 'schedule', 'pricing'];
+  const META = {
+    home:     { label: 'Home',     icon: 'i-home' },
+    schedule: { label: 'Schedule', icon: 'i-cal'  },
+    pricing:  { label: 'Pricing',  icon: 'i-tag'  }
+  };
+  let activePage = 'home';
+  let navTimer = null;
+
+  const scrollNav = document.getElementById('scrollNav');
+  const scrollNavTrack = document.getElementById('scrollNavTrack');
+
+  const iconSvg = (id, cls) =>
+    `<svg class="${cls}" viewBox="0 0 24 24"><use href="#${id}"/></svg>`;
+
+  /* Rebuild popup chips — always exclude the active tab */
+  function buildScrollNav() {
+    scrollNavTrack.querySelectorAll('.nav-chip').forEach(el => el.remove());
+    PAGES.filter(p => p !== activePage).forEach(p => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'nav-chip';
+      b.dataset.goto = p;
+      b.setAttribute('aria-label', 'Go to ' + META[p].label);
+      b.innerHTML = iconSvg(META[p].icon, 'ic') + `<span>${META[p].label}</span>` + iconSvg('i-arrow', 'ic chip-arrow');
+      scrollNavTrack.appendChild(b);
+    });
+  }
+
+  function updateTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      const isActive = btn.dataset.goto === activePage;
+      btn.classList.toggle('is-active', isActive);
+      if (isActive) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+  }
+
+  const showNav = () => { scrollNav.classList.add('show'); scrollNav.setAttribute('aria-hidden', 'false'); };
+  const hideNav = () => { scrollNav.classList.remove('show'); scrollNav.setAttribute('aria-hidden', 'true'); };
+
+  /* Show popup at end of page — or immediately if page fits the screen */
+  function evaluateNav() {
+    const doc = document.documentElement;
+    const scrollable = doc.scrollHeight - window.innerHeight > 80;
+    const atBottom = window.scrollY + window.innerHeight >= doc.scrollHeight - 160;
+    (!scrollable || atBottom) ? showNav() : hideNav();
+  }
+
+  function queueNavEvaluation(delay = 900) {
+    clearTimeout(navTimer);
+    hideNav();
+    navTimer = setTimeout(evaluateNav, delay);
+  }
+
+    /* Render a page (called by tab clicks via hash, and on load) */
+  function renderPage(name) {
+    const current = document.getElementById('page-' + activePage);
+    const next = document.getElementById('page-' + name);
+    if (current && current !== next) current.classList.add('hidden');
+    next.classList.remove('hidden');
+    next.classList.remove('page-enter');
+    void next.offsetWidth; /* restart entrance animation */
+    next.classList.add('page-enter');
+    activePage = name;
+    window.scrollTo(0, 0);
+    updateTabs();
+    buildScrollNav();
+    queueNavEvaluation(900);
+  }
+
+  /* Tab clicks write the tab into the URL — e.g. index.html#pricing */
+  function switchPage(name) {
+    if (!PAGES.includes(name)) return;
+    if (name === activePage) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    location.hash = name; /* triggers hashchange -> renderPage */
+  }
+
+  /* Handles shared links opened with a hash + browser back/forward */
+  window.addEventListener('hashchange', () => {
+    const name = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+    if (name === activePage) return;
+    if (location.hash !== '#' + name) { try { history.replaceState(null, '', '#' + name); } catch (err) {} }
+    renderPage(name);
   });
+
+  /* One delegated handler covers tabs, popup chips and in-page CTAs */
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('[data-goto]');
+    if (!trigger) return;
+    e.preventDefault();
+    switchPage(trigger.dataset.goto);
+  });
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { evaluateNav(); ticking = false; });
+  }, { passive: true });
+  window.addEventListener('resize', evaluateNav);
+
+  /* Initial load: open the tab the shared URL points to */
+  const initial = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+  if (initial !== activePage) {
+    renderPage(initial);
+  } else {
+    buildScrollNav();
+    queueNavEvaluation(1200);
+  }
+  updateTabs();
+  if (!PAGES.includes(location.hash.slice(1))) {
+    try { history.replaceState(null, '', '#' + activePage); } catch (err) {}
+  }
+});
 </script>
 
 </body>

@@ -748,25 +748,6 @@
 <script>
   /* ============================================================
      CONFIG
-     ------------------------------------------------------------
-     SheetDB — "CIFIKA_MEMBERS_DATA" — row 1 headers must be EXACTLY
-     (case-sensitive, no extra spaces — Nationality has capital N):
-     Created, Ref, Status, RegType, RegisteredFor, FullName,
-     PreferredName, DOB, Nationality, Gender, Phone, Email, Address,
-     CityState, GuardianName, GuardianRelationship, GuardianPhone,
-     GuardianEmail, GuardianAddress, GuardianResponsible,
-     EmergencyName, EmergencyRelationship, EmergencyPhone,
-     EmergencyAlt, HasTrained, Arts, MartialStyle, MartialClub,
-     MartialInstructor, MartialRank, MartialYears, MartialLastActive,
-     MartialOther, KarateStyle, KarateClub, KarateInstructor,
-     KarateAssoc, KarateRank, KarateYears, KarateLastActive, Medical,
-     MedicalDesc, Injury, InjuryDesc, Objectives, RulesAgreed,
-     DojoKunAck, ParticipationConsent, ConductConsent, MediaConsent,
-     PrivacyConsent, Signature, SigDate, PassportAttached
-
-     UPDATE BEHAVIOUR: each application keeps ONE Ref for life.
-     Re-submitting the same application PATCHes (updates) the existing
-     row found by Ref — it never creates a duplicate row.
      ============================================================ */
   const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/7vsj9vxphbe0x';
   const WHATSAPP_NUMBER = '2348074001613';
