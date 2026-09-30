@@ -93,7 +93,7 @@
         <div id="rbText" class="text-[12px] text-neutral-500 mt-0.5 leading-[1.5]"></div>
       </div>
     </div>
-    <div class="flex gap-2 flex-wrap" id="rbActions"></div>
+    <div class="flex gap-2 flex-wrap justify-end" id="rbActions"></div>
   </div>
 </div>
 
@@ -219,6 +219,12 @@
                 <div class="text-[11px] font-semibold tracking-[0.08em] text-neutral-700">Date of Birth *</div>
               </div>
               <input type="date" class="input" name="dob" required>
+            </label>
+            <label class="block">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="text-[11px] font-semibold tracking-[0.08em] text-neutral-700">Nationality *</div>
+              </div>
+              <input class="input" placeholder="e.g. Nigerian" name="nationality" required>
             </label>
             <div class="block">
               <div class="flex items-center justify-between mb-1.5">
@@ -645,7 +651,7 @@
       <div class="rounded-[16px] border border-neutral-200 p-5">
         <div class="text-[13px] font-semibold">What happens next?</div>
         <ol class="mt-3 text-[13px] leading-6 text-neutral-600 list-decimal list-inside space-y-1">
-          <li>Attach your passport photograph below — it is embedded in your PDF.</li>
+          <li>Send us your PDF on WhatsApp (steps below) — or print & submit at the dojo.</li>
           <li>Complete payment if you haven't at the City Fitness front desk.</li>
           <li>Attend your first assessment class in full gi or athletic/sport/gym wear.</li>
           <li>The Sensei will review your experience and health declaration.</li>
@@ -671,6 +677,23 @@
         </div>
       </div>
 
+      <!-- HOW TO SEND — CLEAR INSTRUCTIONS -->
+      <div class="grid gap-3">
+        <div class="rounded-[16px] border-2 border-wa/40 bg-[#f2fbf5] p-4">
+          <div class="text-[12px] font-bold flex items-center gap-2 text-neutral-900">📲 Send via WhatsApp — 4 easy steps</div>
+          <ol class="mt-2.5 text-[12px] leading-[1.6] text-neutral-700 list-decimal list-inside space-y-1">
+            <li>Tap the green <b>Share on WhatsApp</b> button below — your application PDF (<span id="pdfFileNameHint" class="font-semibold">CIFIKA_CFK-xxxxx.pdf</span>) downloads automatically and the club chat opens.</li>
+            <li>In the WhatsApp chat, tap the <b>📎 attach icon</b> <span class="text-neutral-500">(bottom-right on iPhone • bottom-left on Android — next to the camera icon)</span>.</li>
+            <li>Choose <b>Document</b> <span class="text-neutral-500">(not "Photos & Videos")</span>, then select the downloaded file <b id="pdfFileNameHint2" class="font-semibold">CIFIKA_CFK-xxxxx.pdf</b>.</li>
+            <li>Press <b>send</b> ✅ — done! The club receives your full application with your passport embedded.</li>
+          </ol>
+        </div>
+        <div class="rounded-[16px] border border-neutral-200 bg-neutral-50 p-4">
+          <div class="text-[12px] font-bold flex items-center gap-2 text-neutral-900">🏢 Prefer to submit in person?</div>
+          <p class="mt-1.5 text-[12px] leading-[1.6] text-neutral-600">Tap <b>Save / Print PDF</b>, print the form, <b>attach a passport photograph</b> to it, and submit it at the <b>City Fitness Karate Club dojo front desk</b>.</p>
+        </div>
+      </div>
+
       <!-- ACTION BUTTONS -->
       <div class="grid gap-3">
         <button type="button" onclick="shareWhatsApp()" class="h-[52px] rounded-full bg-wa text-white font-semibold text-[14px] flex items-center justify-center gap-2.5 hover:bg-[#1eb85a] transition">
@@ -681,7 +704,19 @@
           <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
           Save / Print PDF
         </button>
-        <p id="shareHint" class="hidden text-[11px] text-center text-neutral-500 leading-[1.5]">Your application PDF has been downloaded — attach it in WhatsApp to send it to the club.</p>
+        <p id="shareHint" class="hidden text-[11px] text-center text-emerald-700 font-medium leading-[1.5]">✓ PDF downloaded! Now open WhatsApp and tap the 📎 attach icon → Document → select the file → send.</p>
+      </div>
+
+      <!-- REGISTER ANOTHER MEMBER -->
+      <div class="grid gap-2 pt-2 border-t border-neutral-100">
+        <div class="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 pt-2">REGISTER ANOTHER MEMBER</div>
+        <button type="button" id="btnAddChild" onclick="addAnotherChild()" class="h-[48px] rounded-full bg-brand text-white font-semibold text-[14px] hover:bg-brand-dark transition flex items-center justify-center gap-2">
+          ＋ Add Child / Ward
+        </button>
+        <button type="button" id="btnAddSelf" onclick="addSelfFromParent()" class="h-[48px] rounded-full border-[1.5px] border-black bg-white text-black font-semibold text-[14px] hover:bg-neutral-50 transition flex items-center justify-center gap-2">
+          ＋ Register Myself Too
+        </button>
+        <p class="text-[11px] text-neutral-500 leading-[1.5]">Guardian details are pre-filled automatically — you only complete the new member's information.</p>
       </div>
 
       <button type="button" onclick="leaveConfirmation()" class="h-[44px] rounded-full border border-neutral-200 bg-white text-neutral-600 text-[13px] font-medium hover:border-black transition">Done</button>
@@ -704,10 +739,24 @@
 <script>
   /* ============================================================
      CONFIG
+     ------------------------------------------------------------
+     SheetDB — "CIFIKA_MEMBERS_DATA" — row 1 headers must be:
+     Created, Ref, Status, RegType, RegisteredFor, FullName,
+     PreferredName, DOB, Nationality, Gender, Phone, Email, Address,
+     CityState, GuardianName, GuardianRelationship, GuardianPhone,
+     GuardianEmail, GuardianAddress, GuardianResponsible,
+     EmergencyName, EmergencyRelationship, EmergencyPhone,
+     EmergencyAlt, HasTrained, Arts, MartialStyle, MartialClub,
+     MartialInstructor, MartialRank, MartialYears, MartialLastActive,
+     MartialOther, KarateStyle, KarateClub, KarateInstructor,
+     KarateAssoc, KarateRank, KarateYears, KarateLastActive, Medical,
+     MedicalDesc, Injury, InjuryDesc, Objectives, RulesAgreed,
+     DojoKunAck, ParticipationConsent, ConductConsent, MediaConsent,
+     PrivacyConsent, Signature, SigDate, PassportAttached
      ============================================================ */
   const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/7vsj9vxphbe0x';
   const WHATSAPP_NUMBER = '2348074001613';
-  const LS_KEY = 'cifika_registration_v1';
+  const STORE_KEY = 'cifika_store_v2';
   const LOGO_CANDIDATES = [
     'assets/logo/cifika-w-logo.png',
     'assets/logo/cifika-b-logo.png',
@@ -742,12 +791,18 @@
   const toggles = {};
   const multiSelects = { arts: new Set(), objectives: new Set() };
   let karateStyle = '';
-  let passportData = ''; // base64 JPEG (3:4 crop)
-  let appMeta = { ref: null, submitted: false, submittedAt: null };
+  let passportData = '';
+
+  // Multi-application store:
+  // store.apps = list of applications (each a person: self or a child/ward)
+  // store.guardian = reusable guardian profile (pre-fills sibling/self registrations)
+  // store.activeId = the application currently being edited
+  let store = { apps: [], guardian: null, activeId: null };
 
   // ===== Helpers =====
   const $ = id => document.getElementById(id);
   const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const uid = () => 'app_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
   function toast(msg) {
@@ -755,7 +810,7 @@
     t.textContent = msg;
     t.classList.remove('hidden');
     clearTimeout(t._h);
-    t._h = setTimeout(() => t.classList.add('hidden'), 3800);
+    t._h = setTimeout(() => t.classList.add('hidden'), 4200);
   }
 
   function loadFirstImage(paths) {
@@ -770,6 +825,236 @@
       };
       tryNext();
     });
+  }
+
+  // ===== Store: load / save / migrate =====
+  function loadStore() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) { store = JSON.parse(raw); return; }
+    } catch (e) {}
+    // Migrate from old single-application version (v1)
+    try {
+      const old = localStorage.getItem('cifika_registration_v1');
+      if (old) {
+        const s = JSON.parse(old);
+        const app = {
+          id: uid(),
+          for: (s.registration && s.registration.for) || 'self',
+          type: (s.registration && s.registration.type) || 'self',
+          registration: s.registration || { type: 'self', for: 'self' },
+          fields: s.fields || {}, toggles: s.toggles || {},
+          arts: s.arts || [], objectives: s.objectives || [],
+          karateStyle: s.karateStyle || '', passportData: s.passportData || '',
+          ref: (s.appMeta && s.appMeta.ref) || null,
+          submitted: !!(s.appMeta && s.appMeta.submitted),
+          submittedAt: (s.appMeta && s.appMeta.submittedAt) || null,
+          step: s.step || 1,
+          savedAt: s.savedAt || new Date().toISOString()
+        };
+        store = { apps: [app], guardian: null, activeId: app.id };
+        saveStore();
+        localStorage.removeItem('cifika_registration_v1');
+      }
+    } catch (e) {}
+  }
+
+  function saveStore() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+    catch (e) { console.warn('Storage save failed (full?)', e); }
+  }
+
+  function currentApp() {
+    return store.apps.find(a => a.id === store.activeId) || null;
+  }
+
+  // ===== Save current form into the active application =====
+  function saveDraft() {
+    let app = currentApp();
+    if (!app) {
+      app = { id: uid(), ref: null, submitted: false, submittedAt: null };
+      store.apps.push(app);
+      store.activeId = app.id;
+    }
+    const f = $('regForm');
+    const fields = {};
+    new FormData(f).forEach((v, k) => { fields[k] = v; });
+    app.registration = { ...registration };
+    app.fields = fields;
+    app.toggles = { ...toggles };
+    app.arts = [...multiSelects.arts];
+    app.objectives = [...multiSelects.objectives];
+    app.karateStyle = karateStyle;
+    app.passportData = passportData;
+    app.step = currentLogicalStep;
+    app.savedAt = new Date().toISOString();
+    saveStore();
+  }
+
+  // ===== Reset the visible form UI (does not delete stored apps) =====
+  function resetFormUI() {
+    $('regForm').reset();
+    Object.keys(toggles).forEach(k => delete toggles[k]);
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    multiSelects.arts.clear();
+    multiSelects.objectives.clear();
+    document.querySelectorAll('.check-btn').forEach(b => b.classList.remove('active'));
+    karateStyle = '';
+    document.querySelectorAll('.karate-btn').forEach(b => b.classList.remove('active'));
+    passportData = '';
+    refreshPassportUI();
+    $('martialDetails').classList.add('hidden');
+    $('medicalDetails').classList.add('hidden');
+    $('injuryDetails').classList.add('hidden');
+    $('karateInlineDetails').classList.add('hidden');
+  }
+
+  // ===== Start a brand-new application for a person =====
+  function newApp(forWho, opts = {}) {
+    const app = {
+      id: uid(),
+      for: forWho,
+      type: forWho === 'child' ? 'parent' : (opts.type || 'self'),
+      ref: null, submitted: false, submittedAt: null,
+      fields: {}, toggles: {}, arts: [], objectives: [],
+      karateStyle: '', passportData: '', step: 1,
+      savedAt: new Date().toISOString()
+    };
+    registration = { type: app.type, for: forWho };
+    app.registration = { ...registration };
+
+    resetFormUI();
+
+    const g = store.guardian;
+    if (forWho === 'child' && g) {
+      // Pre-fill guardian details from previous registration
+      app.fields.pFullName = g.fullName || '';
+      app.fields.pRelationship = g.relationship || '';
+      app.fields.pPhone = g.phone || '';
+      app.fields.pEmail = g.email || '';
+      app.fields.pAddress = g.address || '';
+      app.fields.pResponsible = 'on';
+      if (g.nationality) app.fields.nationality = g.nationality;
+    }
+    if (forWho === 'self' && opts.prefillContact && g) {
+      // Parent registering themselves — reuse contact details
+      app.fields.phone = g.phone || '';
+      app.fields.email = g.email || '';
+      app.fields.address = g.address || '';
+      app.fields.cityState = g.cityState || '';
+      if (g.nationality) app.fields.nationality = g.nationality;
+    }
+
+    store.apps.push(app);
+    store.activeId = app.id;
+    saveStore();
+    applyApp(app, 1);
+
+    if (forWho === 'child' && g) toast('Guardian details pre-filled from your previous registration ✓');
+    if (forWho === 'self' && opts.prefillContact && g) toast('Contact details pre-filled from your guardian info ✓');
+    return app;
+  }
+
+  // ===== Load an application into the form UI =====
+  function applyApp(app, stepTo) {
+    store.activeId = app.id;
+    registration = app.registration || { type: app.type, for: app.for };
+    passportData = app.passportData || '';
+    karateStyle = app.karateStyle || '';
+
+    const f = $('regForm');
+    Object.entries(app.fields || {}).forEach(([k, v]) => {
+      const el = f.elements[k];
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!v && v !== 'false';
+      else el.value = v || '';
+    });
+
+    Object.keys(toggles).forEach(k => delete toggles[k]);
+    Object.entries(app.toggles || {}).forEach(([grp, v]) => {
+      toggles[grp] = v;
+      document.querySelectorAll(`.toggle-btn[data-group="${grp}"]`).forEach(b =>
+        b.classList.toggle('active', b.dataset.value === v));
+    });
+    $('martialDetails').classList.toggle('hidden', toggles.hasTrained !== 'yes');
+    $('medicalDetails').classList.toggle('hidden', toggles.medical !== 'yes');
+    $('injuryDetails').classList.toggle('hidden', toggles.injury !== 'yes');
+
+    multiSelects.arts = new Set(app.arts || []);
+    multiSelects.objectives = new Set(app.objectives || []);
+    document.querySelectorAll('#artsGrid .check-btn').forEach(b => b.classList.toggle('active', multiSelects.arts.has(b.textContent)));
+    document.querySelectorAll('#objectivesGrid .check-btn').forEach(b => b.classList.toggle('active', multiSelects.objectives.has(b.textContent)));
+    $('karateInlineDetails').classList.toggle('hidden', !multiSelects.arts.has('Karate'));
+
+    document.querySelectorAll('#karateStyleGrid .karate-btn').forEach(b =>
+      b.classList.toggle('active', b.textContent === karateStyle));
+
+    refreshPassportUI();
+
+    $('ctxJoin').textContent = registration.type === 'parent' ? 'Parent / Guardian' : 'Individual';
+    $('ctxFor').textContent = registration.for === 'child' ? 'Child / Ward' : 'Myself';
+    if (!f.elements.sigDate.value) f.elements.sigDate.value = new Date().toISOString().slice(0, 10);
+
+    showForm();
+    const steps = getSteps();
+    showStep(Math.min(stepTo || app.step || 1, steps.length));
+  }
+
+  // View a stored application → routes to Review section
+  function viewApplication(id) {
+    const app = store.apps.find(a => a.id === id);
+    if (!app) return;
+    applyApp(app);
+    showStep(getSteps().length);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ===== Returning-user banner (lists all applications on device) =====
+  function renderReturningBanner() {
+    if (!store.apps.length) return;
+    $('returningBanner').classList.remove('hidden');
+    const submitted = store.apps.filter(a => a.submitted);
+    const drafts = store.apps.filter(a => !a.submitted);
+    const parts = [];
+    if (submitted.length) parts.push(`${submitted.length} submitted application${submitted.length > 1 ? 's' : ''}`);
+    if (drafts.length) parts.push(`${drafts.length} unfinished draft${drafts.length > 1 ? 's' : ''}`);
+    $('rbTitle').textContent = 'Welcome back! 🥋';
+    $('rbText').textContent = `You have ${parts.join(' and ')} on this device. View, continue, or start a new registration below.`;
+
+    const actions = $('rbActions');
+    actions.innerHTML = '';
+    const mkBtn = (label, cls, fn) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.className = cls;
+      b.onclick = fn;
+      actions.appendChild(b);
+    };
+
+    // Most recent 4 applications
+    store.apps.slice(-4).reverse().forEach(app => {
+      const name = (app.fields && (app.fields.fullName || app.fields.preferredName)) ||
+                   (app.for === 'child' ? 'Child/Ward' : 'Myself');
+      if (app.submitted) {
+        mkBtn(`View: ${name}${app.ref ? ' · ' + app.ref : ''}`,
+          'h-[40px] px-4 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition',
+          () => viewApplication(app.id));
+      } else {
+        mkBtn(`Continue: ${name}`,
+          'h-[40px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-900 transition',
+          () => applyApp(app));
+      }
+    });
+    if (store.apps.length > 4) {
+      const span = document.createElement('span');
+      span.className = 'h-[40px] flex items-center text-[11px] text-neutral-400';
+      span.textContent = `+${store.apps.length - 4} more saved`;
+      actions.appendChild(span);
+    }
+    mkBtn('Start New Registration',
+      'h-[40px] px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition',
+      () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
   // ===== Populate option grids =====
@@ -907,165 +1192,31 @@
   // ===== Show / hide sections =====
   function showForm() {
     $('heroSection').classList.add('hero-hidden');
+    $('returningBanner').classList.add('hidden');
     $('formSection').classList.remove('hidden');
   }
 
   function showOnboarding() {
     $('formSection').classList.add('hidden');
     $('heroSection').classList.remove('hero-hidden');
+    renderReturningBanner();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function startForm() {
-    $('ctxJoin').textContent = registration.type === 'parent' ? 'Parent / Guardian' : 'Individual';
-    $('ctxFor').textContent = registration.for === 'child' ? 'Child / Ward' : 'Myself';
-    const f = $('regForm');
-    if (!f.elements.sigDate.value) f.elements.sigDate.value = new Date().toISOString().slice(0, 10);
-    showForm();
-    showStep(1);
-  }
-
-  function selectSelf() { registration = { type: 'self', for: 'self' }; startForm(); }
+  function selectSelf() { newApp('self'); }
   function openParentModal() { $('parentModal').classList.remove('hidden'); }
   function closeParentModal() { $('parentModal').classList.add('hidden'); }
   function selectParentOption(which) {
-    registration = { type: 'parent', for: which };
     closeParentModal();
-    startForm();
-  }
-
-  // ===== LocalStorage: save / restore =====
-  function saveDraft() {
-    try {
-      const f = $('regForm');
-      const fields = {};
-      new FormData(f).forEach((v, k) => { fields[k] = v; });
-      const data = {
-        fields,
-        toggles: { ...toggles },
-        arts: [...multiSelects.arts],
-        objectives: [...multiSelects.objectives],
-        karateStyle,
-        passportData,
-        registration: { ...registration },
-        step: currentLogicalStep,
-        appMeta: { ...appMeta },
-        savedAt: new Date().toISOString()
-      };
-      localStorage.setItem(LS_KEY, JSON.stringify(data));
-    } catch (e) { console.warn('Save failed (storage full?)', e); }
-  }
-
-  function loadSaved() {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
-  }
-
-  function hasMeaningfulData(s) {
-    if (!s) return false;
-    if (s.appMeta && s.appMeta.submitted) return true;
-    const f = s.fields || {};
-    return !!(f.fullName || f.phone || f.email || f.signature);
-  }
-
-  function applySaved(s) {
-    registration = s.registration || { type: 'self', for: 'self' };
-    passportData = s.passportData || '';
-    appMeta = s.appMeta || { ref: null, submitted: false, submittedAt: null };
-    karateStyle = s.karateStyle || '';
-
-    // form fields
-    const f = $('regForm');
-    Object.entries(s.fields || {}).forEach(([k, v]) => {
-      const el = f.elements[k];
-      if (!el) return;
-      if (el.type === 'checkbox') el.checked = !!v && v !== 'false';
-      else el.value = v || '';
-    });
-
-    // toggles
-    Object.entries(s.toggles || {}).forEach(([g, v]) => {
-      toggles[g] = v;
-      document.querySelectorAll(`.toggle-btn[data-group="${g}"]`).forEach(b =>
-        b.classList.toggle('active', b.dataset.value === v));
-    });
-    $('martialDetails').classList.toggle('hidden', toggles.hasTrained !== 'yes');
-    $('medicalDetails').classList.toggle('hidden', toggles.medical !== 'yes');
-    $('injuryDetails').classList.toggle('hidden', toggles.injury !== 'yes');
-
-    // multi selects
-    multiSelects.arts = new Set(s.arts || []);
-    multiSelects.objectives = new Set(s.objectives || []);
-    document.querySelectorAll('#artsGrid .check-btn').forEach(b => b.classList.toggle('active', multiSelects.arts.has(b.textContent)));
-    document.querySelectorAll('#objectivesGrid .check-btn').forEach(b => b.classList.toggle('active', multiSelects.objectives.has(b.textContent)));
-    $('karateInlineDetails').classList.toggle('hidden', !multiSelects.arts.has('Karate'));
-
-    // karate style
-    document.querySelectorAll('#karateStyleGrid .karate-btn').forEach(b =>
-      b.classList.toggle('active', b.textContent === karateStyle));
-
-    // passport preview
-    refreshPassportUI();
-
-    // jump into form
-    $('ctxJoin').textContent = registration.type === 'parent' ? 'Parent / Guardian' : 'Individual';
-    $('ctxFor').textContent = registration.for === 'child' ? 'Child / Ward' : 'Myself';
-    showForm();
-    const steps = getSteps();
-    showStep(Math.min(s.step || 1, steps.length));
-  }
-
-  function checkReturningUser() {
-    const s = loadSaved();
-    if (!hasMeaningfulData(s)) return;
-    const banner = $('returningBanner');
-    const actions = $('rbActions');
-    actions.innerHTML = '';
-    banner.classList.remove('hidden');
-
-    const mkBtn = (label, cls, fn) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = label;
-      b.className = cls;
-      b.onclick = fn;
-      actions.appendChild(b);
-    };
-
-    if (s.appMeta && s.appMeta.submitted) {
-      $('rbTitle').textContent = 'Welcome back! 🥋';
-      $('rbText').textContent = `Your application ${s.appMeta.ref || ''} was submitted${s.appMeta.submittedAt ? ' on ' + new Date(s.appMeta.submittedAt).toLocaleDateString() : ''}. You can review it or start a new registration.`;
-      mkBtn('View Application', 'h-[40px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition', () => {
-        applySaved(s);
-        showStep(getSteps().length); // route to Review section
-      });
-      mkBtn('Start New Registration', 'h-[40px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition', startOver);
-    } else {
-      const steps = getSteps();
-      const at = Math.min(s.step || 1, steps.length);
-      $('rbTitle').textContent = 'Welcome back!';
-      $('rbText').textContent = `You have an unfinished registration (step ${at} of ${steps.length}). Continue where you left off — nothing to retype.`;
-      mkBtn('Continue Registration', 'h-[40px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-900 transition', () => applySaved(s));
-      mkBtn('View Application', 'h-[40px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition', () => {
-        applySaved(s);
-        showStep(getSteps().length);
-      });
-      mkBtn('Start Over', 'h-[40px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition', startOver);
-    }
-  }
-
-  function startOver() {
-    localStorage.removeItem(LS_KEY);
-    location.reload();
+    if (which === 'child') newApp('child');
+    else newApp('self', { type: 'parent', prefillContact: !!store.guardian });
   }
 
   // Auto-save on any input
   $('regForm').addEventListener('input', debounce(saveDraft, 400));
   $('regForm').addEventListener('change', debounce(saveDraft, 400));
 
-  // ===== Collect all data =====
+  // ===== Collect all data (current application) =====
   function collectAllData() {
     const f = $('regForm');
     const g = n => { const el = f.elements[n]; return el ? String(el.value || '').trim() : ''; };
@@ -1076,6 +1227,7 @@
       RegType: registration.type === 'parent' ? 'Parent / Guardian' : 'Self',
       RegisteredFor: registration.for === 'child' ? 'Child / Ward' : 'Myself',
       FullName: g('fullName'), PreferredName: g('preferredName'), DOB: g('dob'),
+      Nationality: g('nationality'),
       Gender: toggles.gender || '—', Phone: g('phone'), Email: g('email'),
       Address: g('address'), CityState: g('cityState'),
       GuardianName: g('pFullName'), GuardianRelationship: g('pRelationship'),
@@ -1104,7 +1256,7 @@
   function populateReview() {
     const d = collectAllData();
     $('rvReg').textContent = `${d.RegType} • For: ${d.RegisteredFor}`;
-    $('rvMember').textContent = [d.FullName, d.DOB, d.Gender, d.Phone, d.Email, [d.Address, d.CityState].filter(Boolean).join(', ')].filter(x => x && x !== '—').join(' • ') || '—';
+    $('rvMember').textContent = [d.FullName, d.Nationality, d.DOB, d.Gender, d.Phone, d.Email, [d.Address, d.CityState].filter(Boolean).join(', ')].filter(x => x && x !== '—').join(' • ') || '—';
     $('rvGuardianRow').style.display = registration.for === 'child' ? '' : 'none';
     $('rvGuardian').textContent = [d.GuardianName, d.GuardianRelationship, d.GuardianPhone, d.GuardianEmail].filter(x => x && x !== '—').join(' • ') || '—';
     $('rvEmergency').textContent = [d.EmergencyName, d.EmergencyRelationship, d.EmergencyPhone, d.EmergencyAlt].filter(x => x && x !== '—').join(' • ') || '—';
@@ -1122,7 +1274,7 @@
   // ===== SheetDB =====
   async function sendToSheetDB(payload) {
     if (SHEETDB_API_URL.includes('YOUR_SHEETDB_API_ID')) {
-      console.warn('SheetDB API URL not configured — row not sent. Replace SHEETDB_API_URL.');
+      console.warn('SheetDB API URL not configured — row not sent.');
       return false;
     }
     const res = await fetch(SHEETDB_API_URL, {
@@ -1134,13 +1286,27 @@
     return true;
   }
 
+  // ===== Save reusable guardian profile (for sibling/self registrations) =====
+  function saveGuardianProfile() {
+    const f = $('regForm');
+    const g = n => { const el = f.elements[n]; return el ? String(el.value || '').trim() : ''; };
+    store.guardian = {
+      fullName: g('pFullName'),
+      relationship: g('pRelationship'),
+      phone: g('pPhone'),
+      email: g('pEmail'),
+      address: g('pAddress'),
+      cityState: g('cityState'),
+      nationality: g('nationality')
+    };
+  }
+
   // ===== Submit =====
   async function submitForm() {
     const f = $('regForm');
     const d = collectAllData();
 
-    // basic validation
-    if (!d.FullName || !d.DOB || !d.Phone || !d.Email) {
+    if (!d.FullName || !d.DOB || !d.Nationality || !d.Phone || !d.Email) {
       toast('Please complete the required member details first.');
       showStep(1); return;
     }
@@ -1148,41 +1314,46 @@
       toast('Guardian details are required for child/ward registration.');
       showStep(2); return;
     }
-    if (f.elements.rulesRead && !f.elements.rulesRead.checked ||
-        !f.elements.participation.checked || !f.elements.codeOfConduct.checked || !f.elements.privacy.checked) {
+    if (!f.elements.rulesRead.checked || !f.elements.participation.checked ||
+        !f.elements.codeOfConduct.checked || !f.elements.privacy.checked) {
       toast('Please accept the required consents in Rules & Consent.');
-      const steps = getSteps();
-      showStep(steps.find(s => s.section === 5).id); return;
+      showStep(getSteps().find(s => s.section === 5).id); return;
     }
     if (!d.Signature) {
       toast('Please type your name as a signature.');
-      const steps = getSteps();
-      showStep(steps.find(s => s.section === 5).id); return;
+      showStep(getSteps().find(s => s.section === 5).id); return;
     }
 
     const btn = $('submitBtn');
     btn.disabled = true;
     btn.textContent = 'Submitting…';
 
-    // generate ref
+    const app = currentApp() || (() => { saveDraft(); return currentApp(); })();
     const ref = 'CFK-' + String(Math.floor(10000 + Math.random() * 89999));
-    appMeta = { ref, submitted: true, submittedAt: new Date().toISOString() };
+    app.ref = ref;
+    app.submitted = true;
+    app.submittedAt = new Date().toISOString();
 
-    const payload = {
-      Created: appMeta.submittedAt, Ref: ref, Status: 'Received',
-      ...d
-    };
+    // Reusable guardian profile for "Add Child/Ward" and "Register Myself"
+    if (registration.for === 'child') saveGuardianProfile();
 
+    const payload = { Created: app.submittedAt, Ref: ref, Status: 'Received', ...d };
     let synced = false;
     try { synced = await sendToSheetDB(payload); }
     catch (e) { console.error('SheetDB sync failed:', e); }
 
     saveDraft();
 
-    // fill confirmation
+    // Fill confirmation
     $('refNum').textContent = ref;
-    $('statusText').textContent = synced === false && !SHEETDB_API_URL.includes('YOUR_') ? 'Received • sync pending' : 'Received';
+    $('statusText').textContent = synced ? 'Received' : 'Received • sync pending';
     $('shareHint').classList.add('hidden');
+    const fname = pdfFileName();
+    $('pdfFileNameHint').textContent = fname;
+    $('pdfFileNameHint2').textContent = fname;
+    $('btnAddChild').textContent = registration.for === 'child' ? '＋ Add Another Child / Ward' : '＋ Add Child / Ward';
+    $('btnAddSelf').classList.toggle('hidden', registration.for !== 'child');
+
     refreshPassportUI();
     $('successModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -1190,6 +1361,21 @@
     btn.disabled = false;
     btn.textContent = 'Submit Registration →';
     toast('Application submitted. Ref: ' + ref);
+  }
+
+  // ===== Add another member from the confirmation screen =====
+  function addAnotherChild() {
+    $('successModal').classList.add('hidden');
+    document.body.style.overflow = '';
+    newApp('child');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function addSelfFromParent() {
+    $('successModal').classList.add('hidden');
+    document.body.style.overflow = '';
+    newApp('self', { type: 'parent', prefillContact: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ===== Leave confirmation → index.html =====
@@ -1268,7 +1454,10 @@
   }
 
   // ===== Branded PDF generation =====
-  function pdfFileName() { return `CIFIKA_${appMeta.ref || 'APPLICATION'}.pdf`; }
+  function pdfFileName() {
+    const app = currentApp();
+    return `CIFIKA_${(app && app.ref) || 'APPLICATION'}.pdf`;
+  }
 
   async function buildPDF() {
     const { jsPDF } = window.jspdf;
@@ -1312,8 +1501,8 @@
     doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(20);
     doc.text('Registration Received', M, y); y += 20;
     const metaRows = [
-      ['Reference', appMeta.ref || '—'],
-      ['Submitted', appMeta.submittedAt ? new Date(appMeta.submittedAt).toLocaleString() : new Date().toLocaleString()],
+      ['Reference', (currentApp() && currentApp().ref) || '—'],
+      ['Submitted', currentApp() && currentApp().submittedAt ? new Date(currentApp().submittedAt).toLocaleString() : new Date().toLocaleString()],
       ['Status', 'Received'],
       ['Registering as', `${d.RegType} • ${d.RegisteredFor}`]
     ];
@@ -1350,7 +1539,7 @@
     // --- Content ---
     section('Member Information');
     row('Full Name', d.FullName); row('Preferred Name', d.PreferredName);
-    row('Date of Birth', d.DOB); row('Gender', d.Gender);
+    row('Date of Birth', d.DOB); row('Nationality', d.Nationality); row('Gender', d.Gender);
     row('Phone', d.Phone); row('Email', d.Email);
     row('Residential Address', d.Address); row('City / State', d.CityState);
 
@@ -1426,7 +1615,7 @@
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 107, 0);
         doc.text('CIFIKA — MEMBERSHIP APPLICATION', M, 15);
         doc.setTextColor(160); doc.setFont('helvetica', 'normal');
-        doc.text('Ref: ' + (appMeta.ref || '—'), W - M, 15, { align: 'right' });
+        doc.text('Ref: ' + ((currentApp() && currentApp().ref) || '—'), W - M, 15, { align: 'right' });
       }
       doc.setFillColor(255, 107, 0); doc.rect(0, H - 30, W, 2, 'F');
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150);
@@ -1444,8 +1633,8 @@
       const url = String(doc.output('bloburl'));
       let w = null;
       try { w = window.open(url, '_blank'); } catch (e) {}
-      if (w) toast('PDF ready — use Print or Save in the viewer.');
-      else { doc.save(pdfFileName()); toast('PDF downloaded — open it to print or save.'); }
+      if (w) toast('PDF ready — print it, attach a passport photo, and submit at the dojo. Or print & keep a copy.');
+      else { doc.save(pdfFileName()); toast('PDF downloaded — print it, attach a passport, and submit at the dojo.'); }
     } catch (e) {
       console.error(e);
       toast('Could not generate the PDF. Please try again.');
@@ -1457,21 +1646,23 @@
     try {
       toast('Generating your application PDF…');
       const doc = await buildPDF();
-      doc.save(pdfFileName()); // user attaches this file in WhatsApp
+      doc.save(pdfFileName()); // user attaches this file in WhatsApp via 📎
 
       const d = collectAllData();
       const msg =
         '🥋 CITY FITNESS KARATE CLUB — MEMBERSHIP APPLICATION\n\n' +
-        `Ref: ${appMeta.ref || '—'}\n` +
+        `Ref: ${(currentApp() && currentApp().ref) || '—'}\n` +
         `Name: ${d.FullName || '—'}\n` +
+        `Nationality: ${d.Nationality || '—'}\n` +
         `Phone: ${d.Phone || '—'}\n` +
         `Status: Received\n\n` +
-        'Hello! I have just submitted my membership registration. My application PDF' +
+        `Hello! I have just submitted my membership registration. My application PDF` +
         (d.PassportAttached === 'Yes' ? ' (with my passport photograph embedded)' : '') +
-        ' is attached to this chat. Thank you!';
+        ` — ${pdfFileName()} — is attached to this chat. Thank you!`;
 
       window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
       $('shareHint').classList.remove('hidden');
+      toast('PDF downloaded — in WhatsApp, tap 📎 → Document → select the file → send.');
     } catch (e) {
       console.error(e);
       toast('Could not prepare the share. Please try again.');
@@ -1479,8 +1670,9 @@
   }
 
   // ===== Init =====
+  loadStore();
   populateGrids();
-  checkReturningUser();
+  renderReturningBanner();
 </script>
 </body>
 </html>
