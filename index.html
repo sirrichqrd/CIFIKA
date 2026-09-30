@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Fitness Karate Club - Fixed</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  .display { font-family: 'Anton', 'Inter', sans-serif; letter-spacing: -0.02em; }
+  body { font-family: 'Inter', sans-serif; }
+  @keyframes pulse { 50% { opacity: .5; } }
+  .animate-pulse { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+
+  /* === FIXED: Match React Artifact Exactly === */
+  .slideshow-wrapper {
+    /* Exact same responsive sizing as React artifact image */
+    width: 88%;
+    max-width: 640px;
+    height: auto;
+    /* For fade stacking - use grid */
+    display: grid;
+    /* Match original image transform */
+    transform: translateY(2%);
+  }
+  @media (min-width: 640px) { 
+    .slideshow-wrapper { 
+      width: 72%; 
+    } 
+  }
+  @media (min-width: 1024px) { 
+    .slideshow-wrapper { 
+      width: 108%; 
+      max-width: 760px;
+      margin-right: -2rem;
+    } 
+  }
+  @media (min-width: 1280px) { 
+    .slideshow-wrapper { 
+      width: 116%; 
+    } 
+  }
+
+  .slideshow-img {
+    /* Stack all images in same grid cell */
+    grid-area: 1 / 1;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    object-position: bottom center;
+    opacity: 0;
+    transition: opacity 1.2s cubic-bezier(0.4,0,0.2,1);
+    pointer-events: none;
+    user-select: none;
+    filter: drop-shadow(0 18px 30px rgba(0,0,0,0.12));
+  }
+  .slideshow-img.active {
+    opacity: 1;
+    z-index: 2;
+  }
+
+  .hero-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.06em;
+    line-height: 0.9;
+  }
+  .hero-word {
+    display: block;
+    line-height: 0.9;
+    margin: 0 !important;
+    padding: 0;
+    transform: translateZ(0);
+  }
+  .hero-word-tight { letter-spacing: -0.02em; }
+  @media (max-width: 375px) {
+    .hero-title { gap: 0.08em; line-height: 0.92; }
+    .hero-word { line-height: 0.92; }
+  }
+  @media (min-width: 1024px) {
+    .hero-title { gap: 0.05em; }
+  }
+</style>
+</head>
+<body class="min-h-screen w-full bg-[#f5f5f5] flex flex-col items-center justify-start lg:justify-center py-6 lg:py-10 px-4 selection:bg-[#FF6A00] selection:text-white">
+
+<div class="relative w-full max-w-[1120px] bg-white rounded-[28px] lg:rounded-[32px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
+  
+  <div class="h-[6px] w-full bg-[#111] flex">
+    <div class="h-full w-[34%] bg-[#FF6A00]"></div>
+  </div>
+
+  <header class="relative z-20 flex items-center justify-between px-6 sm:px-10 lg:px-14 pt-8 lg:pt-10 pb-4">
+    <div class="flex items-center gap-3">
+      <img src="images/cfkc_logo.jpg" height="auto" width="200px">
+    </div>
+    <div class="hidden sm:flex items-center gap-3">
+      <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-[#111]/60 border border-[#111]/10 rounded-full px-3 py-1.5">Suncity • Abuja</span>
+      <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-white bg-[#111] rounded-full px-3 py-1.5">All Levels</span>
+    </div>
+  </header>
+
+  <div class="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-0">
+    
+    <div class="order-2 lg:order-1 px-6 sm:px-10 lg:px-14 pt-2 lg:pt-6 pb-8 lg:pb-14 flex flex-col justify-center">
+      
+      <div class="flex items-center gap-3 mb-6 lg:mb-8">
+        <div class="h-px w-8 bg-[#FF6A00]"></div>
+        <p class="text-[11px] font-bold tracking-[0.22em] uppercase text-[#111]/40">Elite Training Program</p>
+      </div>
+
+      <h1 class="display hero-title">
+        <span class="hero-word hero-word-tight text-[46px] sm:text-[64px] lg:text-[84px] xl:text-[92px] font-black text-[#FF6A00]">CITY</span>
+        <span class="hero-word hero-word-tight text-[46px] sm:text-[64px] lg:text-[84px] xl:text-[92px] font-black text-[#FF6A00]">FITNESS</span>
+        <span class="hero-word hero-word-tight text-[44px] sm:text-[60px] lg:text-[78px] xl:text-[84px] font-black text-[#111] mt-[0.08em]">KARATE</span>
+        <span class="hero-word hero-word-tight text-[44px] sm:text-[60px] lg:text-[78px] xl:text-[84px] font-black text-[#111]">CLUB</span>
+      </h1>
+
+      <div class="mt-6 lg:mt-8">
+        <p class="text-[13px] sm:text-[14px] font-medium tracking-[0.12em] uppercase text-[#111]/50 leading-[1.7]">
+          Fitness <span class="text-[#111]/20 mx-1">+</span> Karate <span class="text-[#111]/20 mx-1">+</span> Discipline <span class="text-[#111]/20 mx-1">+</span> Personal Development
+        </p>
+      </div>
+
+      <div class="mt-6 flex items-center gap-4">
+        <div class="h-[4px] w-[72px] bg-[#FF6A00] rounded-full"></div>
+        <div class="h-px flex-1 max-w-[140px] bg-[#111]/10"></div>
+      </div>
+
+      <div class="mt-8 lg:mt-10 grid grid-cols-3 gap-4 max-w-[420px]">
+        <div class="border-l border-[#111]/10 pl-3">
+          <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">01</p>
+          <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Strength &<br>Conditioning</p>
+        </div>
+        <div class="border-l border-[#111]/10 pl-3">
+          <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">02</p>
+          <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Traditional<br>Karate</p>
+        </div>
+        <div class="border-l border-[#111]/10 pl-3">
+          <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">03</p>
+          <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Mind &<br>Discipline</p>
+        </div>
+      </div>
+
+      <div class="sm:hidden mt-8 flex items-center gap-2">
+        <span class="text-[10px] font-bold tracking-[0.14em] uppercase text-[#111]/60 border border-[#111]/10 rounded-full px-3 py-1.5">Suncity • Abuja</span>
+        <span class="text-[10px] font-bold tracking-[0.14em] uppercase text-white bg-[#111] rounded-full px-3 py-1.5">All Levels Welcome</span>
+      </div>
+    </div>
+
+    <!-- Right Column - FIXED SLIDESHOW -->
+    <div class="order-1 lg:order-2 relative flex items-end justify-center lg:justify-end overflow-hidden lg:overflow-visible bg-gradient-to-b from-[#fcfcfc] to-white lg:bg-none min-h-[460px] sm:min-h-[560px] lg:min-h-0">
+      
+      <div class="pointer-events-none absolute inset-0 flex items-center justify-center lg:justify-end overflow-hidden select-none">
+        <span class="display text-[140px] sm:text-[200px] lg:text-[320px] leading-none font-black text-[#f5f5f5] tracking-[-0.08em] translate-x-[6%] lg:translate-x-[8%] translate-y-[-6%]">KICK</span>
+      </div>
+
+      <div class="pointer-events-none absolute left-1/2 lg:left-auto lg:right-[14%] top-[52%] -translate-x-1/2 lg:translate-x-0 -translate-y-1/2 w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] lg:w-[520px] lg:h-[520px] rounded-full bg-[#FFF0E6]"></div>
+
+      <!-- This container now matches React artifact exactly -->
+      <div class="relative z-10 w-full h-full flex items-end justify-center lg:justify-end lg:pr-2 xl:pr-6 max-w-full">
+        <div class="slideshow-wrapper">
+          <img src="images/art_kick.png" alt="Karate kick 1" class="slideshow-img active" onerror="this.src='https://images.unsplash.com/photo-1555597673-b21d5c935865?w=800&q=80'">
+          <img src="images/pose3.png" alt="Karate kick 3" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
+          <img src="images/pose4.png" alt="Karate kick 4" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
+        </div>
+      </div>
+
+      <a href="cifika.html">
+        <div class="absolute z-20 bottom-6 right-6 sm:bottom-8 sm:right-8 lg:bottom-[84px] lg:right-[28px] bg-[#FF6A00] text-white rounded-[14px] px-4 py-3 shadow-[0_12px_24px_rgba(255,106,0,0.35)]">
+          <p class="text-[10px] font-black tracking-[0.18em] uppercase leading-none opacity-80">Join Now</p>
+          <p class="display text-[22px] leading-none mt-1 font-black tracking-[-0.02em]">TRAIN HARD.</p>
+        </div>
+      </a>
+
+      <div class="pointer-events-none absolute top-0 right-0 w-[140px] h-[140px] bg-gradient-to-br from-[#FF6A00]/[0.08] to-transparent rounded-bl-[100px]"></div>
+    </div>
+  </div>
+
+  <div class="relative z-20 mt-auto border-t border-[#111]/[0.06] bg-white px-6 sm:px-10 lg:px-14 py-5 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="bg-[#111] rounded-full px-4 py-[8px] flex items-center gap-2">
+        <div class="w-1.5 h-1.5 rounded-full bg-[#FF6A00] animate-pulse"></div>
+        <span class="text-[11px] font-bold tracking-[0.14em] uppercase text-white">Powered by TTOSR</span>
+      </div>
+      <span class="hidden sm:block h-px w-8 bg-[#111]/10"></span>
+      <span class="text-[11px] sm:text-[12px] font-medium tracking-[-0.01em] text-[#111]/60">City Fitness & Aerobics | Suncity, Abuja</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <p class="text-[10px] font-bold tracking-[0.16em] uppercase text-[#111]/30">Est. 2025 • #CFKC</p>
+      <div class="hidden sm:flex items-center gap-1.5">
+        <div class="w-[18px] h-[2px] bg-[#111]"></div>
+        <div class="w-[18px] h-[2px] bg-[#FF6A00]"></div>
+        <div class="w-[18px] h-[2px] bg-[#111]/20"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="mt-6 text-[11px] tracking-[0.14em] uppercase font-medium text-[#111]/30 text-center">Premium promotional poster • 1080 x 1350 • Ready for print & social</p>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const slides = document.querySelectorAll('.slideshow-img');
+    if (slides.length <= 1) return;
+    let current = 0;
+    function showNext() {
+      slides[current].classList.remove('active');
+      current = (current + 1) % slides.length;
+      slides[current].classList.add('active');
+    }
+    setInterval(showNext, 4000);
+  });
+</script>
+
+</body>
+</html>
