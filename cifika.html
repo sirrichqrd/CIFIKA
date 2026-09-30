@@ -61,6 +61,11 @@
   @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .hero-hidden { display: none !important; }
   .dropzone.dragover { border-color: #FF6B00 !important; background: #FFF5EB !important; }
+  .ring-pulse { animation: ringPulse 1.5s ease-out; }
+  @keyframes ringPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255,107,0,0.45); }
+    100% { box-shadow: 0 0 0 22px rgba(255,107,0,0); }
+  }
 </style>
 </head>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
@@ -116,7 +121,7 @@
     </div>
 
     <!-- Registration type selector -->
-    <div class="md:pt-6">
+    <div class="md:pt-6" id="regTypeCard">
       <div class="bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.10)] border border-neutral-200 p-6 md:p-8">
         <div class="text-[13px] font-semibold tracking-[0.08em]">BEGIN YOUR MEMBERSHIP REGISTRATION.</div>
         <p class="text-[13px] text-neutral-500 mt-2 leading-[1.5]">Select how you are joining. This customises the form and consents.</p>
@@ -168,6 +173,10 @@
         <div id="stepCounter" class="text-[12px] font-medium text-neutral-500">1 / 5</div>
       </div>
       <div class="mt-4 space-y-1.5" id="stepList"></div>
+      <div class="mt-3 text-[10px] text-neutral-400 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+        Amber dot = required fields missing. Tap any step to jump.
+      </div>
       <div class="mt-5 rounded-[14px] bg-brand-light border border-brand-border p-3.5">
         <div class="text-[11px] font-semibold tracking-[0.12em] text-brand">CONTEXT</div>
         <div class="mt-1 text-[12px] leading-[1.5] text-neutral-700 space-y-1">
@@ -562,7 +571,7 @@
             <p class="text-[12px] text-neutral-300 mt-2 leading-[1.6]">By submitting, I declare all information is true and I agree to Club Rules, Dojo Kun, participation risks, media choice and privacy as marked. For child/ward, I sign as parent/guardian with authority to consent.</p>
           </div>
           <button type="button" id="submitBtn" onclick="submitForm()" class="h-[52px] rounded-full bg-brand text-white font-semibold text-[15px] hover:bg-brand-dark transition">Submit Registration →</button>
-          <div class="text-[11px] text-neutral-500 text-center">You will see a confirmation screen and reference number for club use.</div>
+          <div class="text-[11px] text-neutral-500 text-center">You will see a confirmation screen and reference number for club use. Re-submitting updates your existing club record — no duplicates.</div>
         </div>
       </div>
 
@@ -740,7 +749,8 @@
   /* ============================================================
      CONFIG
      ------------------------------------------------------------
-     SheetDB — "CIFIKA_MEMBERS_DATA" — row 1 headers must be:
+     SheetDB — "CIFIKA_MEMBERS_DATA" — row 1 headers must be EXACTLY
+     (case-sensitive, no extra spaces — Nationality has capital N):
      Created, Ref, Status, RegType, RegisteredFor, FullName,
      PreferredName, DOB, Nationality, Gender, Phone, Email, Address,
      CityState, GuardianName, GuardianRelationship, GuardianPhone,
@@ -753,6 +763,10 @@
      MedicalDesc, Injury, InjuryDesc, Objectives, RulesAgreed,
      DojoKunAck, ParticipationConsent, ConductConsent, MediaConsent,
      PrivacyConsent, Signature, SigDate, PassportAttached
+
+     UPDATE BEHAVIOUR: each application keeps ONE Ref for life.
+     Re-submitting the same application PATCHes (updates) the existing
+     row found by Ref — it never creates a duplicate row.
      ============================================================ */
   const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/7vsj9vxphbe0x';
   const WHATSAPP_NUMBER = '2348074001613';
@@ -793,10 +807,6 @@
   let karateStyle = '';
   let passportData = '';
 
-  // Multi-application store:
-  // store.apps = list of applications (each a person: self or a child/ward)
-  // store.guardian = reusable guardian profile (pre-fills sibling/self registrations)
-  // store.activeId = the application currently being edited
   let store = { apps: [], guardian: null, activeId: null };
 
   // ===== Helpers =====
@@ -833,7 +843,6 @@
       const raw = localStorage.getItem(STORE_KEY);
       if (raw) { store = JSON.parse(raw); return; }
     } catch (e) {}
-    // Migrate from old single-application version (v1)
     try {
       const old = localStorage.getItem('cifika_registration_v1');
       if (old) {
@@ -927,7 +936,6 @@
 
     const g = store.guardian;
     if (forWho === 'child' && g) {
-      // Pre-fill guardian details from previous registration
       app.fields.pFullName = g.fullName || '';
       app.fields.pRelationship = g.relationship || '';
       app.fields.pPhone = g.phone || '';
@@ -937,7 +945,6 @@
       if (g.nationality) app.fields.nationality = g.nationality;
     }
     if (forWho === 'self' && opts.prefillContact && g) {
-      // Parent registering themselves — reuse contact details
       app.fields.phone = g.phone || '';
       app.fields.email = g.email || '';
       app.fields.address = g.address || '';
@@ -1009,7 +1016,7 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ===== Returning-user banner (lists all applications on device) =====
+  // ===== Returning-user banner =====
   function renderReturningBanner() {
     if (!store.apps.length) return;
     $('returningBanner').classList.remove('hidden');
@@ -1032,7 +1039,6 @@
       actions.appendChild(b);
     };
 
-    // Most recent 4 applications
     store.apps.slice(-4).reverse().forEach(app => {
       const name = (app.fields && (app.fields.fullName || app.fields.preferredName)) ||
                    (app.for === 'child' ? 'Child/Ward' : 'Myself');
@@ -1054,7 +1060,7 @@
     }
     mkBtn('Start New Registration',
       'h-[40px] px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition',
-      () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      () => startNewRegistration());
   }
 
   // ===== Populate option grids =====
@@ -1131,6 +1137,7 @@
     if (group === 'medical') $('medicalDetails').classList.toggle('hidden', value !== 'yes');
     if (group === 'injury') $('injuryDetails').classList.toggle('hidden', value !== 'yes');
     saveDraft();
+    renderStepList(); // refresh incomplete indicators
   });
 
   // ===== Step navigation =====
@@ -1140,6 +1147,48 @@
     return keys.map((k, i) => ({ id: i + 1, ...stepDefs[k] }));
   }
 
+  // --- Required-field validation per logical step ---
+  function stepMissing(logicalId) {
+    const steps = getSteps();
+    const step = steps.find(s => s.id === logicalId);
+    if (!step) return false;
+    const f = $('regForm');
+    const g = n => { const el = f.elements[n]; return el ? String(el.value || '').trim() : ''; };
+    const c = n => { const el = f.elements[n]; return el && el.checked; };
+
+    switch (step.section) {
+      case 1:
+        if (!g('fullName') || !g('dob') || !g('nationality') || !g('phone') || !g('email')) return true;
+        if (!toggles.gender) return true;
+        return false;
+      case 2:
+        return !(g('pFullName') && g('pRelationship') && g('pPhone') && g('pEmail'));
+      case 3:
+        return !(g('eName') && g('eRelationship') && g('ePrimaryPhone'));
+      case 5:
+        return !(c('rulesRead') && c('participation') && c('codeOfConduct') && c('privacy') && g('signature'));
+      default:
+        return false;
+    }
+  }
+
+  // Jump to a step — forward jumps require all earlier steps complete
+  function goToStep(targetId) {
+    if (targetId === currentLogicalStep) return;
+    const steps = getSteps();
+    if (targetId > currentLogicalStep) {
+      for (let i = currentLogicalStep; i < targetId; i++) {
+        if (stepMissing(i)) {
+          const s = steps.find(x => x.id === i);
+          toast(`Complete “${s.label}” first — some required fields are still empty.`);
+          showStep(i);
+          return;
+        }
+      }
+    }
+    showStep(targetId);
+  }
+
   function renderStepList() {
     const steps = getSteps();
     const list = $('stepList');
@@ -1147,11 +1196,15 @@
     steps.forEach((s, i) => {
       const active = s.id === currentLogicalStep;
       const done = s.id < currentLogicalStep;
+      const incomplete = !active && stepMissing(s.id);
       const div = document.createElement('div');
-      div.className = `flex items-center gap-3 rounded-[12px] px-3 py-2.5 border transition ${active ? 'bg-black text-white border-black' : done ? 'bg-neutral-50 border-neutral-200' : 'bg-white border-neutral-100'}`;
+      div.className = `flex items-center gap-3 rounded-[12px] px-3 py-2.5 border transition cursor-pointer ${active ? 'bg-black text-white border-black' : done ? 'bg-neutral-50 border-neutral-200 hover:border-neutral-400 hover:shadow-sm' : 'bg-white border-neutral-100 hover:border-neutral-300 hover:shadow-sm'}`;
+      div.title = 'Go to ' + s.label;
+      div.onclick = () => goToStep(s.id);
       div.innerHTML = `
         <div class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${active ? 'bg-white text-black' : done ? 'bg-brand text-white' : 'bg-neutral-100 text-neutral-500'}">${done ? '✓' : i+1}</div>
-        <div class="text-[13px] font-medium leading-none">${s.label}</div>`;
+        <div class="text-[13px] font-medium leading-none">${s.label}</div>
+        ${incomplete ? '<div class="ml-auto w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Required fields missing"></div>' : ''}`;
       list.appendChild(div);
     });
   }
@@ -1181,7 +1234,7 @@
 
   function nextStep() {
     const steps = getSteps();
-    if (currentLogicalStep < steps.length) showStep(currentLogicalStep + 1);
+    if (currentLogicalStep < steps.length) goToStep(currentLogicalStep + 1);
   }
 
   function prevStep() {
@@ -1203,6 +1256,23 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // New registration: preserve current draft, reveal onboarding, scroll + pulse the type card
+  function startNewRegistration() {
+    if (!$('formSection').classList.contains('hidden')) saveDraft();
+    showOnboarding();
+    setTimeout(() => {
+      const card = $('regTypeCard');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.remove('ring-pulse');
+        void card.offsetWidth; // restart animation
+        card.classList.add('ring-pulse');
+        setTimeout(() => card.classList.remove('ring-pulse'), 1800);
+      }
+    }, 150);
+    toast('Your progress is saved — choose a registration type to begin.');
+  }
+
   function selectSelf() { newApp('self'); }
   function openParentModal() { $('parentModal').classList.remove('hidden'); }
   function closeParentModal() { $('parentModal').classList.add('hidden'); }
@@ -1221,7 +1291,6 @@
     const f = $('regForm');
     const g = n => { const el = f.elements[n]; return el ? String(el.value || '').trim() : ''; };
     const c = n => { const el = f.elements[n]; return el && el.checked ? 'Yes' : 'No'; };
-    const t = k => toggles[k] ? cap(toggles[k]) : '—';
 
     return {
       RegType: registration.type === 'parent' ? 'Parent / Guardian' : 'Self',
@@ -1272,10 +1341,45 @@
   }
 
   // ===== SheetDB =====
-  async function sendToSheetDB(payload) {
+  // Find an existing row by Ref (used to UPDATE instead of duplicating)
+  async function sheetFindRow(ref) {
+    const res = await fetch(`${SHEETDB_API_URL}/search?Ref=${encodeURIComponent(ref)}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return Array.isArray(rows) && rows.length ? rows[0] : null;
+  }
+
+  // Diagnostic: confirm the sheet actually stored Nationality
+  function verifyNationality(row, payload) {
+    if (!payload.Nationality) return;
+    if (!row || !String(row.Nationality || '').trim()) {
+      console.warn('SheetDB: Nationality was sent but the returned row has none. ' +
+        'Check that row 1 of CIFIKA_MEMBERS_DATA contains the header exactly as "Nationality" (capital N, no spaces), ' +
+        'then verify the column appears in your SheetDB dashboard.');
+      toast('Saved — but the sheet did not store Nationality. Check the column header is exactly "Nationality".');
+    }
+  }
+
+  // Create OR update. If a row with this Ref exists → PATCH it; otherwise POST a new row.
+  async function sendToSheetDB(payload, ref) {
     if (SHEETDB_API_URL.includes('YOUR_SHEETDB_API_ID')) {
       console.warn('SheetDB API URL not configured — row not sent.');
-      return false;
+      return 'skipped';
+    }
+    if (ref) {
+      const existing = await sheetFindRow(ref).catch(() => null);
+      if (existing) {
+        const res = await fetch(SHEETDB_API_URL, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ data: payload, search: { Ref: ref } })
+        });
+        if (!res.ok) throw new Error('SheetDB update failed (' + res.status + ')');
+        verifyNationality(await sheetFindRow(ref).catch(() => null), payload);
+        return 'updated';
+      }
     }
     const res = await fetch(SHEETDB_API_URL, {
       method: 'POST',
@@ -1283,7 +1387,8 @@
       body: JSON.stringify({ data: [payload] })
     });
     if (!res.ok) throw new Error('SheetDB responded ' + res.status);
-    return true;
+    verifyNationality(await sheetFindRow(ref).catch(() => null), payload);
+    return 'created';
   }
 
   // ===== Save reusable guardian profile (for sibling/self registrations) =====
@@ -1306,7 +1411,7 @@
     const f = $('regForm');
     const d = collectAllData();
 
-    if (!d.FullName || !d.DOB || !d.Nationality || !d.Phone || !d.Email) {
+    if (!d.FullName || !d.DOB || !d.Nationality || !d.Phone || !d.Email || !toggles.gender) {
       toast('Please complete the required member details first.');
       showStep(1); return;
     }
@@ -1329,24 +1434,26 @@
     btn.textContent = 'Submitting…';
 
     const app = currentApp() || (() => { saveDraft(); return currentApp(); })();
-    const ref = 'CFK-' + String(Math.floor(10000 + Math.random() * 89999));
+    const isResubmit = !!app.ref; // already has a Ref → update existing sheet row
+    const ref = app.ref || 'CFK-' + String(Math.floor(10000 + Math.random() * 89999));
     app.ref = ref;
     app.submitted = true;
     app.submittedAt = new Date().toISOString();
 
-    // Reusable guardian profile for "Add Child/Ward" and "Register Myself"
     if (registration.for === 'child') saveGuardianProfile();
 
     const payload = { Created: app.submittedAt, Ref: ref, Status: 'Received', ...d };
-    let synced = false;
-    try { synced = await sendToSheetDB(payload); }
+    let result = 'skipped';
+    try { result = await sendToSheetDB(payload, ref); }
     catch (e) { console.error('SheetDB sync failed:', e); }
 
     saveDraft();
 
     // Fill confirmation
     $('refNum').textContent = ref;
-    $('statusText').textContent = synced ? 'Received' : 'Received • sync pending';
+    $('statusText').textContent =
+      result === 'updated' ? 'Updated ✓ (same Ref)' :
+      result === 'created' ? 'Received' : 'Received • sync pending';
     $('shareHint').classList.add('hidden');
     const fname = pdfFileName();
     $('pdfFileNameHint').textContent = fname;
@@ -1360,7 +1467,9 @@
 
     btn.disabled = false;
     btn.textContent = 'Submit Registration →';
-    toast('Application submitted. Ref: ' + ref);
+    toast(isResubmit && result === 'updated'
+      ? `Your existing record was updated — Ref unchanged: ${ref}`
+      : 'Application submitted. Ref: ' + ref);
   }
 
   // ===== Add another member from the confirmation screen =====
@@ -1464,6 +1573,7 @@
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const W = 595.28, H = 841.89, M = 40;
     const d = collectAllData();
+    const app = currentApp();
     const logo = await loadFirstImage(LOGO_CANDIDATES);
     let y = 0;
 
@@ -1501,8 +1611,8 @@
     doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(20);
     doc.text('Registration Received', M, y); y += 20;
     const metaRows = [
-      ['Reference', (currentApp() && currentApp().ref) || '—'],
-      ['Submitted', currentApp() && currentApp().submittedAt ? new Date(currentApp().submittedAt).toLocaleString() : new Date().toLocaleString()],
+      ['Reference', (app && app.ref) || '—'],
+      ['Submitted', app && app.submittedAt ? new Date(app.submittedAt).toLocaleString() : new Date().toLocaleString()],
       ['Status', 'Received'],
       ['Registering as', `${d.RegType} • ${d.RegisteredFor}`]
     ];
@@ -1615,7 +1725,7 @@
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 107, 0);
         doc.text('CIFIKA — MEMBERSHIP APPLICATION', M, 15);
         doc.setTextColor(160); doc.setFont('helvetica', 'normal');
-        doc.text('Ref: ' + ((currentApp() && currentApp().ref) || '—'), W - M, 15, { align: 'right' });
+        doc.text('Ref: ' + ((app && app.ref) || '—'), W - M, 15, { align: 'right' });
       }
       doc.setFillColor(255, 107, 0); doc.rect(0, H - 30, W, 2, 'F');
       doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150);
@@ -1633,7 +1743,7 @@
       const url = String(doc.output('bloburl'));
       let w = null;
       try { w = window.open(url, '_blank'); } catch (e) {}
-      if (w) toast('PDF ready — print it, attach a passport photo, and submit at the dojo. Or print & keep a copy.');
+      if (w) toast('PDF ready — print it, attach a passport photo, and submit at the dojo.');
       else { doc.save(pdfFileName()); toast('PDF downloaded — print it, attach a passport, and submit at the dojo.'); }
     } catch (e) {
       console.error(e);
@@ -1646,12 +1756,13 @@
     try {
       toast('Generating your application PDF…');
       const doc = await buildPDF();
-      doc.save(pdfFileName()); // user attaches this file in WhatsApp via 📎
+      doc.save(pdfFileName());
 
       const d = collectAllData();
+      const app = currentApp();
       const msg =
         '🥋 CITY FITNESS KARATE CLUB — MEMBERSHIP APPLICATION\n\n' +
-        `Ref: ${(currentApp() && currentApp().ref) || '—'}\n` +
+        `Ref: ${(app && app.ref) || '—'}\n` +
         `Name: ${d.FullName || '—'}\n` +
         `Nationality: ${d.Nationality || '—'}\n` +
         `Phone: ${d.Phone || '—'}\n` +
