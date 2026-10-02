@@ -253,7 +253,7 @@
   </header>
 
   <!-- ============================================================ -->
-  <!-- PAGE 1 — HOME (unchanged)                                    -->
+  <!-- PAGE 1 — HOME                                  -->
   <!-- ============================================================ -->
   <section id="page-home" class="page flex-1 flex flex-col">
 
@@ -287,11 +287,11 @@
         <div class="mt-8 lg:mt-10 grid grid-cols-3 gap-4 max-w-[420px]">
           <div class="border-l border-[#111]/10 pl-3">
             <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">01</p>
-            <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Strength &<br>Conditioning</p>
+            <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Traditional<br>Karate</p>
           </div>
           <div class="border-l border-[#111]/10 pl-3">
             <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">02</p>
-            <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Traditional<br>Karate</p>
+            <p class="text-[11px] font-bold leading-[1.25] tracking-[-0.01em] text-[#111] mt-1 uppercase">Self<br>Defence</p>
           </div>
           <div class="border-l border-[#111]/10 pl-3">
             <p class="text-[10px] font-black tracking-widest text-[#FF6A00]">03</p>
@@ -318,6 +318,7 @@
           <div class="slideshow-wrapper">
             <img src="images/art_kick.png" alt="Karate kick 1" class="slideshow-img active" onerror="this.src='https://images.unsplash.com/photo-1555597673-b21d5c935865?w=800&q=80'">
             <img src="images/pose3.png" alt="Karate kick 3" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
+            <img src="images/kick_cutout.png" alt="Karate kick 4" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
             <img src="images/pose4.png" alt="Karate kick 4" class="slideshow-img" onerror="this.src='https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=800&q=80'">
           </div>
         </div>
@@ -747,7 +748,7 @@
       <span class="text-[11px] sm:text-[12px] font-medium tracking-[-0.01em] text-[#111]/60">City Fitness & Aerobics | Suncity, Abuja</span>
     </div>
     <div class="flex items-center gap-6">
-      <p class="text-[10px] font-bold tracking-[0.16em] uppercase text-[#111]/30">Est. 2025 • #CIFIKA</p>
+      <p class="text-[10px] font-bold tracking-[0.16em] uppercase text-[#111]/30">Est. 2026 • #CIFIKA</p>
       <div class="hidden sm:flex items-center gap-1.5">
         <div class="w-[18px] h-[2px] bg-[#111]"></div>
         <div class="w-[18px] h-[2px] bg-[#FF6A00]"></div>
@@ -757,7 +758,7 @@
   </div>
 </div>
 
-<p class="mt-6 text-[11px] tracking-[0.14em] uppercase font-medium text-[#111]/30 text-center">CITY FITNESS KARATE CLUB | POWERED BY TTOSR</p>
+<p class="mt-6 text-[11px] tracking-[0.14em] uppercase font-medium text-[#111]/30 text-center">City Fitness Karate Club • Powered by TTOSR </p>
 
 <!-- ===== Scroll-end navigation popup ===== -->
 <div id="scrollNav" class="scroll-nav" aria-hidden="true">
@@ -809,7 +810,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update lead text to hint at auto-nav
     const leadEl = scrollNavTrack.querySelector('.nav-lead');
     if (leadEl) {
-      leadEl.innerHTML = `Keep scrolling <span class="hidden sm:inline">for</span> <span class="text-[#111]">${META[nextPage].label}</span>`;
+      const prevPage = PAGES[(PAGES.indexOf(activePage) - 1 + PAGES.length) % PAGES.length];
+      leadEl.innerHTML = `<span class="hidden sm:inline">Swipe</span><span class="sm:hidden">← swipe →</span><span class="hidden sm:inline"> ← ${META[prevPage].label} • ${META[nextPage].label} →</span>`;
     }
     PAGES.filter(p => p !== activePage).forEach(p => {
       const b = document.createElement('button');
@@ -862,9 +864,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let progressTimer = null;
   const progressWrap = document.getElementById('scrollProgress');
   const progressFg = document.getElementById('progressFg');
-  const CIRC = 2 * Math.PI * 12; // ~75.4
+  const CIRC = 2 * Math.PI * 12;
 
-  function setProgress(p) {
+  function setProgress(p, dir) {
     scrollProgress = Math.max(0, Math.min(100, p));
     if (progressFg) {
       const offset = CIRC - (CIRC * scrollProgress / 100);
@@ -873,6 +875,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (progressWrap) {
       progressWrap.classList.toggle('hidden', scrollProgress <= 2);
       progressWrap.classList.toggle('filling', scrollProgress > 10);
+      const arrowEl = progressWrap.querySelector('.arrow');
+      if (arrowEl && dir) arrowEl.textContent = dir === 'next' ? '→' : '←';
     }
   }
 
@@ -881,13 +885,15 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTimeout(progressTimer);
   }
 
-  function triggerAutoNav() {
+  function triggerAutoNav(direction = 'next') {
     if (autoNavLocked) return;
-    const next = getNextPage();
+    const idx = PAGES.indexOf(activePage);
+    const next = direction === 'next' 
+      ? PAGES[(idx + 1) % PAGES.length]
+      : PAGES[(idx - 1 + PAGES.length) % PAGES.length];
     autoNavLocked = true;
-    setProgress(100);
-    // ChatGPT-style pop
-    scrollNavTrack.style.transform = 'translateY(8px) scale(.97)';
+    setProgress(100, direction);
+    scrollNavTrack.style.transform = direction === 'next' ? 'translateX(-12px) scale(.97)' : 'translateX(12px) scale(.97)';
     scrollNavTrack.style.opacity = '0';
     try { navigator.vibrate && navigator.vibrate(30); } catch(e) {}
     setTimeout(() => {
@@ -899,16 +905,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 220);
   }
 
-  function addProgress(amount) {
-    if (autoNavLocked || !isAtBottom) return;
-    const timeAtBottom = Date.now() - lastBottomTime;
-    if (timeAtBottom < 300) return;
-    setProgress(scrollProgress + amount);
+  function addProgress(amount, dir) {
+    if (autoNavLocked) return;
+    setProgress(scrollProgress + amount, dir);
     clearTimeout(progressTimer);
-    progressTimer = setTimeout(() => { setProgress(Math.max(0, scrollProgress - 20)); }, 600);
+    progressTimer = setTimeout(() => { setProgress(Math.max(0, scrollProgress - 24)); }, 700);
     if (scrollProgress >= 100) {
-      triggerAutoNav();
+      triggerAutoNav(dir);
     }
+  }
+
+  function getNextPage() {
+    const idx = PAGES.indexOf(activePage);
+    return PAGES[(idx + 1) % PAGES.length];
+  }
+  function getPrevPage() {
+    const idx = PAGES.indexOf(activePage);
+    return PAGES[(idx - 1 + PAGES.length) % PAGES.length];
   }
 
   function queueNavEvaluation(delay = 900) {
@@ -964,59 +977,112 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { passive: true });
   window.addEventListener('resize', evaluateNav);
 
-  // ===== Smooth auto-nav on extra scroll at bottom (ChatGPT-style with ring) =====
+  // ===== Swipe left / right to navigate (Instagram-style) =====
+  let touchStartX = 0;
   let touchStartY = 0;
-  window.addEventListener('wheel', (e) => {
-    if (!isAtBottom || autoNavLocked) return;
-    if (e.deltaY > 0) {
-      e.preventDefault();
-      // map wheel delta to progress: 12px ~ 18% progress
-      const inc = Math.min(34, Math.max(10, e.deltaY * 0.9));
-      addProgress(inc);
-    }
-  }, { passive: false });
+  let isHorizontalSwipe = false;
 
   window.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
+    isHorizontalSwipe = false;
   }, { passive: true });
 
   window.addEventListener('touchmove', (e) => {
-    if (!isAtBottom || autoNavLocked) return;
+    if (autoNavLocked || e.touches.length !== 1) return;
+    const curX = e.touches[0].clientX;
     const curY = e.touches[0].clientY;
-    const diff = touchStartY - curY;
-    if (diff > 6) {
-      // dragging up at bottom fills ring
-      addProgress(diff * 0.25);
+    const diffX = curX - touchStartX;
+    const diffY = curY - touchStartY;
+
+    // detect horizontal intent early
+    if (!isHorizontalSwipe && Math.abs(diffX) > 18 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
+      isHorizontalSwipe = true;
+    }
+
+    if (isHorizontalSwipe) {
+      // live progress fill as you drag
+      const dir = diffX < 0 ? 'next' : 'prev';
+      const prog = Math.min(92, Math.abs(diffX) * 0.42);
+      setProgress(prog, dir);
+      // slight drag of the page for feel
+      const pageEl = document.getElementById('page-' + activePage);
+      if (pageEl) pageEl.style.transform = `translateX(${diffX * 0.16}px)`;
     }
   }, { passive: true });
 
   window.addEventListener('touchend', (e) => {
-    if (!isAtBottom || autoNavLocked) return;
-    const touchEndY = e.changedTouches[0].clientY;
-    const swipeDistance = touchStartY - touchEndY;
-    if (swipeDistance > 26) {
-      addProgress(42);
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    const diffX = endX - touchStartX;
+    const diffY = endY - touchStartY;
+    const pageEl = document.getElementById('page-' + activePage);
+    if (pageEl) pageEl.style.transform = '';
+
+    if (Math.abs(diffX) > 64 && Math.abs(diffX) > Math.abs(diffY) * 1.15) {
+      const dir = diffX < 0 ? 'next' : 'prev';
+      if (Math.abs(diffX) > 90) {
+        triggerAutoNav(dir);
+      } else {
+        addProgress(68, dir);
+      }
     } else {
-      // small swipe decays
-      setTimeout(() => setProgress(scrollProgress * 0.5), 300);
+      // snap back
+      setTimeout(() => setProgress(scrollProgress * 0.3), 120);
     }
+    isHorizontalSwipe = false;
   }, { passive: true });
 
-  // Keyboard: extra ArrowDown / PageDown at bottom also advances with progress
-  window.addEventListener('keydown', (e) => {
-    if (!isAtBottom || autoNavLocked) return;
-    if (['ArrowDown', 'PageDown', ' '].includes(e.key)) {
-      e.preventDefault();
-      addProgress(34);
+  // Mouse drag for desktop preview (optional)
+  let mouseDown = false;
+  let mouseStartX = 0;
+  window.addEventListener('mousedown', (e) => {
+    mouseDown = true;
+    mouseStartX = e.clientX;
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!mouseDown || autoNavLocked) return;
+    const diffX = e.clientX - mouseStartX;
+    if (Math.abs(diffX) > 20) {
+      const dir = diffX < 0 ? 'next' : 'prev';
+      setProgress(Math.min(88, Math.abs(diffX) * 0.32), dir);
+    }
+  });
+  window.addEventListener('mouseup', (e) => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    const diffX = e.clientX - mouseStartX;
+    const pageEl = document.getElementById('page-' + activePage);
+    if (pageEl) pageEl.style.transform = '';
+    if (Math.abs(diffX) > 84) {
+      triggerAutoNav(diffX < 0 ? 'next' : 'prev');
+    } else {
+      resetProgress();
     }
   });
 
-  // decay progress when leaving bottom
-  const _origEvaluate = evaluateNav;
-  // wrap to reset when not at bottom
-  window.addEventListener('scroll', () => {
-    if (!isAtBottom) resetProgress();
-  }, { passive: true });
+  // Keyboard: ArrowLeft / ArrowRight to nav
+  window.addEventListener('keydown', (e) => {
+    if (autoNavLocked) return;
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      triggerAutoNav('next');
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      triggerAutoNav('prev');
+    }
+  });
+
+  // Also keep the vertical smart-scroll at bottom as fallback: extra scroll down = next
+  window.addEventListener('wheel', (e) => {
+    if (autoNavLocked) return;
+    if (isAtBottom && e.deltaY > 18 && Math.abs(e.deltaX) < 20) {
+      e.preventDefault();
+      const inc = Math.min(32, Math.max(12, e.deltaY * 0.7));
+      addProgress(inc, 'next');
+    }
+  }, { passive: false });
 
   /* Initial load: open the tab the shared URL points to */
   const initial = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
