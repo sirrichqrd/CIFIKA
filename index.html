@@ -1,35 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><style>
-@font-face {
-  font-family: "Optimistic";
-  font-style: normal;
-  font-weight: 400 600;
-  font-display: swap;
-  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Optimistic Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
-}
-:where(html) {
-  font-family: "Optimistic", system-ui, sans-serif;
-}
-:where(code, pre, kbd, samp) {
-  font-family: "Optimistic Mono", ui-monospace, monospace;
-}
-</style>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>City Fitness Karate Club — CIFIKA | Abuja</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="icon" type="image/svg" href="favicon.svg">
-<link rel="apple-touch-icon" href="favicon.svg">
-<link rel="shortcut icon" type="image/svg" href="favicon.svg">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Primary SEO -->
+  <title>City Fitness Karate Club — CIFIKA | Traditional Karate in Abuja</title>
+  <meta name="title" content="City Fitness Karate Club — CIFIKA | Traditional Karate in Abuja">
+  <meta name="description" content="City Fitness Karate Club (CIFIKA) — Elite karate training in Sun City, Galadimawa, Abuja. Traditional karate, strength & conditioning, and discipline for children and adults. Fridays & Sundays, 4:30 PM - 6:00 PM at City Fitness & Aerobics." />
+  <meta name="keywords" content="karate Abuja, karate club Abuja, CIFIKA, City Fitness Karate, martial arts Abuja, karate for kids Abuja, Galadimawa karate, Sun City karate, traditional karate Nigeria" />
+  <meta name="author" content="City Fitness Karate Club — CIFIKA" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://cifika.netlify.app/" />
+
+  <!-- Favicons & Manifest -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- Fonts - Keep your existing -->
+  <style>
+  @font-face {
+    font-family: "Optimistic";
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: swap;
+    src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Optimistic Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+  }
+  :where(html) {
+    font-family: "Optimistic", system-ui, sans-serif;
+  }
+  :where(code, pre, kbd, samp) {
+    font-family: "Optimistic Mono", ui-monospace, monospace;
+  }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://cifika.netlify.app/" />
+  <meta property="og:site_name" content="CIFIKA — City Fitness Karate Club" />
+  <meta property="og:title" content="City Fitness Karate Club — CIFIKA | Elite Karate in Abuja" />
+  <meta property="og:description" content="Elite training program combining traditional karate, strength & conditioning, and personal discipline. Open to all levels, kids & adults. Fridays & Sundays at City Fitness, Sun City, Abuja." />
+  <meta property="og:locale" content="en_NG" />
+  <meta property="og:image" content="https://cifika.netlify.app/assets/social-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="City Fitness Karate Club — CIFIKA | Abuja" />
+
+  <!-- X / Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://cifika.netlify.app/" />
+  <meta name="twitter:title" content="City Fitness Karate Club — CIFIKA | Elite Karate in Abuja" />
+  <meta name="twitter:description" content="Elite training program combining traditional karate, strength & conditioning, and personal discipline. Training every Friday & Sunday, 4:30 PM at City Fitness, Sun City, Abuja." />
+  <meta name="twitter:image" content="https://cifika.netlify.app/assets/social-preview.png" />
+  <meta name="twitter:image:alt" content="City Fitness Karate Club — CIFIKA | Abuja" />
+
+  <!-- Structured Data for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SportsClub",
+    "name": "City Fitness Karate Club — CIFIKA",
+    "alternateName": "CIFIKA",
+    "url": "https://cifika.netlify.app/",
+    "logo": "https://cifika.netlify.app/favicon.svg",
+    "image": "https://cifika.netlify.app/assets/social-preview.png",
+    "description": "Traditional karate, strength & conditioning and discipline training for children and adults in Abuja.",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "City Fitness & Aerobics, Sun City Estate, Galadimawa",
+      "addressLocality": "Abuja",
+      "addressRegion": "FCT",
+      "addressCountry": "NG"
+    },
+    "openingHours": "Fr,Su 16:30-18:00",
+    "sport": "Karate",
+    "priceRange": "₦15000 - ₦55000",
+    "sameAs": [
+      "https://cifika.netlify.app/#home",
+      "https://cifika.netlify.app/#schedule",
+      "https://cifika.netlify.app/#pricing"
+    ]
+  }
+  </script>
 <style>
   .display { font-family: 'Anton', 'Inter', sans-serif; letter-spacing: -0.02em; }
   body { font-family: 'Inter', sans-serif; }
