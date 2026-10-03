@@ -44,7 +44,57 @@
   :where(code, pre, kbd, samp) {
     font-family: "Optimistic Mono", ui-monospace, monospace;
   }
-  </style>
+  
+  /* === ADVANCE PLANS MOBILE FIX - Scroll pop-up reveal === */
+  .advance-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(17,17,17,.10);
+    background: white;
+    padding: 20px;
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+    filter: blur(4px);
+    transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1), filter .7s ease, box-shadow .4s ease;
+    will-change: transform, opacity;
+  }
+  .advance-card.is-best {
+    background: #111;
+    border-color: rgba(255,255,255,.08);
+  }
+  .advance-card.in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  .advance-card.in-view:hover {
+    box-shadow: 0 18px 40px -18px rgba(0,0,0,.18);
+  }
+  /* Inner line stagger */
+  .advance-card .advance-line {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  .advance-card.in-view .advance-line {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  /* smooth pop for best value */
+  .advance-card.is-best.in-view {
+    animation: bestPop .8s cubic-bezier(.22,1,.36,1) .2s both;
+  }
+  @keyframes bestPop {
+    0% { transform: translateY(32px) scale(0.92); }
+    60% { transform: translateY(-4px) scale(1.02); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .advance-card { opacity:1; transform:none; filter:none; transition:none; }
+  }
+
+</style>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
 
@@ -217,6 +267,56 @@
     transition: transform .2s cubic-bezier(.22,1,.36,1);
   }
   .scroll-progress.filling .arrow { transform: translateY(-1px) scale(1.1); }
+
+  /* === ADVANCE PLANS MOBILE FIX - Scroll pop-up reveal === */
+  .advance-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(17,17,17,.10);
+    background: white;
+    padding: 20px;
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+    filter: blur(4px);
+    transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1), filter .7s ease, box-shadow .4s ease;
+    will-change: transform, opacity;
+  }
+  .advance-card.is-best {
+    background: #111;
+    border-color: rgba(255,255,255,.08);
+  }
+  .advance-card.in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  .advance-card.in-view:hover {
+    box-shadow: 0 18px 40px -18px rgba(0,0,0,.18);
+  }
+  /* Inner line stagger */
+  .advance-card .advance-line {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
+  }
+  .advance-card.in-view .advance-line {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  /* smooth pop for best value */
+  .advance-card.is-best.in-view {
+    animation: bestPop .8s cubic-bezier(.22,1,.36,1) .2s both;
+  }
+  @keyframes bestPop {
+    0% { transform: translateY(32px) scale(0.92); }
+    60% { transform: translateY(-4px) scale(1.02); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .advance-card { opacity:1; transform:none; filter:none; transition:none; }
+  }
+
 </style>
 </head>
 <body class="min-h-screen w-full bg-[#f5f5f5] flex flex-col items-center justify-start py-6 lg:py-10 px-4 selection:bg-[#FF6A00] selection:text-white">
@@ -552,55 +652,122 @@
         <p class="mt-4 text-[12px] leading-relaxed text-[#111]/50 max-w-[660px]">Everything a new member needs to step on the mat — uniform, registration and the first month of training, in one payment. After the first month, training continues at the standard monthly rate.</p>
       </div>
 
-      <!-- 03 Advance Payment Plans -->
-      <div class="mt-12 lg:mt-14">
+            <!-- 03 Advance Payment Plans - FIXED FOR MOBILE WITH SCROLL REVEAL -->
+      <div id="advance-plans-section" class="mt-12 lg:mt-14 scroll-mt-6">
         <div class="flex items-center gap-3 sm:gap-4">
           <p class="text-[11px] font-black tracking-[0.18em] text-[#FF6A00]">03</p>
           <h3 class="display text-[20px] sm:text-[26px] font-black tracking-[-0.01em] text-[#111] uppercase">Advance Payment Plans</h3>
           <div class="h-px flex-1 bg-[#111]/[0.08]"></div>
           <span class="chip border border-[#111]/10 text-[#111]/50 hidden sm:inline-flex">Training fees only</span>
         </div>
-        <div class="mt-5 rounded-2xl border border-[#111]/10 overflow-hidden">
+
+        <!-- DESKTOP TABLE -->
+        <div class="mt-5 hidden sm:block rounded-2xl border border-[#111]/10 overflow-hidden">
           <table class="w-full">
             <thead>
               <tr class="bg-[#111] text-white">
-                <th class="px-3 sm:px-6 py-4 text-left text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Period</th>
-                <th class="px-3 sm:px-4 py-4 text-left text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Discount</th>
-                <th class="px-3 sm:px-6 py-4 text-right text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Adult</th>
-                <th class="px-3 sm:px-6 py-4 text-right text-[9.5px] sm:text-[10px] font-black tracking-[0.18em] uppercase">Child</th>
+                <th class="px-6 py-4 text-left text-[10px] font-black tracking-[0.18em] uppercase">Period</th>
+                <th class="px-4 py-4 text-left text-[10px] font-black tracking-[0.18em] uppercase">Discount</th>
+                <th class="px-6 py-4 text-right text-[10px] font-black tracking-[0.18em] uppercase">Adult</th>
+                <th class="px-6 py-4 text-right text-[10px] font-black tracking-[0.18em] uppercase">Child</th>
               </tr>
             </thead>
             <tbody>
               <tr class="bg-[#fafafa] border-b border-[#111]/[0.06]">
-                <td class="px-3 sm:px-6 py-4 text-[13px] font-black text-[#111]">Monthly</td>
-                <td class="px-3 sm:px-4 py-4 text-[11px] font-bold text-[#111]/35">Base rate</td>
-                <td class="px-3 sm:px-6 py-4 text-right text-[13px] sm:text-[15px] font-black text-[#111]/70">₦25,000</td>
-                <td class="px-3 sm:px-6 py-4 text-right text-[13px] sm:text-[15px] font-black text-[#111]/70">₦15,000</td>
+                <td class="px-6 py-4 text-[13px] font-black text-[#111]">Monthly</td>
+                <td class="px-4 py-4 text-[11px] font-bold text-[#111]/35">Base rate</td>
+                <td class="px-6 py-4 text-right text-[15px] font-black text-[#111]/70">₦25,000</td>
+                <td class="px-6 py-4 text-right text-[15px] font-black text-[#111]/70">₦15,000</td>
               </tr>
               <tr class="border-b border-[#111]/[0.06]">
-                <td class="px-3 sm:px-6 py-4 text-[13px] sm:text-[14px] font-black text-[#111]">3 Months</td>
-                <td class="px-3 sm:px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 5%</span></td>
-                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦75,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦71,250</span></td>
-                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦45,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦42,750</span></td>
+                <td class="px-6 py-4 text-[14px] font-black text-[#111]">3 Months</td>
+                <td class="px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 5%</span></td>
+                <td class="px-6 py-4 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦75,000</span><span class="text-[15px] font-black text-[#111]">₦71,250</span></td>
+                <td class="px-6 py-4 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦45,000</span><span class="text-[15px] font-black text-[#111]">₦42,750</span></td>
               </tr>
               <tr class="border-b border-[#111]/[0.06]">
-                <td class="px-3 sm:px-6 py-4 text-[13px] sm:text-[14px] font-black text-[#111]">6 Months</td>
-                <td class="px-3 sm:px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 8%</span></td>
-                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦150,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦138,000</span></td>
-                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦90,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦82,800</span></td>
+                <td class="px-6 py-4 text-[14px] font-black text-[#111]">6 Months</td>
+                <td class="px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 8%</span></td>
+                <td class="px-6 py-4 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦150,000</span><span class="text-[15px] font-black text-[#111]">₦138,000</span></td>
+                <td class="px-6 py-4 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦90,000</span><span class="text-[15px] font-black text-[#111]">₦82,800</span></td>
               </tr>
               <tr class="bg-[#FFFBF6]">
-                <td class="px-3 sm:px-6 py-4">
-                  <span class="text-[13px] sm:text-[14px] font-black text-[#111]">12 Months</span>
-                  <span class="chip bg-[#FF6A00] text-white hidden sm:inline-flex ml-2">Best value</span>
-                </td>
-                <td class="px-3 sm:px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 10%</span></td>
-                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦300,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦270,000</span></td>
-                <td class="px-3 sm:px-6 py-4 text-right whitespace-nowrap"><span class="hidden sm:inline text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦180,000</span><span class="text-[13px] sm:text-[15px] font-black text-[#111]">₦162,000</span></td>
+                <td class="px-6 py-4"><span class="text-[14px] font-black text-[#111]">12 Months</span><span class="chip bg-[#FF6A00] text-white inline-flex ml-2">Best value</span></td>
+                <td class="px-4 py-4"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 10%</span></td>
+                <td class="px-6 py-4 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦300,000</span><span class="text-[15px] font-black text-[#111]">₦270,000</span></td>
+                <td class="px-6 py-4 text-right whitespace-nowrap"><span class="text-[11px] font-bold text-[#111]/30 line-through mr-1.5">₦180,000</span><span class="text-[15px] font-black text-[#111]">₦162,000</span></td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        <!-- MOBILE: POP-UP STACK WITH SCROLL REVEAL -->
+        <div class="mt-5 sm:hidden space-y-3" id="advance-mobile-cards">
+          <div class="advance-card">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-[10px] font-black tracking-[0.18em] uppercase text-[#111]/35">Period</p>
+                <p class="display mt-1 text-[22px] font-black leading-none text-[#111]">Monthly</p>
+                <p class="mt-2 text-[11px] font-bold tracking-[0.06em] text-[#111]/40 uppercase">Base rate • No discount</p>
+              </div>
+              <span class="chip bg-[#111] text-white">Standard</span>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+              <div class="advance-line rounded-xl bg-[#fafafa] border border-[#111]/[0.06] p-3.5"><p class="text-[9px] font-black tracking-[0.16em] uppercase text-[#111]/40">Adult</p><p class="mt-1 text-[18px] font-black text-[#111]">₦25,000</p><p class="text-[10px] font-bold text-[#111]/30">/ month</p></div>
+              <div class="advance-line rounded-xl bg-[#fafafa] border border-[#111]/[0.06] p-3.5"><p class="text-[9px] font-black tracking-[0.16em] uppercase text-[#111]/40">Child</p><p class="mt-1 text-[18px] font-black text-[#111]">₦15,000</p><p class="text-[10px] font-bold text-[#111]/30">/ month</p></div>
+            </div>
+          </div>
+
+          <div class="advance-card">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-[10px] font-black tracking-[0.18em] uppercase text-[#111]/35">Period</p>
+                <p class="display mt-1 text-[22px] font-black leading-none text-[#111]">3 Months</p>
+                <p class="mt-2 inline-flex"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 5%</span></p>
+              </div>
+              <div class="h-8 w-8 rounded-full bg-[#FFF0E6] grid place-items-center text-[#FF6A00] font-black text-[12px]">5%</div>
+            </div>
+            <div class="mt-4 space-y-2.5">
+              <div class="advance-line flex items-center justify-between rounded-xl bg-[#FFFBF6] border border-[#FF6A00]/10 px-4 py-3"><div><p class="text-[9px] font-black tracking-[0.16em] uppercase text-[#111]/40">Adult</p><p class="text-[11px] font-bold line-through text-[#111]/30 mt-0.5">₦75,000</p></div><p class="text-[18px] font-black text-[#111]">₦71,250</p></div>
+              <div class="advance-line flex items-center justify-between rounded-xl bg-[#FFFBF6] border border-[#FF6A00]/10 px-4 py-3"><div><p class="text-[9px] font-black tracking-[0.16em] uppercase text-[#111]/40">Child</p><p class="text-[11px] font-bold line-through text-[#111]/30 mt-0.5">₦45,000</p></div><p class="text-[18px] font-black text-[#111]">₦42,750</p></div>
+            </div>
+          </div>
+
+          <div class="advance-card">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-[10px] font-black tracking-[0.18em] uppercase text-[#111]/35">Period</p>
+                <p class="display mt-1 text-[22px] font-black leading-none text-[#111]">6 Months</p>
+                <p class="mt-2 inline-flex"><span class="chip bg-[#FFF0E6] text-[#FF6A00]">Save 8%</span></p>
+              </div>
+              <div class="h-8 w-8 rounded-full bg-[#FFF0E6] grid place-items-center text-[#FF6A00] font-black text-[12px]">8%</div>
+            </div>
+            <div class="mt-4 space-y-2.5">
+              <div class="advance-line flex items-center justify-between rounded-xl bg-[#FFFBF6] border border-[#FF6A00]/10 px-4 py-3"><div><p class="text-[9px] font-black tracking-[0.16em] uppercase text-[#111]/40">Adult</p><p class="text-[11px] font-bold line-through text-[#111]/30 mt-0.5">₦150,000</p></div><p class="text-[18px] font-black text-[#111]">₦138,000</p></div>
+              <div class="advance-line flex items-center justify-between rounded-xl bg-[#FFFBF6] border border-[#FF6A00]/10 px-4 py-3"><div><p class="text-[9px] font-black tracking-[0.16em] uppercase text-[#111]/40">Child</p><p class="text-[11px] font-bold line-through text-[#111]/30 mt-0.5">₦90,000</p></div><p class="text-[18px] font-black text-[#111]">₦82,800</p></div>
+            </div>
+          </div>
+
+          <div class="advance-card is-best">
+            <div class="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-[#FF6A00]/[0.18]"></div>
+            <div class="relative">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-[10px] font-black tracking-[0.18em] uppercase text-white/35">Period</p>
+                  <p class="display mt-1 text-[22px] font-black leading-none text-white">12 Months</p>
+                  <div class="mt-2 flex items-center gap-2"><span class="chip bg-[#FF6A00] text-white">Best value</span><span class="chip bg-white/10 text-white/70">Save 10%</span></div>
+                </div>
+                <div class="h-8 w-8 rounded-full bg-[#FF6A00] grid place-items-center text-white font-black text-[12px]">10%</div>
+              </div>
+              <div class="mt-4 space-y-2.5">
+                <div class="advance-line flex items-center justify-between rounded-xl bg-white/[0.06] border border-white/[0.08] px-4 py-3"><div><p class="text-[9px] font-black tracking-[0.16em] uppercase text-white/40">Adult</p><p class="text-[11px] font-bold line-through text-white/25 mt-0.5">₦300,000</p></div><p class="text-[18px] font-black text-white">₦270,000</p></div>
+                <div class="advance-line flex items-center justify-between rounded-xl bg-white/[0.06] border border-white/[0.08] px-4 py-3"><div><p class="text-[9px] font-black tracking-[0.16em] uppercase text-white/40">Child</p><p class="text-[11px] font-bold line-through text-white/25 mt-0.5">₦180,000</p></div><p class="text-[18px] font-black text-white">₦162,000</p></div>
+              </div>
+              <p class="mt-3.5 text-[10px] font-bold tracking-[0.04em] leading-relaxed text-white/45">You save ₦30,000 (Adult) & ₦18,000 (Child) vs monthly payments.</p>
+            </div>
+          </div>
+        </div>
+
         <p class="mt-4 text-[12px] leading-relaxed text-[#111]/50 max-w-[660px]">Advance-payment plans cover training fees only. Registration and Gi charges apply separately for new members. After the prepaid period expires, membership simply returns to the standard monthly rate.</p>
       </div>
 
@@ -1097,6 +1264,68 @@ document.addEventListener('DOMContentLoaded', () => {
     try { history.replaceState(null, '', '#' + activePage); } catch (err) {}
   }
 });
+
+  /* Advance payment plans scroll pop-up reveal */
+  (function(){
+    const section = document.getElementById('advance-plans-section');
+    const cards = document.querySelectorAll('.advance-card');
+    if(!section || !cards.length) return;
+
+    // Initially mark not in view
+    cards.forEach((card, i)=>{
+      // stagger inner lines
+      const lines = card.querySelectorAll('.advance-line');
+      lines.forEach((line, j)=>{
+        line.style.transitionDelay = (j * 0.08 + 0.15) + 's';
+      });
+    });
+
+    const observer = new IntersectionObserver((entries)=>{
+      entries.forEach(entry=>{
+        if(entry.isIntersecting){
+          const container = entry.target;
+          const cs = container.querySelectorAll('.advance-card');
+          cs.forEach((c, idx)=>{
+            setTimeout(()=>{
+              c.classList.add('in-view');
+            }, idx * 140); // pop one after another
+          });
+          observer.unobserve(container);
+        }
+      });
+    }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+
+    // Observe the section
+    observer.observe(section);
+
+    // Fallback: if already visible on load (e.g., direct hash #pricing)
+    const checkHash = ()=>{
+      if(location.hash === '#pricing'){
+        setTimeout(()=>{
+          cards.forEach((c, idx)=>{
+            setTimeout(()=> c.classList.add('in-view'), idx * 140);
+          });
+        }, 300);
+      }
+    };
+    window.addEventListener('hashchange', checkHash);
+    // Also re-trigger when pricing page becomes active via SPA nav
+    const origRender = window.renderPage;
+    // Hook into tab switch: after render, if pricing, trigger
+    document.addEventListener('click', (e)=>{
+      if(e.target.closest('[data-goto="pricing"]')){
+        setTimeout(()=>{
+          cards.forEach(c=> c.classList.remove('in-view'));
+          setTimeout(()=>{
+            cards.forEach((c, idx)=>{
+              setTimeout(()=> c.classList.add('in-view'), idx * 140);
+            });
+          }, 100);
+        }, 400);
+      }
+    });
+  })();
+
 </script>
 
 </body>
