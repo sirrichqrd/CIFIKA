@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Member Portal — City Fitness Karate Club</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Favicons & Manifest -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        colors: {
+          brand: { DEFAULT: '#FF6B00', dark: '#E65A00', light: '#FFF5EB', border: '#FFD4A8', text: '#B34700' }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .input { width:100%; height:44px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
+           padding:0 16px; font-size:13px; outline:none; transition: border-color .15s, box-shadow .15s; }
+  .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.06); }
+  .card { background:#fff; border:1px solid #e5e5e5; border-radius:22px; }
+  .fade-in { animation: fadeIn .35s ease-out; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .tab-btn { transition: all .15s ease; }
+  .tab-btn.active { background:#111; color:#fff; border-color:#111; }
+  .role-btn { transition: all .15s ease; }
+  .role-btn.active { background:#111; color:#fff; border-color:#111; }
+  .ring-pulse { animation: ringPulse 1.6s ease-out infinite; }
+  @keyframes ringPulse { 0% { box-shadow:0 0 0 0 rgba(255,107,0,.4); } 100% { box-shadow:0 0 0 10px rgba(255,107,0,0); } }
+  .scroll-x::-webkit-scrollbar { height:0; }
+</style>
+</head>
+<body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
+
+<!-- ═══════════════ AUTH VIEW ═══════════════ -->
+<div id="authView" class="hidden min-h-screen flex items-center justify-center px-5 py-10">
+  <div class="w-full max-w-[440px]">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-[14px] font-bold">空</span>
+        <span class="text-[12px] font-bold tracking-[0.16em]">CITY FITNESS <span class="text-brand">KARATE</span></span>
+      </div>
+      <h1 class="mt-4 text-[28px] font-extrabold tracking-tight leading-tight">Member Portal</h1>
+      <p class="text-[13px] text-neutral-500 mt-1.5">Track training, attendance and belt progression.</p>
+    </div>
+
+    <div class="card shadow-[0_16px_48px_rgba(0,0,0,0.07)] p-6 md:p-8">
+      <div class="grid grid-cols-2 gap-2 p-1 bg-neutral-100 rounded-full">
+        <button id="tabIn" onclick="switchAuthTab('in')" class="h-9 rounded-full text-[12px] font-semibold bg-white shadow-sm">Sign In</button>
+        <button id="tabUp" onclick="switchAuthTab('up')" class="h-9 rounded-full text-[12px] font-semibold text-neutral-500">Create Account</button>
+      </div>
+
+      <div id="authError" class="hidden mt-4 text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border"></div>
+
+      <!-- SIGN IN -->
+      <form id="signInForm" class="mt-5 grid gap-3" onsubmit="event.preventDefault(); doSignIn();">
+        <input id="siEmail" type="email" class="input" placeholder="Email address" autocomplete="email">
+        <input id="siPassword" type="password" class="input" placeholder="Password" autocomplete="current-password">
+        <button id="siBtn" type="submit" class="h-[46px] rounded-full bg-black text-white text-[13.5px] font-semibold hover:bg-neutral-800 transition">Sign In →</button>
+        <button type="button" onclick="doReset()" class="text-[11.5px] text-neutral-400 hover:text-neutral-700 transition">Forgot password?</button>
+      </form>
+
+      <!-- SIGN UP -->
+      <form id="signUpForm" class="hidden mt-5 grid gap-3" onsubmit="event.preventDefault(); doSignUp();">
+        <input id="suName" class="input" placeholder="Full name">
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="roleStudent" onclick="setSignupRole('student')" class="role-btn active h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold">🥋 I'm a Student</button>
+          <button type="button" id="roleParent" onclick="setSignupRole('parent')" class="role-btn h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold">👨‍👧 Parent / Guardian</button>
+        </div>
+        <div>
+          <input id="suRef" class="input" placeholder="Registration ID — e.g. CFK-12345" style="text-transform:uppercase" onblur="verifyRef(false)">
+          <p class="text-[11px] text-neutral-400 mt-1 px-1">The CFK-xxxxx ID from your registration confirmation.</p>
+        </div>
+        <div id="refStatus" class="hidden text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border"></div>
+        <input id="suEmail" type="email" class="input" placeholder="Email — must match your registration" autocomplete="email" onblur="if(document.getElementById('suRef').value.trim()) verifyRef(false)">
+        <input id="suPassword" type="password" class="input" placeholder="Create password (min. 6 characters)" autocomplete="new-password">
+        <button id="suBtn" type="submit" class="h-[46px] rounded-full bg-brand text-white text-[13.5px] font-semibold hover:bg-brand-dark transition">Create Account →</button>
+      </form>
+    </div>
+    <p class="text-center text-[11px] text-neutral-400 mt-5">Use the email address you registered with at the dojo.</p>
+  </div>
+</div>
+
+<!-- ═══════════════ APP VIEW ═══════════════ -->
+<div id="appView" class="hidden">
+  <header class="sticky top-0 z-40 bg-black text-white border-b border-neutral-800">
+    <div class="max-w-[1200px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
+        <span class="text-[12px] font-bold tracking-[0.14em]">CITY FITNESS <span class="text-brand">KARATE</span></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
+        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[180px] truncate"></span>
+        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <main id="appMain" class="max-w-[1200px] mx-auto px-5 md:px-8 py-6 md:py-8"></main>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-black text-white text-[12px] font-medium px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] max-w-[90vw] text-center"></div>
+
+<script>
+/* ═══════════════ CONFIG — replace these two values ═══════════════ */
+const SUPABASE_URL     = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
+
+const CLUB = { nextClass: 'Tue & Thu • 6:00 PM  •  Sat • 10:00 AM' };
+
+/* ═══════════════ STATE ═══════════════ */
+let sb, currentUser, currentProfile, beltLevels = [], parentChildren = [];
+let signupRole = 'student';
+let verifiedRef = null;
+
+const $ = id => document.getElementById(id);
+
+/* ═══════════════ BOOT ═══════════════ */
+window.addEventListener('DOMContentLoaded', boot);
+
+async function boot() {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // arriving from registration.html → "Open the Portal"
+    const params = new URLSearchParams(location.search);
+  window._pendingRef = params.get('ref') || null;
+  if (params.get('ref')) {
+    if (params.get('convert') === '1') {
+      // existing member account → sign in, then auto-convert + link
+      switchAuthTab('in');
+      $('siEmail').value = params.get('email') || '';
+      showAuthError('Sign in with your existing account — it will be converted to a parent account and ' + params.get('ref') + ' linked to it.', true);
+    } else {
+      switchAuthTab('up');
+      $('suRef').value = params.get('ref').toUpperCase();
+      if (params.get('email')) $('suEmail').value = params.get('email');
+      if (params.get('role')) setSignupRole(params.get('role'));
+    }
+    history.replaceState(null, '', location.pathname);
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) await enterApp(session.user);
+  else $('authView').classList.remove('hidden');
+
+  sb.auth.onAuthStateChange((_evt, session) => {
+    if (session?.user && !currentUser) enterApp(session.user);
+  });
+}
+
+/* ═══════════════ AUTH ═══════════════ */
+function switchAuthTab(which) {
+  const inForm = $('signInForm'), upForm = $('signUpForm');
+  const inBtn = $('tabIn'), upBtn = $('tabUp');
+  inForm.classList.toggle('hidden', which !== 'in');
+  upForm.classList.toggle('hidden', which !== 'up');
+  inBtn.className = 'h-9 rounded-full text-[12px] font-semibold ' + (which === 'in' ? 'bg-white shadow-sm' : 'text-neutral-500');
+  upBtn.className = 'h-9 rounded-full text-[12px] font-semibold ' + (which === 'up' ? 'bg-white shadow-sm' : 'text-neutral-500');
+  hideAuthError();
+}
+
+function setSignupRole(r) {
+  signupRole = r;
+  $('roleStudent').classList.toggle('active', r === 'student');
+  $('roleParent').classList.toggle('active', r === 'parent');
+}
+
+function showRefStatus(msg, ok) {
+  const box = $('refStatus');
+  box.textContent = msg;
+  box.className = 'text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border ' +
+    (ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-700');
+}
+
+async function verifyRef(silent) {
+  const ref = $('suRef').value.trim().toUpperCase();
+  const email = $('suEmail').value.trim().toLowerCase();
+  if (!ref || !email) {
+    if (!silent && ref && !email) showRefStatus('Enter your email so we can verify the ID against it.', false);
+    verifiedRef = null;
+    return false;
+  }
+  const { data, error } = await sb.rpc('validate_registration_ref', { p_ref: ref, p_email: email });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') {
+    verifiedRef = null;
+    showRefStatus(d?.message || error?.message || 'Could not verify that ID.', false);
+    return false;
+  }
+  verifiedRef = ref;
+  setSignupRole(d.role); // auto-correct the role based on the registration
+  showRefStatus(
+    d.already_yours
+      ? `✓ Already linked to your account — just sign in. (${d.member_display})`
+      : `✓ Verified — registration for ${d.member_display}. Your portal will link automatically.`,
+    true);
+  return true;
+}
+
+function showAuthError(msg, isInfo) {
+  const el = $('authError');
+  el.textContent = msg;
+  el.className = 'mt-4 text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border ' +
+    (isInfo ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-700');
+}
+
+function hideAuthError() { $('authError').classList.add('hidden'); }
+
+async function doSignIn() {
+  hideAuthError();
+  const email = $('siEmail').value.trim(), password = $('siPassword').value;
+  if (!email || !password) return showAuthError('Enter your email and password.');
+  const btn = $('siBtn'); btn.disabled = true; btn.textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Sign In →';
+  if (error) showAuthError(error.message);
+}
+
+async function doSignUp() {
+  hideAuthError();
+  const fullName = $('suName').value.trim();
+  const email = $('suEmail').value.trim();
+  const password = $('suPassword').value;
+  const ref = $('suRef').value.trim().toUpperCase();
+  if (!fullName || !email || password.length < 6)
+    return showAuthError('Fill all fields — password must be at least 6 characters.');
+  if (!ref)
+    return showAuthError('Enter the Registration ID (CFK-xxxxx) you received when you registered.');
+
+  const btn = $('suBtn'); btn.disabled = true; btn.textContent = 'Verifying…';
+  const ok = await verifyRef(true);
+  if (!ok) {
+    btn.disabled = false; btn.textContent = 'Create Account →';
+    return showAuthError('Registration ID could not be verified — use the exact email from the registration form.');
+  }
+
+  btn.textContent = 'Creating…';
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: fullName, role: signupRole, reg_ref: ref } }
+  });
+  btn.disabled = false; btn.textContent = 'Create Account →';
+  if (error) return showAuthError(error.message);
+  if (!data.session) showAuthError('Account created! Check your inbox to confirm your email, then sign in.', true);
+  // if email confirmation is OFF, a session exists → dashboard loads automatically, already linked
+}
+
+async function doReset() {
+  const email = $('siEmail').value.trim();
+  if (!email) return showAuthError('Type your email in the field above first, then tap reset.');
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  showAuthError(error ? error.message : 'Reset link sent — check your inbox.', !error);
+}
+
+async function signOut() { await sb.auth.signOut(); location.reload(); }
+
+/* ═══════════════ APP ENTRY (role router) ═══════════════ */
+async function enterApp(user) {
+  currentUser = user;
+
+  let { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (!profile) {
+    const role = user.user_metadata?.role || 'student';
+    await sb.from('profiles').insert({
+      id: user.id, email: user.email,
+      full_name: user.user_metadata?.full_name || '', role
+    });
+    profile = { id: user.id, email: user.email, role, full_name: user.user_metadata?.full_name || '' };
+  }
+  currentProfile = profile;
+
+    // "Use my member account" flow → link the child + convert role server-side
+  if (window._pendingRef) {
+    const ref = window._pendingRef; window._pendingRef = null;
+    const { data: linked } = await sb.rpc('link_by_ref', { p_ref: ref });
+    if (linked?.status === 'ok') {
+      toast(`✓ Linked ${linked.linked || 'member'} — your account is now a parent account`);
+      const { data: p2 } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      if (p2) { profile = p2; currentProfile = p2; }   // role may have changed student → parent
+    }
+  }
+
+  const { data: belts } = await sb.from('belt_levels').select('*').eq('is_active', true).order('belt_order');
+  beltLevels = belts || [];
+
+  $('authView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('hdrEmail').textContent = user.email;
+  $('hdrRole').textContent = profile.role.toUpperCase();
+
+  if (profile.role === 'parent') await renderParentHome();
+  else if (profile.role === 'admin' || profile.role === 'instructor') await renderAdminHome();
+  else await renderStudentHome();
+}
+
+/* ═══════════════ STUDENT HOME ═══════════════ */
+async function renderStudentHome() {
+  const { data: student } = await sb.from('students').select('*').eq('user_id', currentUser.id).maybeSingle();
+  if (!student) {
+    $('appMain').innerHTML = `
+      <div class="fade-in card p-8 text-center max-w-[520px] mx-auto">
+        <div class="w-12 h-12 mx-auto rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[20px]">🥋</div>
+        <h2 class="mt-4 text-[18px] font-extrabold">Your member profile isn't linked yet</h2>
+        <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
+          Your account is active, but no membership record is attached to
+          <b>${escapeHtml(currentUser.email)}</b> yet. Once the club processes your registration
+          (or your email matches the guardian email on a registration), your dashboard appears here automatically.
+        </p>
+        <button onclick="signOut()" class="mt-5 h-[42px] px-6 rounded-full bg-black text-white text-[12px] font-semibold">Sign out</button>
+      </div>`;
+    return;
+  }
+  await renderDashboard(student, {});
+}
+
+/* ═══════════════ PARENT HOME ═══════════════ */
+async function renderParentHome() {
+  const [{ data: links }, { data: mine }] = await Promise.all([
+    sb.from('parent_child_links').select('id, relationship, students(*)').eq('parent_id', currentUser.id),
+    sb.from('students').select('*').eq('user_id', currentUser.id).maybeSingle(),
+  ]);
+  parentChildren = (links || []).map(l => l.students).filter(Boolean);
+  window.mineStudent = mine || null;
+
+  const cards = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
+  const myCard = mine ? `
+      <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="renderDashboard(window.mineStudent, { back:true, backLabel:'← Back to parent home' })">
+        <div class="w-14 h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0">${(mine.full_name || '?').trim()[0]?.toUpperCase() || '?'}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">MY TRAINING</div>
+          <div class="font-bold text-[14.5px] truncate">${escapeHtml(mine.full_name || 'Me')}</div>
+          <div class="mt-1.5">${beltChipHTML(mine.current_belt)}</div>
+        </div>
+        <div class="text-neutral-400">→</div>
+      </div>` : '';
+
+  $('appMain').innerHTML = `
+  <div class="fade-in grid gap-6">
+    <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome, ${escapeHtml(currentProfile.full_name || 'Parent')} 👨‍👧</h1>
+        <p class="text-[13px] text-neutral-500 mt-1">${mine ? 'Parent + member account — manage your children and keep training.' : 'Guardian portal — monitor training, attendance and grading progress.'}</p>
+      </div>
+      <div class="text-[12px] text-neutral-500 md:text-right">
+        <div class="font-semibold text-neutral-800">Next classes</div>
+        <div>${CLUB.nextClass}</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">MY CHILDREN</div>
+      ${parentChildren.length
+        ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`
+        : `<div class="rounded-[22px] border-2 border-dashed border-neutral-300 p-8 text-center">
+             <div class="text-[26px]">👨‍👧</div>
+             <div class="mt-2 text-[14px] font-bold">No children linked yet</div>
+             <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[46ch] mx-auto leading-[1.6]">
+               Register your child via the registration form, then use "Link an existing registration" below.
+               Your account email must match the guardian email on the registration.
+             </div>
+           </div>`}
+    </div>
+
+    ${myCard ? `<div><div class="text-[12px] font-bold tracking-[0.14em] mb-3">ALSO ON THE MAT</div><div class="max-w-[420px]">${myCard}</div></div>` : ''}
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em]">LINK AN EXISTING REGISTRATION</div>
+      <p class="text-[12.5px] text-neutral-500 mt-1.5 leading-[1.55]">
+        Enter your child's registration reference (from their confirmation, e.g. <b>CFK-00001</b>).
+        The account email must match the guardian email on the registration.
+      </p>
+      <div class="mt-4 flex flex-col sm:flex-row gap-2 max-w-[520px]">
+        <input id="linkRef" class="input flex-1" placeholder="CFK-xxxxx">
+        <button onclick="linkChild()" class="h-[44px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Link Child</button>
+      </div>
+      <p id="linkMsg" class="hidden mt-2 text-[12px]"></p>
+    </div>
+  </div>`;
+}
+
+function childCardHTML(c, i) {
+  const initial = (c.full_name || '?').trim()[0]?.toUpperCase() || '?';
+  const age = calcAge(c.date_of_birth);
+  return `
+  <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="viewChild(${i})">
+    <div class="w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[18px] font-extrabold overflow-hidden shrink-0">
+      ${c.passport_photo_url ? `<img src="${escapeHtml(c.passport_photo_url)}" class="w-full h-full object-cover" alt="">` : initial}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="font-bold text-[14.5px] truncate">${escapeHtml(c.full_name || 'Member')}</div>
+      <div class="text-[11.5px] text-neutral-500 mt-0.5">${age !== null ? age + ' years • ' : ''}${escapeHtml(c.registration_ref || '')}</div>
+      <div class="mt-2">${beltChipHTML(c.current_belt)}</div>
+    </div>
+    <div class="text-neutral-400">→</div>
+  </div>`;
+}
+
+async function linkChild() {
+  const ref = $('linkRef').value.trim();
+  const msg = $('linkMsg');
+  if (!ref) { msg.textContent = 'Enter a reference first.'; msg.className = 'mt-2 text-[12px] text-red-600'; return; }
+    const { data, error } = await sb.rpc('link_by_ref', { p_ref: ref });
+  const ok = !error && data?.status === 'ok';
+    msg.textContent = ok ? `✓ Linked ${data.linked}!` : (data?.message || error?.message || 'Could not link.');
+  msg.className = 'mt-2 text-[12px] ' + (ok ? 'text-emerald-700 font-semibold' : 'text-red-600');
+  if (ok) setTimeout(renderParentHome, 900);
+}
+
+async function viewChild(i) {
+  const child = parentChildren[i];
+  if (child) await renderDashboard(child, { back: true });
+}
+
+/* ═══════════════ DASHBOARD (shared by student & parent views) ═══════════════ */
+async function renderDashboard(student, opts = {}) {
+  const [{ data: attendance }, { data: gradings }] = await Promise.all([
+    sb.from('attendance').select('*').eq('student_id', student.id).order('class_date', { ascending: false }).limit(60),
+    sb.from('gradings').select('*').eq('student_id', student.id).order('grading_date', { ascending: false }),
+  ]);
+  const att = attendance || [], grd = gradings || [];
+
+  const attended = att.filter(a => a.status === 'present' || a.status === 'late').length;
+  const rate = att.length ? Math.round(attended / att.length * 100) : null;
+
+  const curIdx = Math.max(0, beltLevels.findIndex(b => b.belt_name === student.current_belt));
+  const nextBelt = beltLevels[curIdx + 1] || null;
+  const displayName = student.preferred_name || (student.full_name || '').split(' ')[0] || 'Member';
+
+  const curBelt = beltLevels[curIdx];
+  const hex = curBelt?.belt_color_hex || '#E5E5E5';
+
+  const nextCard = !beltLevels.length
+    ? `<div class="rounded-[16px] bg-black text-white p-5"><p class="text-[12.5px] text-neutral-300">Belt system not configured — run the belt seed SQL.</p></div>`
+    : nextBelt ? `
+      <div class="rounded-[16px] bg-black text-white p-5">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">NEXT GRADING</div>
+        <div class="mt-2 flex items-center gap-2">
+          <span class="w-4 h-4 rounded-full border border-neutral-600" style="background:${nextBelt.belt_color_hex}"></span>
+          <span class="text-[15px] font-bold">${escapeHtml(nextBelt.belt_name)} Belt</span>
+        </div>
+        <ul class="mt-3 text-[12px] text-neutral-300 leading-[1.7] list-disc list-inside space-y-0.5">
+          ${(nextBelt.requirements || '').split('. ').filter(Boolean).map(r => `<li>${escapeHtml(r.replace(/\.$/, ''))}</li>`).join('')}
+          ${nextBelt.minimum_months_at_previous ? `<li>Minimum ${nextBelt.minimum_months_at_previous} months at current rank</li>` : ''}
+          ${nextBelt.minimum_age ? `<li>Minimum age ${nextBelt.minimum_age}</li>` : ''}
+        </ul>
+        <button onclick="requestGrading('${escapeHtml(nextBelt.belt_name)}')" class="mt-4 h-9 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition">Request Grading →</button>
+      </div>` : `
+      <div class="rounded-[16px] bg-black text-white p-5">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">PATH COMPLETE</div>
+        <p class="mt-2 text-[12.5px] text-neutral-300 leading-[1.6]">You've reached the top of the kyu path. Dan (black belt) gradings are arranged directly with Sensei.</p>
+      </div>`;
+
+  $('appMain').innerHTML = `
+  <div class="fade-in grid gap-6">
+     ${opts.back ? `<button onclick="renderParentHome()" class="w-fit h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">← ${escapeHtml(opts.backLabel || 'All my children')}</button>` : ''}
+
+    <!-- WELCOME -->
+    <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome back, ${escapeHtml(displayName)} 🥋</h1>
+        <div class="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-neutral-500">
+          ${beltChipHTML(student.current_belt)}
+          <span class="px-2.5 py-0.5 rounded-full border font-semibold ${student.membership_status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">${escapeHtml(student.membership_status || 'pending')}</span>
+          <span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>
+        </div>
+      </div>
+      <div class="text-[12px] text-neutral-500 md:text-right">
+        <div class="font-semibold text-neutral-800">Next class</div>
+        <div>${CLUB.nextClass}</div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="card p-5">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">CURRENT BELT</div>
+        <div class="mt-2.5 flex items-center gap-2">
+          <span class="w-4 h-4 rounded-full border border-neutral-300" style="background:${hex}"></span>
+          <span class="text-[16px] font-extrabold">${escapeHtml(student.current_belt)}</span>
+        </div>
+        <div class="text-[11px] text-neutral-500 mt-1">current rank</div>
+      </div>
+      ${statCard('CLASSES ATTENDED', attended, `of ${att.length} recorded`)}
+      ${statCard('ATTENDANCE RATE', rate !== null ? rate + '%' : '—', '80% required for grading')}
+      ${statCard('NEXT GRADING', nextBelt ? nextBelt.belt_name : '—', nextBelt ? `min ${nextBelt.minimum_months_at_previous ?? '—'} months at rank` : 'kyu path complete')}
+    </div>
+
+    <!-- BELT JOURNEY -->
+    <div class="card p-6 md:p-7">
+      <div class="flex items-center justify-between">
+        <div class="text-[12px] font-bold tracking-[0.14em]">BELT JOURNEY</div>
+        <div class="text-[11px] text-neutral-400">${beltLevels.length} ranks</div>
+      </div>
+      ${beltJourneyHTML(student.current_belt)}
+      <div class="mt-6 grid md:grid-cols-2 gap-4">
+        <div class="rounded-[16px] bg-neutral-50 border border-neutral-200 p-5">
+          <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">CURRENT RANK</div>
+          <div class="mt-2">${beltChipHTML(student.current_belt)}</div>
+          <div class="mt-2.5 text-[12px] text-neutral-500">Achieved: <b class="text-neutral-700">${fmtDate(student.last_grading_date)}</b></div>
+          <div class="text-[12px] text-neutral-500">Member since: <b class="text-neutral-700">${fmtDate(student.registration_date)}</b></div>
+        </div>
+        ${nextCard}
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="card overflow-hidden">
+      <div class="px-4 md:px-6 pt-4 pb-4 flex gap-2 border-b border-neutral-100 flex-wrap">
+        <button class="tab-btn active h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('attendance')">📅 Attendance</button>
+        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('gradings')">🥋 Gradings</button>
+        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('profile')">👤 Profile</button>
+      </div>
+      <div id="tab-attendance" class="p-5 md:p-6">${attendanceTabHTML(att, rate)}</div>
+      <div id="tab-gradings" class="hidden p-5 md:p-6">${gradingsTabHTML(grd)}</div>
+      <div id="tab-profile" class="hidden p-5 md:p-6">${profileTabHTML(student)}</div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════ DASHBOARD COMPONENTS ═══════════════ */
+function switchTab(name) {
+  ['attendance', 'gradings', 'profile'].forEach(t =>
+    $('tab-' + t).classList.toggle('hidden', t !== name));
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent.toLowerCase().includes(name)));
+}
+
+function beltJourneyHTML(currentBelt) {
+  if (!beltLevels.length) return `<p class="mt-4 text-[12px] text-neutral-500">Belt system not configured.</p>`;
+  const curIdx = Math.max(0, beltLevels.findIndex(b => b.belt_name === currentBelt));
+  const last = beltLevels.length - 1;
+  const pct = last > 0 ? (curIdx / last) * 100 : 100;
+  return `
+  <div class="mt-6 overflow-x-auto scroll-x">
+    <div class="min-w-[520px] relative">
+      <div class="absolute left-2 right-2 top-[9px] h-[6px] rounded-full bg-neutral-200"></div>
+      <div class="absolute left-2 top-[9px] h-[6px] rounded-full bg-gradient-to-r from-brand to-brand-dark" style="width:calc(${pct}% - 8px)"></div>
+      <div class="relative flex justify-between" style="margin-top:-14px">
+        ${beltLevels.map((b, i) => {
+          const state = i < curIdx ? 'done' : i === curIdx ? 'current' : 'future';
+          return `
+          <div class="flex flex-col items-center" style="min-width:56px">
+            <div class="w-[22px] h-[22px] rounded-full border border-neutral-300 ${state === 'current' ? 'ring-pulse ring-2 ring-brand/40' : ''}"
+                 style="background:${state === 'future' ? '#fff' : b.belt_color_hex}"></div>
+            <div class="mt-2 text-[10px] md:text-[11px] font-semibold text-center leading-tight ${state === 'current' ? 'text-neutral-900' : state === 'done' ? 'text-neutral-700' : 'text-neutral-400'}">${escapeHtml(b.belt_name)}</div>
+            ${state === 'current' ? `<div class="text-[8.5px] text-brand font-bold tracking-[0.1em] mt-0.5">NOW</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function beltChipHTML(name) {
+  const b = beltLevels.find(x => x.belt_name === name);
+  const hex = b?.belt_color_hex || '#E5E5E5';
+  const dark = isDark(hex);
+  return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border"
+    style="background:${hex}; color:${dark ? '#fff' : '#1a1a1a'}; border-color:${dark ? hex : '#ddd'}">
+    <span class="w-2 h-2 rounded-full" style="background:${dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.25)'}"></span>${escapeHtml(name)} Belt</span>`;
+}
+
+function statusPill(s) {
+  const map = {
+    present: ['bg-emerald-50 text-emerald-700 border-emerald-200', 'Present'],
+    absent:  ['bg-red-50 text-red-600 border-red-200', 'Absent'],
+    excused: ['bg-amber-50 text-amber-700 border-amber-200', 'Excused'],
+    late:    ['bg-orange-50 text-orange-700 border-orange-200', 'Late']
+  };
+  const [cls, label] = map[s] || map.present;
+  return `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border ${cls}">${label}</span>`;
+}
+
+function resultPill(r) {
+  const map = {
+    'pass':             ['bg-emerald-50 text-emerald-700 border-emerald-200', 'PASS'],
+    'fail':             ['bg-red-50 text-red-600 border-red-200', 'FAIL'],
+    'conditional pass': ['bg-amber-50 text-amber-700 border-amber-200', 'CONDITIONAL'],
+    'deferred':         ['bg-neutral-100 text-neutral-600 border-neutral-200', 'DEFERRED']
+  };
+  const [cls, label] = map[r] || map['deferred'];
+  return `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${cls}">${label}</span>`;
+}
+
+function statCard(label, value, sub) {
+  return `
+  <div class="card p-5">
+    <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">${label}</div>
+    <div class="mt-2 text-[20px] font-extrabold tracking-tight truncate">${escapeHtml(String(value ?? '—'))}</div>
+    ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${sub}</div>` : ''}
+  </div>`;
+}
+
+function attendanceTabHTML(att, rate) {
+  if (!att.length) return emptyState('📅', 'No attendance recorded yet', 'Your classes will appear here once the club starts recording attendance.');
+  return `
+    ${rate !== null ? `
+    <div class="flex items-center gap-4 mb-5">
+      <div class="text-[26px] font-extrabold">${rate}%</div>
+      <div class="flex-1">
+        <div class="h-2 rounded-full bg-neutral-100 overflow-hidden">
+          <div class="h-full rounded-full ${rate >= 80 ? 'bg-emerald-500' : rate >= 60 ? 'bg-amber-500' : 'bg-red-500'}" style="width:${rate}%"></div>
+        </div>
+        <div class="text-[11px] text-neutral-500 mt-1">attendance rate — 80% required for grading eligibility</div>
+      </div>
+    </div>` : ''}
+    <div class="grid gap-2">
+      ${att.slice(0, 15).map(a => `
+        <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-white border border-neutral-200 flex items-center justify-center text-[11px] font-bold text-neutral-600">${fmtDay(a.class_date)}</div>
+            <div>
+              <div class="text-[12.5px] font-semibold">${fmtDate(a.class_date)}</div>
+              <div class="text-[11px] text-neutral-400 capitalize">${escapeHtml(a.class_type || 'regular')} class</div>
+            </div>
+          </div>
+          ${statusPill(a.status)}
+        </div>`).join('')}
+    </div>
+    ${att.length > 15 ? `<div class="text-[11px] text-neutral-400 text-center mt-3">Showing 15 most recent of ${att.length} records</div>` : ''}`;
+}
+
+function gradingsTabHTML(grd) {
+  if (!grd.length) return emptyState('🥋', 'No gradings yet', 'Your first grading will appear here with examiner, result and remarks. Train consistently — you\'ve got this!');
+  return `<div class="grid gap-3">
+    ${grd.map(g => `
+      <div class="rounded-[16px] border border-neutral-200 p-4">
+        <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+          <div class="flex flex-wrap items-center gap-2">
+            ${beltChipHTML(g.previous_belt)}
+            <span class="text-neutral-400">→</span>
+            ${beltChipHTML(g.new_belt)}
+            <span class="text-[12px] text-neutral-500 md:ml-2">${fmtDate(g.grading_date)} • Examiner: ${escapeHtml(g.examiner_name || '—')}</span>
+          </div>
+          ${resultPill(g.result)}
+        </div>
+        ${g.remarks ? `<div class="mt-2 text-[12px] text-neutral-500 italic">"${escapeHtml(g.remarks)}"</div>` : ''}
+      </div>`).join('')}
+  </div>`;
+}
+
+function profileTabHTML(s) {
+  const ec = s.emergency_contact || {};
+  const rows = [
+    ['Full Name', s.full_name],
+    ['Preferred Name', s.preferred_name],
+    ['Date of Birth', fmtDate(s.date_of_birth) + (calcAge(s.date_of_birth) !== null ? ` (${calcAge(s.date_of_birth)} yrs)` : '')],
+    ['Gender', s.gender],
+    ['Nationality', s.nationality],
+    ['Phone', s.phone],
+    ['Email', s.email],
+    ['Address', [s.address, s.city_state].filter(Boolean).join(', ')],
+    ['Training Category', s.training_category ? capitalize(s.training_category) : null],
+    ['Karate Style', s.karate_style],
+    ['Previous Rank', s.previous_rank],
+    ['Years Trained', s.years_trained],
+    ['Media Consent', (s.media_consent === null || s.media_consent === undefined) ? null : (s.media_consent ? 'Yes' : 'No')],
+    ['Medical Conditions', s.medical_conditions],
+    ['Injuries', s.injuries],
+    ['Emergency Contact', ec.name ? `${ec.name}${ec.relationship ? ' (' + ec.relationship + ')' : ''} — ${ec.primaryPhone || ''}` : null],
+  ].filter(r => r[1]);
+  return `
+    <div class="grid md:grid-cols-2 gap-x-8">
+      ${rows.map(([k, v]) => `
+        <div class="flex justify-between gap-4 py-2.5 border-b border-neutral-100">
+          <span class="text-[12px] text-neutral-500 shrink-0">${k}</span>
+          <span class="text-[12.5px] font-medium text-right break-words">${escapeHtml(String(v))}</span>
+        </div>`).join('')}
+    </div>
+    <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>`;
+}
+
+/* ═══════════════ ADMIN (preview  ═══════════════ */
+async function renderAdminHome() { location.href = 'admin.html'; }
+
+/* ═══════════════ UTILITIES ═══════════════ */
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function capitalize(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function isDark(hex) {
+  const c = (hex || '#fff').replace('#', '');
+  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) < 140;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function fmtDay(d) { return d ? new Date(d + 'T00:00:00').getDate() : '—'; }
+function calcAge(dob) {
+  if (!dob) return null;
+  const d = new Date(dob), t = new Date();
+  let a = t.getFullYear() - d.getFullYear();
+  const m = t.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < d.getDate())) a--;
+  return a;
+}
+function emptyState(icon, title, text) {
+  return `<div class="text-center py-10">
+    <div class="text-[30px]">${icon}</div>
+    <div class="mt-2 text-[14px] font-bold">${title}</div>
+    <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[40ch] mx-auto leading-[1.6]">${text}</div>
+  </div>`;
+}
+let toastTimer;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 4200);
+}
+function requestGrading(name) {
+  toast(`Grading request noted for ${name} Belt. Confirm with Sensei in class — 80% attendance required.`);
+}
+</script>
+</body>
+</html>

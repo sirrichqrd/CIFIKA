@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Console — City Fitness Karate Club</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Favicons & Manifest -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+      colors: { brand: { DEFAULT:'#FF6B00', dark:'#E65A00', light:'#FFF5EB', border:'#FFD4A8', text:'#B34700' } }
+    }}
+  }
+</script>
+<style>
+  body { font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  .input { width:100%; height:42px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
+           padding:0 14px; font-size:13px; outline:none; transition:border-color .15s, box-shadow .15s; }
+  .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.06); }
+  textarea.input { height:auto; border-radius:14px; padding:10px 14px; }
+  select.input { appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,#888 50%),linear-gradient(135deg,#888 50%,transparent 50%);
+    background-position:calc(100% - 16px) calc(50% - 2px),calc(100% - 11px) calc(50% - 2px);
+    background-size:5px 5px,5px 5px; background-repeat:no-repeat; }
+  .card { background:#fff; border:1px solid #e5e5e5; border-radius:18px; }
+  .fade-in { animation:fadeIn .3s ease-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .nav-btn { transition:all .15s ease; }
+  .nav-btn.active { background:#111; color:#fff; }
+  .att-btn { transition:all .12s ease; }
+  .modal-enter { animation:modalIn .22s ease-out; }
+  @keyframes modalIn { from{opacity:0;transform:scale(.96) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+</style>
+</head>
+<body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
+
+<!-- AUTH -->
+<div id="authView" class="hidden min-h-screen flex items-center justify-center px-5 py-10">
+  <div class="w-full max-w-[400px]">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-[14px] font-bold">空</span>
+        <span class="text-[12px] font-bold tracking-[0.16em]">CIFIKA <span class="text-brand">ADMIN</span></span>
+      </div>
+      <h1 class="mt-4 text-[26px] font-extrabold tracking-tight">Staff Sign In</h1>
+    </div>
+    <div class="card shadow-[0_16px_48px_rgba(0,0,0,0.07)] p-6">
+      <div id="authError" class="hidden mb-3 text-[12px] px-4 py-3 rounded-[14px] border bg-red-50 border-red-200 text-red-700"></div>
+      <form class="grid gap-3" onsubmit="event.preventDefault(); doSignIn();">
+        <input id="siEmail" type="email" class="input" placeholder="Staff email" autocomplete="email">
+        <input id="siPassword" type="password" class="input" placeholder="Password" autocomplete="current-password">
+        <button id="siBtn" type="submit" class="h-[46px] rounded-full bg-black text-white text-[13.5px] font-semibold hover:bg-neutral-800 transition">Sign In →</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- UNAUTHORIZED -->
+<div id="unauthView" class="hidden min-h-screen flex items-center justify-center px-5">
+  <div class="card p-8 text-center max-w-[440px]">
+    <div class="text-[28px]">🔒</div>
+    <h2 class="mt-3 text-[18px] font-extrabold">No admin access</h2>
+    <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
+      <span id="unauthEmail" class="font-semibold text-neutral-700"></span> isn't an admin or instructor account.
+      Ask an existing admin to promote you, or use the member portal instead.
+    </p>
+    <div class="mt-5 flex gap-2 justify-center">
+      <a href="portal.html" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold flex items-center hover:border-black transition">Member Portal</a>
+      <button onclick="signOut()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="hidden">
+  <header class="sticky top-0 z-40 bg-black text-white border-b border-neutral-800">
+    <div class="max-w-[1280px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
+        <span class="text-[12px] font-bold tracking-[0.14em]">CIFIKA <span class="text-brand">ADMIN</span></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate"></span>
+        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-6 grid lg:grid-cols-[210px_1fr] gap-6">
+    <!-- SIDEBAR -->
+    <aside class="lg:sticky lg:top-[80px] h-fit">
+      <nav id="navWrap" class="flex lg:flex-col gap-1.5 overflow-x-auto pb-1"></nav>
+    </aside>
+    <main id="content" class="min-w-0"></main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalWrap" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start md:items-center justify-center p-4 overflow-y-auto">
+  <div id="modalBox" class="modal-enter bg-white rounded-[22px] shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-neutral-200 max-w-[620px] w-full my-6"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-black text-white text-[12px] font-medium px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] max-w-[90vw] text-center"></div>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
+
+/* ═══════════ STATE ═══════════ */
+let sb, currentUser, currentProfile;
+let membersList = [], beltLevels = [], profilesList = [];
+let section = 'dashboard';
+let memState = { q:'', status:'', cat:'', belt:'' };
+let attState = { date:null, type:'regular', rows:{} };
+let gradingPreselect = null;
+let currentMemberId = null;
+
+const $  = id => document.getElementById(id);
+const SECTIONS = [
+  ['dashboard', '📊', 'Dashboard'],
+  ['members',   '👥', 'Members'],
+  ['attendance','📅', 'Attendance'],
+  ['gradings',  '🥋', 'Gradings'],
+  ['linking',   '🔗', 'Linking'],
+  ['reports',   '📈', 'Reports'],
+  ['staff',     '⚙️', 'Staff & Roles'],
+];
+
+/* ═══════════ BOOT ═══════════ */
+window.addEventListener('DOMContentLoaded', boot);
+
+async function boot() {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) await gate(session.user); else $('authView').classList.remove('hidden');
+  sb.auth.onAuthStateChange((_e, s) => { if (s?.user && !currentUser) gate(s.user); });
+}
+
+async function gate(user) {
+  currentUser = user;
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (!profile || !['admin','instructor'].includes(profile.role)) {
+    $('authView').classList.add('hidden');
+    $('unauthEmail').textContent = user.email;
+    $('unauthView').classList.remove('hidden');
+    return;
+  }
+  currentProfile = profile;
+  await loadCore();
+  $('authView').classList.add('hidden');
+  $('unauthView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('hdrEmail').textContent = user.email;
+  renderNav();
+  show('dashboard');
+}
+
+async function loadCore() {
+  const [s, b, p] = await Promise.all([
+    sb.from('students').select('*').order('created_at', { ascending: false }),
+    sb.from('belt_levels').select('*').eq('is_active', true).order('belt_order'),
+    sb.from('profiles').select('id,email,full_name,role,created_at').order('created_at'),
+  ]);
+  membersList = s.data || []; beltLevels = b.data || []; profilesList = p.data || [];
+}
+
+async function refreshMembers() {
+  const { data } = await sb.from('students').select('*').order('created_at', { ascending: false });
+  membersList = data || [];
+}
+
+function doSignIn() {
+  const email = $('siEmail').value.trim(), password = $('siPassword').value;
+  if (!email || !password) return authErr('Enter email and password.');
+  sb.auth.signInWithPassword({ email, password })
+    .then(({ error }) => { if (error) authErr(error.message); });
+}
+function authErr(m) { const e = $('authError'); e.textContent = m; e.classList.remove('hidden'); }
+async function signOut() { await sb.auth.signOut(); location.reload(); }
+
+/* ═══════════ SHELL ═══════════ */
+function renderNav() {
+  $('navWrap').innerHTML = SECTIONS.map(([id, icon, label]) => `
+    <button onclick="show('${id}')" data-nav="${id}"
+      class="nav-btn ${section === id ? 'active' : 'bg-white text-neutral-700 hover:border-black'}
+             shrink-0 h-10 px-4 lg:px-3 rounded-full lg:rounded-[14px] border border-neutral-200
+             text-[12.5px] font-semibold flex items-center gap-2 whitespace-nowrap">
+      <span>${icon}</span><span class="hidden lg:inline">${label}</span>
+    </button>`).join('');
+}
+
+function show(id) {
+  section = id;
+  document.querySelectorAll('[data-nav]').forEach(b =>
+    b.className = b.className.replace(/ active/g,'') + (b.dataset.nav === id ? ' active' : ''));
+  ({ dashboard: showDashboard, members: showMembers, attendance: showAttendance,
+     gradings: showGradings, linking: showLinking, reports: showReports, staff: showStaff })[id]();
+}
+
+/* ═══════════ DASHBOARD ═══════════ */
+function showDashboard() {
+  const total = membersList.length;
+  const active = membersList.filter(m => m.membership_status === 'active').length;
+  const pending = membersList.filter(m => m.membership_status === 'pending');
+  const children = membersList.filter(m => m.training_category === 'child').length;
+
+  const dist = beltLevels.map(b => ({ b, n: membersList.filter(m => m.current_belt === b.belt_name).length }));
+  const maxN = Math.max(1, ...dist.map(d => d.n));
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-6">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${statCard('TOTAL MEMBERS', total)}
+      ${statCard('ACTIVE', active, `${total ? Math.round(active/total*100) : 0}% of club`)}
+      ${statCard('PENDING', pending.length, 'awaiting activation')}
+      ${statCard('CHILDREN', children, `${total - children} adults`)}
+    </div>
+
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-[12px] font-bold tracking-[0.14em]">PENDING ACTIVATION</div>
+        <div class="text-[11px] text-neutral-400">new registrations awaiting Sensei approval</div>
+      </div>
+      ${pending.length ? `<div class="grid gap-2">${pending.map(m => `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-[14px] border border-amber-200 bg-amber-50/60">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-full bg-white border border-amber-200 flex items-center justify-center text-[12px] font-bold text-amber-700 shrink-0">${initial(m.full_name)}</div>
+            <div class="min-w-0">
+              <div class="text-[13px] font-semibold truncate">${escapeHtml(m.full_name || '—')}</div>
+              <div class="text-[11px] text-neutral-500">${escapeHtml(m.registration_ref || '')} • ${m.training_category === 'child' ? 'Child' : 'Adult'} • ${fmtDate(m.registration_date)}</div>
+            </div>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <button onclick="setMemberStatus('${m.id}','active')" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11.5px] font-semibold hover:bg-emerald-700 transition">✓ Activate</button>
+            <button onclick="openMember('${m.id}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Details</button>
+          </div>
+        </div>`).join('')}</div>`
+      : `<div class="text-center py-6 text-[13px] text-neutral-400">No pending registrations — all caught up ✓</div>`}
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">BELT DISTRIBUTION</div>
+      <div class="grid gap-2.5">
+        ${dist.map(({ b, n }) => `
+        <div class="flex items-center gap-3">
+          <span class="w-3.5 h-3.5 rounded-full border border-neutral-300 shrink-0" style="background:${b.belt_color_hex}"></span>
+          <span class="text-[12px] font-medium w-[70px] shrink-0">${escapeHtml(b.belt_name)}</span>
+          <div class="flex-1 h-[18px] rounded-full bg-neutral-100 overflow-hidden">
+            <div class="h-full rounded-full transition-all" style="width:${Math.round(n/maxN*100)}%; background:${b.belt_color_hex}"></div>
+          </div>
+          <span class="text-[12px] font-bold w-7 text-right">${n}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════ MEMBERS ═══════════ */
+function filteredMembers() {
+  const q = memState.q.toLowerCase();
+  return membersList.filter(m => {
+    if (memState.status && m.membership_status !== memState.status) return false;
+    if (memState.cat && m.training_category !== memState.cat) return false;
+    if (memState.belt && m.current_belt !== memState.belt) return false;
+    if (q) {
+      const hay = [m.full_name, m.preferred_name, m.registration_ref, m.email, m.guardian_email, m.phone]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function showMembers() {
+  const rows = filteredMembers();
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-4 grid md:grid-cols-[1fr_150px_150px_150px] gap-2">
+      <input class="input" placeholder="Search name, ref, email, phone…" value="${escapeHtml(memState.q)}"
+             oninput="memState.q=this.value; renderMemberRows()">
+      ${selectFilter('memState.status','renderMemberRows()', [
+        ['','All statuses'],['pending','Pending'],['active','Active'],['inactive','Inactive'],['suspended','Suspended']], memState.status)}
+      ${selectFilter('memState.cat','renderMemberRows()', [['','All ages'],['child','Children'],['adult','Adults']], memState.cat)}
+      ${selectFilter('memState.belt','renderMemberRows()', [['','All belts'], ...beltLevels.map(b=>[b.belt_name,b.belt_name])], memState.belt)}
+    </div>
+    <div class="card overflow-hidden">
+      <div id="memberTable">${memberRowsHTML(rows)}</div>
+    </div>
+    <div class="text-[11px] text-neutral-400">${rows.length} of ${membersList.length} members</div>
+  </div>`;
+}
+
+function memberRowsHTML(rows) {
+  if (!rows.length) return `<div class="p-10 text-center text-[13px] text-neutral-400">No members match these filters.</div>`;
+  return rows.map(m => `
+    <div class="flex items-center gap-3 px-4 md:px-5 py-3.5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 cursor-pointer transition" onclick="openMember('${m.id}')">
+      <div class="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[13px] font-bold shrink-0">${initial(m.full_name)}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13.5px] font-semibold truncate">${escapeHtml(m.full_name || '—')}</div>
+        <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(m.registration_ref || '')} • ${m.training_category === 'child' ? 'Child' : m.training_category === 'adult' ? 'Adult' : '—'}${m.guardian_id || m.user_id ? ' • Portal ✓' : ''}</div>
+      </div>
+      <div class="hidden md:block">${beltChipHTML(m.current_belt)}</div>
+      ${statusChip(m.membership_status)}
+      <div class="text-neutral-300">›</div>
+    </div>`).join('');
+}
+function renderMemberRows() { $('memberTable').innerHTML = memberRowsHTML(filteredMembers()); }
+
+function openMember(id) {
+  const m = membersList.find(x => x.id === id);
+  if (!m) return;
+  currentMemberId = id;
+  const guardian = profilesList.find(p => p.id === m.guardian_id);
+  const ec = m.emergency_contact || {};
+  $('modalBox').innerHTML = `
+    <div class="px-6 py-5 border-b border-neutral-100 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">${beltChipHTML(m.current_belt)} ${statusChip(m.membership_status)}</div>
+        <h3 class="mt-2 text-[19px] font-extrabold tracking-tight truncate">${escapeHtml(m.full_name || '—')}</h3>
+        <div class="text-[11.5px] text-neutral-500">${escapeHtml(m.registration_ref || '')} • ${m.training_category === 'child' ? 'Child' : 'Adult'} • joined ${fmtDate(m.registration_date)}</div>
+      </div>
+      <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center shrink-0">✕</button>
+    </div>
+    <div class="px-6 py-4 grid gap-4 max-h-[55vh] overflow-y-auto">
+      <div class="grid md:grid-cols-2 gap-x-6">
+        ${infoRow('DOB', fmtDate(m.date_of_birth) + (calcAge(m.date_of_birth) !== null ? ` (${calcAge(m.date_of_birth)})` : ''))}
+        ${infoRow('Gender', m.gender)}
+        ${infoRow('Phone', m.phone)}
+        ${infoRow('Email', m.email)}
+        ${infoRow('Guardian', m.guardian_name ? `${m.guardian_name}${guardian ? ' (portal: ' + guardian.email + ')' : ''}` : null)}
+        ${infoRow('Emergency', ec.name ? `${ec.name} — ${ec.primaryPhone || ''}` : null)}
+        ${infoRow('Medical', m.medical_conditions)}
+        ${infoRow('Injuries', m.injuries)}
+        ${infoRow('Prior training', m.previous_rank || m.years_trained ? `${m.previous_rank || ''} ${m.years_trained ? '• ' + m.years_trained : ''}` : null)}
+        ${infoRow('Media consent', m.media_consent === null || m.media_consent === undefined ? null : (m.media_consent ? 'Yes' : 'No'))}
+      </div>
+
+      <div class="rounded-[14px] border border-neutral-200 p-4">
+        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-500 mb-2.5">MEMBERSHIP STATUS</div>
+        <div class="flex flex-wrap gap-2">
+          ${['pending','active','inactive','suspended'].map(s =>
+            `<button onclick="setMemberStatus('${m.id}','${s}')" class="h-9 px-4 rounded-full border text-[11.5px] font-semibold transition
+              ${m.membership_status === s ? 'bg-black text-white border-black' : 'bg-white hover:border-black'}">${cap(s)}</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="rounded-[14px] border border-neutral-200 p-4">
+        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-500 mb-2.5">QUICK BELT EDIT</div>
+        <div class="flex gap-2">
+          <select id="mBeltSel" class="input flex-1">
+            ${beltLevels.map(b => `<option value="${escapeHtml(b.belt_name)}" ${m.current_belt === b.belt_name ? 'selected' : ''}>${escapeHtml(b.belt_name)}</option>`).join('')}
+          </select>
+          <button onclick="saveBelt('${m.id}')" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition shrink-0">Save Belt</button>
+        </div>
+        <div class="text-[10.5px] text-neutral-400 mt-2">For permanent history (certificates, remarks), use Gradings → Record instead — it promotes automatically.</div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-neutral-100 flex flex-wrap gap-2 justify-between">
+      <button onclick="closeModal(); gradingPreselect='${m.id}'; show('gradings')" class="h-10 px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition">🥋 Record Grading</button>
+      <button onclick="closeModal()" class="h-10 px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">Close</button>
+    </div>`;
+  $('modalWrap').classList.remove('hidden');
+}
+function closeModal() { $('modalWrap').classList.add('hidden'); currentMemberId = null; }
+
+async function setMemberStatus(id, status) {
+  const { error } = await sb.from('students').update({ membership_status: status }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast(status === 'active' ? '✓ Member activated' : 'Status: ' + status);
+  await refreshMembers();
+  if (currentMemberId) openMember(id); // refresh modal
+  show(section);
+}
+
+async function saveBelt(id) {
+  const beltName = $('mBeltSel').value;
+  const order = beltLevels.find(b => b.belt_name === beltName)?.belt_order;
+  const { error } = await sb.from('students')
+    .update({ current_belt: beltName, current_rank: order ?? 0 }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('✓ Belt updated to ' + beltName);
+  await refreshMembers();
+  openMember(id);
+  show(section);
+}
+
+/* ═══════════ ATTENDANCE ═══════════ */
+function showAttendance() {
+  if (!attState.date) attState.date = new Date().toISOString().slice(0, 10);
+  attState.rows = {};
+  const roster = [...membersList].sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-4 flex flex-col md:flex-row md:items-end gap-3">
+      <label class="block md:w-[190px]"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">DATE</div>
+        <input type="date" class="input" value="${attState.date}" onchange="attState.date=this.value; loadAttendanceRoster()"></label>
+      <label class="block md:w-[200px]"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">CLASS TYPE</div>
+        <select class="input" onchange="attState.type=this.value; loadAttendanceRoster()">
+          ${['regular','grading','competition','special'].map(t=>`<option ${attState.type===t?'selected':''}>${t}</option>`).join('')}
+        </select></label>
+      <div class="flex gap-2 md:ml-auto">
+        <button onclick="markAllPresent()" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition">Mark all present</button>
+        <button id="saveAttBtn" onclick="saveAttendance()" class="h-[42px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">Save Attendance</button>
+      </div>
+    </div>
+    <div id="attSummary" class="text-[11.5px] text-neutral-500 px-1"></div>
+    <div class="card overflow-hidden"><div id="attRoster"><div class="p-10 text-center text-[13px] text-neutral-400">Loading roster…</div></div></div>
+  </div>`;
+
+  renderAttendanceRoster(roster);
+  loadAttendanceRoster();
+}
+
+function renderAttendanceRoster(roster) {
+  roster = roster || [...membersList].sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
+  const counts = { present:0, late:0, absent:0, excused:0, none:0 };
+  roster.forEach(m => { const s = attState.rows[m.id] || 'none'; counts[s]++; });
+
+  $('attRoster').innerHTML = !roster.length
+    ? `<div class="p-10 text-center text-[13px] text-neutral-400">No members registered yet.</div>`
+    : roster.map(m => {
+      const cur = attState.rows[m.id] || '';
+      const btn = (val, label, on) => `
+        <button onclick="setAtt('${m.id}','${val}')" class="att-btn h-8 w-9 rounded-full border text-[11px] font-bold
+          ${cur === val ? on : 'bg-white border-neutral-200 text-neutral-500 hover:border-black'}">${label}</button>`;
+      return `
+      <div class="flex items-center gap-3 px-4 md:px-5 py-3 border-b border-neutral-100 last:border-0">
+        <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[12px] font-bold shrink-0">${initial(m.full_name)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(m.full_name || '—')}</div>
+          <div class="text-[10.5px] text-neutral-400">${escapeHtml(m.registration_ref || '')} • ${escapeHtml(m.current_belt)}</div>
+        </div>
+        <div class="flex gap-1.5 shrink-0">
+          ${btn('present','P','bg-emerald-500 border-emerald-500 text-white')}
+          ${btn('late','L','bg-orange-400 border-orange-400 text-white')}
+          ${btn('absent','A','bg-red-500 border-red-500 text-white')}
+          ${btn('excused','E','bg-amber-400 border-amber-400 text-white')}
+        </div>
+      </div>`;
+    }).join('');
+
+  $('attSummary').textContent =
+    `Present ${counts.present} • Late ${counts.late} • Absent ${counts.absent} • Excused ${counts.excused} • Unmarked ${counts.none}`;
+}
+
+async function loadAttendanceRoster() {
+  const { data } = await sb.from('attendance')
+    .select('student_id,status').eq('class_date', attState.date).eq('class_type', attState.type);
+  attState.rows = {};
+  (data || []).forEach(r => attState.rows[r.student_id] = r.status);
+  renderAttendanceRoster();
+}
+
+function setAtt(id, status) { attState.rows[id] = status; renderAttendanceRoster(); }
+function markAllPresent() {
+  membersList.forEach(m => attState.rows[m.id] = 'present');
+  renderAttendanceRoster();
+}
+
+async function saveAttendance() {
+  const btn = $('saveAttBtn');
+  const entries = Object.entries(attState.rows).filter(([,v]) => v && v !== 'none');
+  if (!entries.length) return toast('Nothing to save — mark some members first.', true);
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const payload = entries.map(([student_id, status]) => ({
+    student_id, class_date: attState.date, class_type: attState.type,
+    status, recorded_by: currentUser.id,
+  }));
+  const { error } = await sb.from('attendance')
+    .upsert(payload, { onConflict: 'student_id,class_date,class_type' });
+  btn.disabled = false; btn.textContent = 'Save Attendance';
+  if (error) return toast('✗ ' + error.message, true);
+  toast(`✓ Saved ${payload.length} attendance records for ${fmtDate(attState.date)}`);
+}
+
+/* ═══════════ GRADINGS ═══════════ */
+function showGradings() {
+  const sorted = [...membersList].sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
+  const pre = gradingPreselect; gradingPreselect = null;
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">RECORD A GRADING</div>
+      <div class="grid md:grid-cols-2 gap-3">
+        <label class="block md:col-span-2"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">MEMBER</div>
+          <select id="gStudent" class="input" onchange="suggestNextBelt()">
+            <option value="">Select member…</option>
+            ${sorted.map(m=>`<option value="${m.id}" ${pre===m.id?'selected':''}>${escapeHtml((m.full_name||'—')+' — '+(m.registration_ref||'')+' ('+m.current_belt+')')}</option>`).join('')}
+          </select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">GRADING DATE</div>
+          <input type="date" id="gDate" class="input" value="${new Date().toISOString().slice(0,10)}"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">RESULT</div>
+          <select id="gResult" class="input" onchange="suggestNextBelt()">
+            <option value="pass">Pass — promote belt</option>
+            <option value="conditional pass">Conditional pass</option>
+            <option value="fail">Fail</option>
+            <option value="deferred">Deferred</option>
+          </select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">GRADING TOWARDS</div>
+          <select id="gBelt" class="input">
+            ${beltLevels.map(b=>`<option value="${escapeHtml(b.belt_name)}">${escapeHtml(b.belt_name)}</option>`).join('')}
+          </select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">EXAMINER</div>
+          <input id="gExaminer" class="input" value="${escapeHtml(currentProfile.full_name || '')}"></label>
+        <label class="block md:col-span-2"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">REMARKS</div>
+          <textarea id="gRemarks" class="input min-h-[70px]" placeholder="Technique notes, areas to improve…"></textarea></label>
+      </div>
+      <button onclick="submitGrading()" class="mt-4 h-[46px] px-7 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition">Record Grading →</button>
+      <div class="text-[10.5px] text-neutral-400 mt-2">A "Pass" automatically promotes the member's belt in the portal and sets their grading date.</div>
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">RECENT GRADINGS</div>
+      <div id="recentGradings"><div class="text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+
+  suggestNextBelt();
+  loadRecentGradings();
+}
+
+function suggestNextBelt() {
+  const sel = $('gStudent'), belt = $('gBelt'), res = $('gResult');
+  if (!sel?.value) return;
+  const m = membersList.find(x => x.id === sel.value);
+  if (!m) return;
+  const idx = beltLevels.findIndex(b => b.belt_name === m.current_belt);
+  const next = beltLevels[idx + 1];
+  if (next && res.value === 'pass') belt.value = next.belt_name;
+}
+
+async function submitGrading() {
+  const studentId = $('gStudent').value;
+  if (!studentId) return toast('Select a member first.', true);
+  const args = {
+    p_student_id: studentId,
+    p_grading_date: $('gDate').value || null,
+    p_new_belt: $('gBelt').value,
+    p_result: $('gResult').value,
+    p_examiner_name: $('gExaminer').value.trim() || null,
+    p_remarks: $('gRemarks').value.trim() || null,
+  };
+  const { data, error } = await sb.rpc('record_grading', args);
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message), true);
+  toast(args.p_result === 'pass' ? `✓ Recorded — promoted to ${args.p_new_belt} Belt` : '✓ Grading recorded');
+  $('gRemarks').value = '';
+  await refreshMembers();
+  loadRecentGradings();
+}
+
+async function loadRecentGradings() {
+  const { data } = await sb.from('gradings')
+    .select('id, grading_date, previous_belt, new_belt, result, examiner_name, remarks, students(full_name, registration_ref)')
+    .order('grading_date', { ascending: false }).order('created_at', { ascending: false }).limit(25);
+  const rows = data || [];
+  $('recentGradings').innerHTML = !rows.length
+    ? `<div class="text-[13px] text-neutral-400 py-4">No gradings recorded yet.</div>`
+    : `<div class="grid gap-2">${rows.map(g => `
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(g.students?.full_name || '—')}</div>
+          <div class="text-[11px] text-neutral-500 flex items-center gap-1.5 flex-wrap mt-0.5">
+            ${escapeHtml(g.previous_belt || '?')} → ${escapeHtml(g.new_belt || '?')} • ${fmtDate(g.grading_date)} • ${escapeHtml(g.examiner_name || '—')}
+          </div>
+        </div>
+        ${resultPill(g.result)}
+        <button onclick="delGrading('${g.id}')" class="text-[10.5px] text-red-400 hover:text-red-600 font-medium shrink-0">Delete</button>
+      </div>`).join('')}</div>
+      <div class="text-[10.5px] text-neutral-400 mt-3">Deleting a record doesn't revert the member's belt — adjust via Members → Quick Belt Edit if needed.</div>`;
+}
+
+async function delGrading(id) {
+  if (!confirm('Delete this grading record?')) return;
+  const { error } = await sb.from('gradings').delete().eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Grading record deleted');
+  loadRecentGradings();
+}
+
+/* ═══════════ LINKING ═══════════ */
+function showLinking() {
+  const orphans = membersList.filter(m => m.training_category === 'child' && !m.guardian_id);
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">LINK GUARDIAN → MEMBER</div>
+      <p class="text-[12px] text-neutral-500 mb-4">Connect a parent's portal account to a child's membership. The parent must have signed up on the portal first.</p>
+      <div class="grid md:grid-cols-[1fr_170px_170px_auto] gap-2 items-end">
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">PARENT EMAIL (portal account)</div>
+          <input id="lEmail" class="input" placeholder="parent@email.com"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">MEMBER REF</div>
+          <input id="lRef" class="input" placeholder="CFK-xxxxx" style="text-transform:uppercase"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">RELATIONSHIP</div>
+          <select id="lRel" class="input"><option>Father</option><option>Mother</option><option>Guardian</option><option>Grandparent</option><option>Other</option></select></label>
+        <button onclick="adminLink()" class="h-[42px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">Link →</button>
+      </div>
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">UNLINKED CHILD REGISTRATIONS <span class="text-neutral-400 font-medium">(${orphans.length})</span></div>
+      ${orphans.length ? `<div class="grid gap-2">${orphans.map(m=>`
+        <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] border border-amber-200 bg-amber-50/50">
+          <div class="min-w-0"><div class="text-[13px] font-semibold truncate">${escapeHtml(m.full_name||'—')}</div>
+          <div class="text-[11px] text-neutral-500">${escapeHtml(m.registration_ref||'')} • guardian email on form: ${escapeHtml(m.guardian_email||'—')}</div></div>
+          <button onclick="$('lRef').value='${escapeHtml(m.registration_ref||'')}'; $('lEmail').value='${escapeHtml(m.guardian_email||'')}'; window.scrollTo({top:0,behavior:'smooth'})"
+            class="h-8 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition shrink-0">Use ↓</button>
+        </div>`).join('')}</div>`
+      : `<div class="text-[13px] text-neutral-400">Every child registration has a linked guardian ✓</div>`}
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">CURRENT LINKS</div>
+      <div id="linkedList"><div class="text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+  loadLinkedList();
+}
+
+async function loadLinkedList() {
+  const { data } = await sb.from('parent_child_links')
+    .select('id, child_id, relationship, profiles(full_name,email), students(full_name,registration_ref,current_belt)')
+    .order('created_at', { ascending: false });
+  const rows = data || [];
+  $('linkedList').innerHTML = !rows.length
+    ? `<div class="text-[13px] text-neutral-400 py-2">No guardian links yet.</div>`
+    : `<div class="grid gap-2">${rows.map(l => `
+      <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
+        <div class="min-w-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(l.profiles?.email || '?')} → ${escapeHtml(l.students?.full_name || '?')}</div>
+          <div class="text-[11px] text-neutral-500">${escapeHtml(l.relationship || 'guardian')} • ${escapeHtml(l.students?.registration_ref || '')} • ${escapeHtml(l.students?.current_belt || '')}</div>
+        </div>
+        <button onclick="unlinkChild('${l.child_id}','${escapeHtml(l.students?.full_name || '')}')" class="text-[10.5px] text-red-400 hover:text-red-600 font-medium shrink-0">Unlink</button>
+      </div>`).join('')}</div>`;
+}
+
+async function adminLink() {
+  const email = $('lEmail').value.trim().toLowerCase();
+  const ref = $('lRef').value.trim().toUpperCase();
+  const rel = $('lRel').value;
+  if (!email || !ref) return toast('Enter both parent email and member ref.', true);
+
+  const prof = profilesList.find(p => (p.email || '').toLowerCase() === email);
+  if (!prof) return toast('✗ No portal account with that email — ask them to sign up first.', true);
+  const st = membersList.find(m => (m.registration_ref || '').toUpperCase() === ref);
+  if (!st) return toast('✗ No member found with ref ' + ref, true);
+  if (prof.id === st.user_id) return toast('✗ That is the member\'s own account, not a guardian.', true);
+
+  const { error: e1 } = await sb.from('students')
+    .update({ guardian_id: prof.id, guardian_email: prof.email }).eq('id', st.id);
+  if (e1) return toast('✗ ' + e1.message, true);
+  const { error: e2 } = await sb.from('parent_child_links')
+    .upsert({ parent_id: prof.id, child_id: st.id, relationship: rel, is_primary: true },
+            { onConflict: 'parent_id,child_id', ignoreDuplicates: true });
+  if (e2) return toast('✗ ' + e2.message, true);
+
+  toast(`✓ Linked ${st.full_name} ↔ ${prof.email}`);
+  $('lEmail').value = ''; $('lRef').value = '';
+  await refreshMembers();
+  showLinking();
+}
+
+async function unlinkChild(childId, name) {
+  if (!confirm(`Unlink guardian from ${name}?`)) return;
+  await sb.from('parent_child_links').delete().eq('child_id', childId);
+  await sb.from('students').update({ guardian_id: null }).eq('id', childId);
+  toast('Guardian unlinked');
+  await refreshMembers();
+  showLinking();
+}
+
+/* ═══════════ REPORTS ═══════════ */
+function showReports() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">EXPORTS</div>
+      <p class="text-[12px] text-neutral-500 mb-4">Download CSV files for records, affiliation paperwork and backups.</p>
+      <div class="grid sm:grid-cols-3 gap-3">
+        <button onclick="exportMembers()" class="rounded-[16px] border border-neutral-200 p-5 text-left hover:border-black transition">
+          <div class="text-[20px]">👥</div><div class="mt-2 text-[13px] font-bold">Members CSV</div>
+          <div class="text-[11px] text-neutral-500 mt-0.5">Full register with belts, status, guardians</div></button>
+        <button onclick="exportAttendance()" class="rounded-[16px] border border-neutral-200 p-5 text-left hover:border-black transition">
+          <div class="text-[20px]">📅</div><div class="mt-2 text-[13px] font-bold">Attendance CSV</div>
+          <div class="text-[11px] text-neutral-500 mt-0.5">Per-member totals + attendance rate</div></button>
+        <button onclick="exportGradings()" class="rounded-[16px] border border-neutral-200 p-5 text-left hover:border-black transition">
+          <div class="text-[20px]">🥋</div><div class="mt-2 text-[13px] font-bold">Gradings CSV</div>
+          <div class="text-[11px] text-neutral-500 mt-0.5">Full grading history</div></button>
+      </div>
+    </div>
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">SNAPSHOT</div>
+      <div class="grid sm:grid-cols-2 gap-x-8">
+        ${infoRow('Total members', membersList.length)}
+        ${infoRow('Active', membersList.filter(m=>m.membership_status==='active').length)}
+        ${infoRow('Children / Adults', `${membersList.filter(m=>m.training_category==='child').length} / ${membersList.filter(m=>m.training_category==='adult').length}`)}
+        ${infoRow('Portal accounts', profilesList.length)}
+      </div>
+    </div>
+  </div>`;
+}
+
+function csv(rows) {
+  return rows.map(r => r.map(v => {
+    v = v == null ? '' : String(v);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }).join(',')).join('\n');
+}
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function exportMembers() {
+  download(`CIFIKA_members_${new Date().toISOString().slice(0,10)}.csv`, csv([
+    ['Ref','Name','Preferred','DOB','Category','Status','Belt','Rank(Kyu)','Email','Phone','Address','Guardian Name','Guardian Email','Joined'],
+    ...membersList.map(m => [m.registration_ref, m.full_name, m.preferred_name, m.date_of_birth,
+      m.training_category, m.membership_status, m.current_belt, m.current_rank, m.email, m.phone,
+      [m.address, m.city_state].filter(Boolean).join(', '), m.guardian_name, m.guardian_email, m.registration_date]),
+  ]));
+  toast('✓ Members CSV downloaded');
+}
+
+async function exportAttendance() {
+  toast('Building attendance export…');
+  const { data } = await sb.from('attendance').select('student_id,status');
+  const agg = {};
+  (data || []).forEach(a => {
+    agg[a.student_id] = agg[a.student_id] || { total:0, present:0, late:0, absent:0, excused:0 };
+    const g = agg[a.student_id]; g.total++;
+    if (g[a.status] !== undefined) g[a.status]++;
+  });
+  download(`CIFIKA_attendance_${new Date().toISOString().slice(0,10)}.csv`, csv([
+    ['Ref','Name','Belt','Recorded','Present','Late','Absent','Excused','Rate %'],
+    ...membersList.map(m => {
+      const g = agg[m.id] || { total:0, present:0, late:0, absent:0, excused:0 };
+      const rate = g.total ? Math.round((g.present + g.late) / g.total * 100) : '';
+      return [m.registration_ref, m.full_name, m.current_belt, g.total, g.present, g.late, g.absent, g.excused, rate];
+    }),
+  ]));
+  toast('✓ Attendance CSV downloaded');
+}
+
+async function exportGradings() {
+  const { data } = await sb.from('gradings')
+    .select('grading_date,previous_belt,new_belt,result,examiner_name,remarks,students(full_name,registration_ref)')
+    .order('grading_date', { ascending: false });
+  download(`CIFIKA_gradings_${new Date().toISOString().slice(0,10)}.csv`, csv([
+    ['Date','Ref','Name','From Belt','To Belt','Result','Examiner','Remarks'],
+    ...(data || []).map(g => [g.grading_date, g.students?.registration_ref, g.students?.full_name,
+      g.previous_belt, g.new_belt, g.result, g.examiner_name, g.remarks]),
+  ]));
+  toast('✓ Gradings CSV downloaded');
+}
+
+/* ═══════════ STAFF & ROLES ═══════════ */
+function showStaff() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">STAFF & ROLES</div>
+      <p class="text-[12px] text-neutral-500 mb-4">
+        <b>admin</b> = full console access • <b>instructor</b> = can record attendance & gradings •
+        <b>student/parent</b> = member portal only. You can't demote yourself.
+      </p>
+      <div class="grid gap-2">
+        ${profilesList.map(p => `
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate">${escapeHtml(p.full_name || p.email)}</div>
+            <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(p.email)}${p.id === currentUser.id ? ' — you' : ''}</div>
+          </div>
+          <select id="role-${p.id}" class="input sm:w-[150px]">
+            ${['student','parent','instructor','admin'].map(r=>`<option ${p.role===r?'selected':''}>${r}</option>`).join('')}
+          </select>
+          <button onclick="saveRole('${p.id}')" class="h-[42px] px-5 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition shrink-0 sm:w-auto">Save</button>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function saveRole(pid) {
+  const role = $('role-' + pid).value;
+  const { data, error } = await sb.rpc('admin_set_role', { p_profile_id: pid, p_role: role });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message), true);
+  toast('✓ Role updated to ' + role);
+  const p = profilesList.find(x => x.id === pid); if (p) p.role = role;
+}
+
+/* ═══════════ SHARED COMPONENTS ═══════════ */
+function statCard(label, value, sub) {
+  return `<div class="card p-5">
+    <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">${label}</div>
+    <div class="mt-2 text-[24px] font-extrabold tracking-tight">${escapeHtml(String(value ?? '—'))}</div>
+    ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${sub}</div>` : ''}</div>`;
+}
+function infoRow(k, v) {
+  if (v === null || v === undefined || v === '') return '';
+  return `<div class="flex justify-between gap-4 py-2 border-b border-neutral-100">
+    <span class="text-[11.5px] text-neutral-500 shrink-0">${k}</span>
+    <span class="text-[12.5px] font-medium text-right break-words">${escapeHtml(String(v))}</span></div>`;
+}
+function selectFilter(stateKey, onchange, options, current) {
+  return `<select class="input" onchange="${stateKey}=this.value; ${onchange}">
+    ${options.map(([v,l])=>`<option value="${escapeHtml(v)}" ${current===v?'selected':''}>${escapeHtml(l)}</option>`).join('')}</select>`;
+}
+function beltChipHTML(name) {
+  const b = beltLevels.find(x => x.belt_name === name);
+  const hex = b?.belt_color_hex || '#E5E5E5';
+  const dark = isDark(hex);
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-bold border"
+    style="background:${hex}; color:${dark ? '#fff' : '#1a1a1a'}; border-color:${dark ? hex : '#ddd'}">
+    <span class="w-2 h-2 rounded-full" style="background:${dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.25)'}"></span>${escapeHtml(name || '—')}</span>`;
+}
+function statusChip(s) {
+  const map = {
+    active:    'bg-emerald-50 text-emerald-700 border-emerald-200',
+    pending:   'bg-amber-50 text-amber-700 border-amber-200',
+    inactive:  'bg-neutral-100 text-neutral-500 border-neutral-200',
+    suspended: 'bg-red-50 text-red-600 border-red-200',
+  };
+  return `<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${map[s] || map.inactive}">${cap(s || 'pending')}</span>`;
+}
+function resultPill(r) {
+  const map = {
+    'pass':             'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'fail':             'bg-red-50 text-red-600 border-red-200',
+    'conditional pass': 'bg-amber-50 text-amber-700 border-amber-200',
+    'deferred':         'bg-neutral-100 text-neutral-600 border-neutral-200',
+  };
+  return `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${map[r] || map['deferred']}">${(r || '—').toUpperCase()}</span>`;
+}
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function isDark(hex) {
+  const c = (hex || '#fff').replace('#','');
+  const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+  return (0.299*r + 0.587*g + 0.114*b) < 140;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+function calcAge(dob) {
+  if (!dob) return null;
+  const d = new Date(dob), t = new Date();
+  let a = t.getFullYear() - d.getFullYear();
+  const m = t.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < d.getDate())) a--;
+  return a;
+}
+function initial(name) { return (name || '?').trim()[0]?.toUpperCase() || '?'; }
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.background = isErr ? '#B91C1C' : '#111';
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 4200);
+}
+</script>
+</body>
+</html>

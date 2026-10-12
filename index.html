@@ -59,6 +59,91 @@
     transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1), filter .7s ease, box-shadow .4s ease;
     will-change: transform, opacity;
   }
+
+  /* ===== Scroll-end navigation popup — RESPONSIVE, same design language ===== */
+  .scroll-nav {
+    position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 60;
+    transform: translateX(-50%); pointer-events: none;
+    max-width: calc(100vw - 20px); width: max-content;
+  }
+  .scroll-nav-track {
+    display: flex; align-items: center; gap: 3px; padding: 6px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.88);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    backdrop-filter: blur(18px) saturate(1.5);
+    border: 1px solid rgba(17,17,17,.09);
+    box-shadow: 0 24px 55px -14px rgba(0,0,0,.32), 0 2px 10px rgba(0,0,0,.05);
+    transform: translateY(150%) scale(.95); opacity: 0;
+    transition: transform .6s cubic-bezier(.22,1,.36,1), opacity .4s ease;
+  }
+  .scroll-nav.show .scroll-nav-track { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+  .nav-lead { font-size: 9.5px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: rgba(17,17,17,.35); padding: 0 6px 0 10px; }
+  .nav-divider { width: 1px; height: 18px; background: rgba(17,17,17,.12); margin: 0 4px; flex-shrink:0; }
+  .nav-chip {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 16px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(17,17,17,.65); white-space: nowrap;
+    transition: background-color .22s ease, color .22s ease, transform .22s ease;
+    flex-shrink: 0;
+  }
+  .nav-chip:hover { background: #111; color: #fff; transform: translateY(-1px); }
+  .nav-chip .chip-arrow { transition: transform .25s ease; }
+  .nav-chip:hover .chip-arrow { transform: translateX(3px); }
+  .nav-chip.is-next { background: #111; color: #fff; }
+  .nav-chip-accent { background: #111; color: #fff !important; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+  .nav-chip-accent:hover { background: #000; transform: translateY(-1px); }
+  .nav-chip-accent.is-authed { background: #FF6A00; color: #fff !important; }
+  .nav-chip-accent.is-authed:hover { background: #ff7d1f; }
+  .portal-dot { width: 6px; height: 6px; border-radius: 999px; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.22); animation: pulseDot 1.8s infinite; position:absolute; top:2px; right:2px; }
+  @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .nav-chip-persist { order: 10; position: relative; }
+  .chip-icon { display:inline-flex; }
+  @media (max-width: 768px) {
+    .scroll-nav { bottom: max(14px, env(safe-area-inset-bottom)); }
+    .nav-chip { padding: 10px 14px; font-size: 10.5px; }
+  }
+  @media (max-width: 560px) {
+    .scroll-nav { bottom: max(10px, env(safe-area-inset-bottom)); max-width: calc(100vw - 16px); }
+    .scroll-nav-track { padding: 8px; gap: 8px; justify-content: center; background: rgba(255,255,255,.92); box-shadow: 0 20px 50px -12px rgba(0,0,0,.38), 0 4px 16px rgba(0,0,0,.08); }
+    .nav-lead, .nav-divider, #portalDivider { display: none !important; }
+    .nav-chip {
+      width: 48px; height: 48px; padding: 0; border-radius: 999px;
+      background: rgba(17,17,17,.07); color: #111; gap: 0;
+    }
+    .nav-chip.is-next { background: #111; color: #fff; }
+    .nav-chip .chip-label, .nav-chip .chip-arrow, .nav-chip .portal-label-text { display: none !important; }
+    .nav-chip .ic { width: 20px; height: 20px; }
+    .nav-chip-accent { width: 48px; height: 48px; background: #111; color: #fff !important; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+    .nav-chip-accent.is-authed { background: #FF6A00; }
+    .portal-dot { top: 1px; right: 1px; width: 8px; height: 8px; box-shadow: 0 0 0 2.5px #fff; }
+  }
+  @media (max-width: 380px) {
+    .scroll-nav-track { gap: 6px; padding: 6px; }
+    .nav-chip, .nav-chip-accent { width: 44px; height: 44px; }
+    .nav-chip .ic { width: 18px; height: 18px; }
+  }
+
+  .scroll-progress {
+
+    position: relative; width: 28px; height: 28px; flex-shrink: 0;
+    display: grid; place-items: center;
+  }
+  .scroll-progress svg { transform: rotate(-90deg); width: 28px; height: 28px; }
+  .scroll-progress .bg { fill: none; stroke: rgba(17,17,17,.1); stroke-width: 3; }
+  .scroll-progress .fg {
+    fill: none; stroke: #FF6A00; stroke-width: 3; stroke-linecap: round;
+    stroke-dasharray: 75.4; stroke-dashoffset: 75.4;
+    transition: stroke-dashoffset 0.08s linear;
+  }
+  .scroll-progress .arrow {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 12px; font-weight: 900; color: #111;
+    transition: transform .2s cubic-bezier(.22,1,.36,1);
+  }
+  .scroll-progress.filling .arrow { transform: translateY(-1px) scale(1.1); }
+
   .advance-card.is-best {
     background: #111;
     border-color: rgba(255,255,255,.08);
@@ -218,104 +303,6 @@
   .map-embed { filter: grayscale(1) contrast(1.05); transition: filter .5s ease; }
   .map-wrap:hover .map-embed { filter: grayscale(0); }
 
-  /* ===== Scroll-end navigation popup ===== */
-  .scroll-nav {
-    position: fixed; left: 50%; bottom: 18px; z-index: 60;
-    transform: translateX(-50%); pointer-events: none;
-    max-width: calc(100vw - 20px);
-  }
-  .scroll-nav-track {
-    display: flex; align-items: center; gap: 2px; padding: 6px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.85);
-    -webkit-backdrop-filter: blur(18px) saturate(1.5);
-    backdrop-filter: blur(18px) saturate(1.5);
-    border: 1px solid rgba(17,17,17,.09);
-    box-shadow: 0 24px 55px -14px rgba(0,0,0,.32), 0 2px 10px rgba(0,0,0,.05);
-    transform: translateY(150%) scale(.95); opacity: 0;
-    transition: transform .6s cubic-bezier(.22,1,.36,1), opacity .4s ease;
-  }
-  .scroll-nav.show .scroll-nav-track { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
-  .nav-lead { font-size: 9.5px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: rgba(17,17,17,.35); padding: 0 6px 0 10px; }
-  .nav-divider { width: 1px; height: 18px; background: rgba(17,17,17,.12); margin: 0 4px; }
-  .nav-chip {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 10px 16px; border-radius: 999px;
-    font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
-    color: rgba(17,17,17,.65); white-space: nowrap;
-    transition: background-color .22s ease, color .22s ease, transform .22s ease;
-  }
-  .nav-chip:hover { background: #111; color: #fff; transform: translateY(-1px); }
-  .nav-chip .chip-arrow { transition: transform .25s ease; }
-  .nav-chip:hover .chip-arrow { transform: translateX(3px); }
-  @media (max-width: 480px) { .nav-lead, .nav-divider { display: none; } .nav-chip { padding: 10px 13px; gap: 6px; } }
-
-  .scroll-progress {
-    position: relative; width: 28px; height: 28px; flex-shrink: 0;
-    display: grid; place-items: center;
-  }
-  .scroll-progress svg { transform: rotate(-90deg); width: 28px; height: 28px; }
-  .scroll-progress .bg { fill: none; stroke: rgba(17,17,17,.1); stroke-width: 3; }
-  .scroll-progress .fg {
-    fill: none; stroke: #FF6A00; stroke-width: 3; stroke-linecap: round;
-    stroke-dasharray: 75.4; stroke-dashoffset: 75.4;
-    transition: stroke-dashoffset 0.08s linear;
-  }
-  .scroll-progress .arrow {
-    position: absolute; inset: 0; display: grid; place-items: center;
-    font-size: 12px; font-weight: 900; color: #111;
-    transition: transform .2s cubic-bezier(.22,1,.36,1);
-  }
-  .scroll-progress.filling .arrow { transform: translateY(-1px) scale(1.1); }
-
-  /* === ADVANCE PLANS MOBILE FIX - Scroll pop-up reveal === */
-  .advance-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: 18px;
-    border: 1px solid rgba(17,17,17,.10);
-    background: white;
-    padding: 20px;
-    opacity: 0;
-    transform: translateY(32px) scale(0.96);
-    filter: blur(4px);
-    transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1), filter .7s ease, box-shadow .4s ease;
-    will-change: transform, opacity;
-  }
-  .advance-card.is-best {
-    background: #111;
-    border-color: rgba(255,255,255,.08);
-  }
-  .advance-card.in-view {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-  .advance-card.in-view:hover {
-    box-shadow: 0 18px 40px -18px rgba(0,0,0,.18);
-  }
-  /* Inner line stagger */
-  .advance-card .advance-line {
-    opacity: 0;
-    transform: translateX(-8px);
-    transition: opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
-  }
-  .advance-card.in-view .advance-line {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  /* smooth pop for best value */
-  .advance-card.is-best.in-view {
-    animation: bestPop .8s cubic-bezier(.22,1,.36,1) .2s both;
-  }
-  @keyframes bestPop {
-    0% { transform: translateY(32px) scale(0.92); }
-    60% { transform: translateY(-4px) scale(1.02); }
-    100% { transform: translateY(0) scale(1); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .advance-card { opacity:1; transform:none; filter:none; transition:none; }
-  }
 
 </style>
 </head>
@@ -331,6 +318,7 @@
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 6.5V12l3.5 2"/></symbol>
     <symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="3.5"/><path d="M4.5 19.5a7.5 7.5 0 0 1 15 0"/></symbol>
   </defs>
 </svg>
 
@@ -348,6 +336,7 @@
       <div class="order-2 sm:order-3 hidden lg:flex items-center gap-3">
         <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-[#111]/60 border border-[#111]/10 rounded-full px-3 py-1.5">Suncity • Abuja</span>
         <span class="text-[10px] font-bold tracking-[0.18em] uppercase text-white bg-[#111] rounded-full px-3 py-1.5">All Levels</span>
+        <a href="portal.html" class="hidden lg:inline-flex items-center gap-1.5 text-[10px] font-bold tracking-[0.18em] uppercase text-white bg-[#FF6A00] hover:bg-[#ff7d1f] rounded-full px-3 py-1.5 transition-colors">Member Portal →</a>
       </div>
     </div>
   </header>
@@ -786,7 +775,7 @@
             </div>
             <div class="hidden sm:block w-px self-stretch bg-[#FF6A00]/20"></div>
             <ul class="space-y-3 text-[13px] text-[#111]/75 leading-relaxed">
-              <li class="flex gap-2.5"><svg class="ic w-4 h-4 text-[#FF6A00] mt-0.5"><use href="#i-check"/></svg><span>10% off monthly training fees when two or more children are registered under the same parent/guardian.</span></li>
+              <li class="flex gap-2.5"><svg class="ic w-4 h-4 text-[#FF6A00] mt-0.5"><use href="#i-check"/></svg><span>10% off registration and training fees when two or more children are registered under the same parent/guardian.</span></li>
               <li class="flex gap-2.5"><svg class="ic w-4 h-4 text-[#FF6A00] mt-0.5"><use href="#i-check"/></svg><span>Applies to registration and training fees only — Gi purchases are excluded.</span></li>
               <li class="flex gap-2.5"><svg class="ic w-4 h-4 text-[#FF6A00] mt-0.5"><use href="#i-check"/></svg><span>Family discounts, City Fitness benefit and advance-payment discounts cannot be combined. Where more than one discount applies, the discount with the greater benefit will be used.</span></li>
             </ul>
@@ -896,7 +885,7 @@
           <h4 class="display text-[28px] sm:text-[34px] font-black tracking-[-0.01em] leading-none">READY TO <span class="text-[#FF6A00]">START?</span></h4>
           <p class="mt-2.5 text-[13px] text-white/55 font-medium leading-relaxed max-w-[440px]">Begin with the New Member Start Pack — Gi, registration and your first month of training included.</p>
         </div>
-        <a href="cifika.html" class="relative shrink-0 inline-flex items-center gap-2.5 bg-[#FF6A00] hover:bg-[#ff7d1f] active:scale-[0.98] text-white rounded-xl px-6 py-4 text-[11px] font-black tracking-[0.16em] uppercase transition-all duration-200 shadow-[0_14px_30px_-10px_rgba(255,106,0,0.55)]">
+        <a href="registration.html" class="relative shrink-0 inline-flex items-center gap-2.5 bg-[#FF6A00] hover:bg-[#ff7d1f] active:scale-[0.98] text-white rounded-xl px-6 py-4 text-[11px] font-black tracking-[0.16em] uppercase transition-all duration-200 shadow-[0_14px_30px_-10px_rgba(255,106,0,0.55)]">
           Register Now
           <svg class="ic w-4 h-4"><use href="#i-arrow"/></svg>
         </a>
@@ -927,23 +916,31 @@
 
 <p class="mt-6 text-[11px] tracking-[0.14em] uppercase font-medium text-[#111]/30 text-center">City Fitness Karate Club • Powered by TTOSR </p>
 
-<!-- ===== Scroll-end navigation popup ===== -->
+<!-- ===== Scroll navigation popup + PORTAL - RESPONSIVE ===== -->
 <div id="scrollNav" class="scroll-nav" aria-hidden="true">
   <div id="scrollNavTrack" class="scroll-nav-track" role="navigation" aria-label="Explore other sections">
     <span class="nav-lead">Explore</span>
     <span class="nav-divider"></span>
-    <!-- chips injected by JS (active tab excluded) -->
+    <span class="nav-divider" id="portalDivider"></span>
+    <a href="portal.html" id="portalChip" class="nav-chip nav-chip-accent nav-chip-persist" title="Member Portal">
+      <span id="portalDot" class="portal-dot hidden"></span>
+      <span class="chip-icon"><svg class="ic" viewBox="0 0 24 24"><use href="#i-user"/></svg></span>
+      <span id="portalChipLabel" class="chip-label portal-label-text">PORTAL</span>
+      <span class="chip-arrow">→</span>
+    </a>
     <div id="scrollProgress" class="scroll-progress ml-1 hidden" aria-hidden="true">
       <svg viewBox="0 0 28 28"><circle class="bg" cx="14" cy="14" r="12"/><circle id="progressFg" class="fg" cx="14" cy="14" r="12"/></svg>
       <span class="arrow">↓</span>
     </div>
   </div>
 </div>
+</div>
+
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* Slideshow (unchanged) */
   const slides = document.querySelectorAll('.slideshow-img');
   if (slides.length > 1) {
     let current = 0;
@@ -954,7 +951,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 4000);
   }
 
-  /* ===== Tabs / pages ===== */
   const PAGES = ['home', 'schedule', 'pricing'];
   const META = {
     home:     { label: 'Home',     icon: 'i-home' },
@@ -963,33 +959,35 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   let activePage = 'home';
   let navTimer = null;
-
   const scrollNav = document.getElementById('scrollNav');
   const scrollNavTrack = document.getElementById('scrollNavTrack');
+  const iconSvg = (id, cls) => `<svg class="${cls}" viewBox="0 0 24 24"><use href="#${id}"/></svg>`;
 
-  const iconSvg = (id, cls) =>
-    `<svg class="${cls}" viewBox="0 0 24 24"><use href="#${id}"/></svg>`;
-
-  /* Rebuild popup chips — always exclude the active tab + show smart-scroll hint */
   function buildScrollNav() {
-    scrollNavTrack.querySelectorAll('.nav-chip').forEach(el => el.remove());
+    if (!scrollNavTrack) return;
+    // preserve portal chip (persist)
+    const portal = document.getElementById('portalChip');
+    scrollNavTrack.querySelectorAll('.nav-chip:not(.nav-chip-persist)').forEach(el => el.remove());
     const nextPage = PAGES[(PAGES.indexOf(activePage) + 1) % PAGES.length];
-    // Update lead text to hint at auto-nav
+    const prevPage = PAGES[(PAGES.indexOf(activePage) - 1 + PAGES.length) % PAGES.length];
     const leadEl = scrollNavTrack.querySelector('.nav-lead');
     if (leadEl) {
-      const prevPage = PAGES[(PAGES.indexOf(activePage) - 1 + PAGES.length) % PAGES.length];
       leadEl.innerHTML = `<span class="hidden sm:inline">Swipe</span><span class="sm:hidden">← swipe →</span><span class="hidden sm:inline"> ← ${META[prevPage].label} • ${META[nextPage].label} →</span>`;
     }
     PAGES.filter(p => p !== activePage).forEach(p => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'nav-chip';
+      b.className = 'nav-chip' + (p === nextPage ? ' is-next' : '');
       b.dataset.goto = p;
-      if (p === nextPage) b.classList.add('!bg-[#111]', '!text-white');
       b.setAttribute('aria-label', 'Go to ' + META[p].label);
-      b.innerHTML = iconSvg(META[p].icon, 'ic') + `<span>${META[p].label}</span>` + iconSvg('i-arrow', 'ic chip-arrow');
-      scrollNavTrack.appendChild(b);
+      // same design language: icon + label + arrow, but on mobile CSS hides label/arrow -> becomes circle icon
+      b.innerHTML = `<span class="chip-icon">${iconSvg(META[p].icon, 'ic')}</span><span class="chip-label">${META[p].label}</span>${iconSvg('i-arrow', 'ic chip-arrow')}`;
+      // insert before portal chip to keep portal at end
+      if (portal) scrollNavTrack.insertBefore(b, portal);
+      else scrollNavTrack.appendChild(b);
     });
+    // ensure portal chip is last
+    if (portal) scrollNavTrack.appendChild(portal);
   }
 
   function updateTabs() {
@@ -1001,30 +999,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const showNav = () => { scrollNav.classList.add('show'); scrollNav.setAttribute('aria-hidden', 'false'); };
-  const hideNav = () => { scrollNav.classList.remove('show'); scrollNav.setAttribute('aria-hidden', 'true'); };
+  const showNav = () => { if(scrollNav){ scrollNav.classList.add('show'); scrollNav.setAttribute('aria-hidden', 'false'); } };
+  const hideNav = () => { if(scrollNav){ scrollNav.classList.remove('show'); scrollNav.setAttribute('aria-hidden', 'true'); } };
 
-  let isAtBottom = false;
-  let lastBottomTime = 0;
-  let autoNavLocked = false;
-  let lastScrollY = window.scrollY;
-
-  /* Show popup at end of page — or immediately if page fits the screen */
   function evaluateNav() {
     const doc = document.documentElement;
     const scrollable = doc.scrollHeight - window.innerHeight > 80;
     const atBottom = window.scrollY + window.innerHeight >= doc.scrollHeight - 160;
-    isAtBottom = atBottom || !scrollable;
-    if (isAtBottom && Date.now() - lastBottomTime > 300) {
-      lastBottomTime = Date.now();
-    }
-    (!scrollable || atBottom) ? showNav() : hideNav();
-    lastScrollY = window.scrollY;
-  }
-
-  function getNextPage() {
-    const idx = PAGES.indexOf(activePage);
-    return PAGES[(idx + 1) % PAGES.length];
+    const show = !scrollable || atBottom;
+    if (scrollNav) show ? showNav() : hideNav();
   }
 
   let scrollProgress = 0;
@@ -1032,6 +1015,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const progressWrap = document.getElementById('scrollProgress');
   const progressFg = document.getElementById('progressFg');
   const CIRC = 2 * Math.PI * 12;
+  let autoNavLocked = false;
 
   function setProgress(p, dir) {
     scrollProgress = Math.max(0, Math.min(100, p));
@@ -1046,65 +1030,46 @@ document.addEventListener('DOMContentLoaded', () => {
       if (arrowEl && dir) arrowEl.textContent = dir === 'next' ? '→' : '←';
     }
   }
-
-  function resetProgress() {
-    setProgress(0);
-    clearTimeout(progressTimer);
-  }
-
+  function resetProgress() { setProgress(0); clearTimeout(progressTimer); }
   function triggerAutoNav(direction = 'next') {
     if (autoNavLocked) return;
     const idx = PAGES.indexOf(activePage);
-    const next = direction === 'next' 
-      ? PAGES[(idx + 1) % PAGES.length]
-      : PAGES[(idx - 1 + PAGES.length) % PAGES.length];
+    const next = direction === 'next' ? PAGES[(idx + 1) % PAGES.length] : PAGES[(idx - 1 + PAGES.length) % PAGES.length];
     autoNavLocked = true;
     setProgress(100, direction);
-    scrollNavTrack.style.transform = direction === 'next' ? 'translateX(-12px) scale(.97)' : 'translateX(12px) scale(.97)';
-    scrollNavTrack.style.opacity = '0';
+    if (scrollNavTrack) {
+      scrollNavTrack.style.transform = direction === 'next' ? 'translateX(-12px) scale(.97)' : 'translateX(12px) scale(.97)';
+      scrollNavTrack.style.opacity = '0';
+    }
     try { navigator.vibrate && navigator.vibrate(30); } catch(e) {}
     setTimeout(() => {
-      scrollNavTrack.style.transform = '';
-      scrollNavTrack.style.opacity = '';
+      if (scrollNavTrack) { scrollNavTrack.style.transform = ''; scrollNavTrack.style.opacity = ''; }
       resetProgress();
       switchPage(next);
       setTimeout(() => { autoNavLocked = false; }, 900);
     }, 220);
   }
-
   function addProgress(amount, dir) {
     if (autoNavLocked) return;
     setProgress(scrollProgress + amount, dir);
     clearTimeout(progressTimer);
     progressTimer = setTimeout(() => { setProgress(Math.max(0, scrollProgress - 24)); }, 700);
-    if (scrollProgress >= 100) {
-      triggerAutoNav(dir);
-    }
+    if (scrollProgress >= 100) triggerAutoNav(dir);
   }
-
-  function getNextPage() {
-    const idx = PAGES.indexOf(activePage);
-    return PAGES[(idx + 1) % PAGES.length];
-  }
-  function getPrevPage() {
-    const idx = PAGES.indexOf(activePage);
-    return PAGES[(idx - 1 + PAGES.length) % PAGES.length];
-  }
-
   function queueNavEvaluation(delay = 900) {
     clearTimeout(navTimer);
     hideNav();
     navTimer = setTimeout(evaluateNav, delay);
   }
-
-    /* Render a page (called by tab clicks via hash, and on load) */
   function renderPage(name) {
+    if (!PAGES.includes(name)) return;
     const current = document.getElementById('page-' + activePage);
     const next = document.getElementById('page-' + name);
+    if (!next) return;
     if (current && current !== next) current.classList.add('hidden');
     next.classList.remove('hidden');
     next.classList.remove('page-enter');
-    void next.offsetWidth; /* restart entrance animation */
+    void next.offsetWidth;
     next.classList.add('page-enter');
     activePage = name;
     window.scrollTo(0, 0);
@@ -1112,30 +1077,24 @@ document.addEventListener('DOMContentLoaded', () => {
     buildScrollNav();
     queueNavEvaluation(900);
   }
-
-  /* Tab clicks write the tab into the URL — e.g. index.html#pricing */
   function switchPage(name) {
     if (!PAGES.includes(name)) return;
     if (name === activePage) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-    location.hash = name; /* triggers hashchange -> renderPage */
+    location.hash = name;
   }
 
-  /* Handles shared links opened with a hash + browser back/forward */
   window.addEventListener('hashchange', () => {
     const name = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
     if (name === activePage) return;
     if (location.hash !== '#' + name) { try { history.replaceState(null, '', '#' + name); } catch (err) {} }
     renderPage(name);
   });
-
-  /* One delegated handler covers tabs, popup chips and in-page CTAs */
   document.addEventListener('click', (e) => {
     const trigger = e.target.closest('[data-goto]');
     if (!trigger) return;
     e.preventDefault();
     switchPage(trigger.dataset.goto);
   });
-
   let ticking = false;
   window.addEventListener('scroll', () => {
     if (ticking) return;
@@ -1144,70 +1103,42 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { passive: true });
   window.addEventListener('resize', evaluateNav);
 
-  // ===== Swipe left / right to navigate (Instagram-style) =====
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let isHorizontalSwipe = false;
-
+  let touchStartX = 0, touchStartY = 0, isHorizontalSwipe = false;
   window.addEventListener('touchstart', (e) => {
     if (e.touches.length !== 1) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     isHorizontalSwipe = false;
   }, { passive: true });
-
   window.addEventListener('touchmove', (e) => {
     if (autoNavLocked || e.touches.length !== 1) return;
-    const curX = e.touches[0].clientX;
-    const curY = e.touches[0].clientY;
-    const diffX = curX - touchStartX;
-    const diffY = curY - touchStartY;
-
-    // detect horizontal intent early
-    if (!isHorizontalSwipe && Math.abs(diffX) > 18 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
-      isHorizontalSwipe = true;
-    }
-
+    const curX = e.touches[0].clientX, curY = e.touches[0].clientY;
+    const diffX = curX - touchStartX, diffY = curY - touchStartY;
+    if (!isHorizontalSwipe && Math.abs(diffX) > 18 && Math.abs(diffX) > Math.abs(diffY) * 1.2) isHorizontalSwipe = true;
     if (isHorizontalSwipe) {
-      // live progress fill as you drag
       const dir = diffX < 0 ? 'next' : 'prev';
       const prog = Math.min(92, Math.abs(diffX) * 0.42);
       setProgress(prog, dir);
-      // slight drag of the page for feel
       const pageEl = document.getElementById('page-' + activePage);
       if (pageEl) pageEl.style.transform = `translateX(${diffX * 0.16}px)`;
     }
   }, { passive: true });
-
   window.addEventListener('touchend', (e) => {
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    const diffX = endX - touchStartX;
-    const diffY = endY - touchStartY;
+    const endX = e.changedTouches[0].clientX, endY = e.changedTouches[0].clientY;
+    const diffX = endX - touchStartX, diffY = endY - touchStartY;
     const pageEl = document.getElementById('page-' + activePage);
     if (pageEl) pageEl.style.transform = '';
-
     if (Math.abs(diffX) > 64 && Math.abs(diffX) > Math.abs(diffY) * 1.15) {
       const dir = diffX < 0 ? 'next' : 'prev';
-      if (Math.abs(diffX) > 90) {
-        triggerAutoNav(dir);
-      } else {
-        addProgress(68, dir);
-      }
+      if (Math.abs(diffX) > 90) triggerAutoNav(dir); else addProgress(68, dir);
     } else {
-      // snap back
       setTimeout(() => setProgress(scrollProgress * 0.3), 120);
     }
     isHorizontalSwipe = false;
   }, { passive: true });
 
-  // Mouse drag for desktop preview (optional)
-  let mouseDown = false;
-  let mouseStartX = 0;
-  window.addEventListener('mousedown', (e) => {
-    mouseDown = true;
-    mouseStartX = e.clientX;
-  });
+  let mouseDown = false, mouseStartX = 0;
+  window.addEventListener('mousedown', (e) => { mouseDown = true; mouseStartX = e.clientX; });
   window.addEventListener('mousemove', (e) => {
     if (!mouseDown || autoNavLocked) return;
     const diffX = e.clientX - mouseStartX;
@@ -1222,43 +1153,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const diffX = e.clientX - mouseStartX;
     const pageEl = document.getElementById('page-' + activePage);
     if (pageEl) pageEl.style.transform = '';
-    if (Math.abs(diffX) > 84) {
-      triggerAutoNav(diffX < 0 ? 'next' : 'prev');
-    } else {
-      resetProgress();
-    }
+    if (Math.abs(diffX) > 84) triggerAutoNav(diffX < 0 ? 'next' : 'prev'); else resetProgress();
   });
 
-  // Keyboard: ArrowLeft / ArrowRight to nav
   window.addEventListener('keydown', (e) => {
     if (autoNavLocked) return;
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      triggerAutoNav('next');
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      triggerAutoNav('prev');
-    }
+    if (e.key === 'ArrowRight') { e.preventDefault(); triggerAutoNav('next'); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); triggerAutoNav('prev'); }
   });
 
-  // Also keep the vertical smart-scroll at bottom as fallback: extra scroll down = next
-  window.addEventListener('wheel', (e) => {
-    if (autoNavLocked) return;
-    if (isAtBottom && e.deltaY > 18 && Math.abs(e.deltaX) < 20) {
-      e.preventDefault();
-      const inc = Math.min(32, Math.max(12, e.deltaY * 0.7));
-      addProgress(inc, 'next');
-    }
-  }, { passive: false });
+  // WHEEL AUTO-SCROLL REMOVED - scrolling at bottom no longer triggers next page
 
-  /* Initial load: open the tab the shared URL points to */
   const initial = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
-  if (initial !== activePage) {
-    renderPage(initial);
-  } else {
-    buildScrollNav();
-    queueNavEvaluation(1200);
-  }
+  if (initial !== activePage) renderPage(initial);
+  else { buildScrollNav(); queueNavEvaluation(1200); }
   updateTabs();
   if (!PAGES.includes(location.hash.slice(1))) {
     try { history.replaceState(null, '', '#' + activePage); } catch (err) {}
@@ -1266,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
   /* Advance payment plans scroll pop-up reveal */
-  (function(){
+(function(){
     const section = document.getElementById('advance-plans-section');
     const cards = document.querySelectorAll('.advance-card');
     if(!section || !cards.length) return;
@@ -1327,6 +1235,95 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* PORTAL LOGIC — bottom popup nav + header + new-user handling */
+(function () {
+  const SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
 
+  const $ = (id) => document.getElementById(id);
+
+  function setPortalState(session) {
+    const label = $('portalChipLabel');
+    const dot   = $('portalDot');
+    const chip  = $('portalChip');
+    const headerPortal = document.querySelector('a[href="portal.html"].hidden'); // header one
+    const isAuthed = !!session?.user;
+
+    if (isAuthed) {
+      if (label) label.textContent = 'MY PORTAL';
+      if (dot) dot.classList.remove('hidden');
+      if (chip) {
+        chip.classList.add('is-authed');
+        chip.title = (session.user.email || '') + ' — signed in';
+        chip.href = 'portal.html';
+      }
+      // update header button if present
+      const hdr = document.querySelector('header a[href="portal.html"]');
+      if (hdr) { hdr.textContent = 'My Portal →'; hdr.classList.remove('hidden'); hdr.classList.add('lg:inline-flex'); }
+      localStorage.setItem('cifika_is_member', '1');
+    } else {
+      if (label) label.textContent = 'PORTAL';
+      if (dot) dot.classList.add('hidden');
+      if (chip) {
+        chip.classList.remove('is-authed');
+        chip.title = 'Member Portal — sign in or register';
+        chip.href = 'portal.html';
+      }
+      // keep header CTA as Member Portal but visible
+      localStorage.removeItem('cifika_is_member');
+    }
+  }
+
+  async function initPortal() {
+    try {
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      window.__cifika_sb = sb; // expose for other pages
+
+      // check current session
+      const { data: { session } } = await sb.auth.getSession();
+      setPortalState(session);
+
+      // handle new registration redirect flag
+      const params = new URLSearchParams(location.search);
+      const justRegistered = params.get('registered') === '1' || localStorage.getItem('cifika_just_registered') === '1';
+      if (justRegistered && session?.user) {
+        localStorage.removeItem('cifika_just_registered');
+        // optional: auto-show popup and highlight portal chip
+        const chip = $('portalChip');
+        if (chip) {
+          chip.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 500, easing: 'ease-out' });
+        }
+        // if they just registered, send them to portal after 900ms unless they are on pricing etc.
+        if (params.get('registered') === '1') {
+          setTimeout(() => { window.location.href = 'portal.html?welcome=1'; }, 900);
+          return;
+        }
+      }
+
+      // listen for auth changes (sign in / sign out elsewhere)
+      sb.auth.onAuthStateChange((event, newSession) => {
+        if (event === 'SIGNED_IN') {
+          setPortalState(newSession);
+          // mark as new user if this is first sign-in
+          if (event === 'SIGNED_IN' && !localStorage.getItem('cifika_is_member')) {
+            localStorage.setItem('cifika_just_registered', '1');
+          }
+        }
+        if (event === 'SIGNED_OUT') {
+          setPortalState(null);
+        }
+      });
+
+    } catch (e) {
+      console.warn('Portal check failed', e);
+    }
+  }
+
+  // for registration.html to call: localStorage.setItem('cifika_just_registered','1')
+  window.addEventListener('DOMContentLoaded', initPortal);
+})();
+</script>
 </body>
 </html>

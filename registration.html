@@ -68,6 +68,7 @@
   }
 </style>
 </head>
+<script src="cifika-supabase.js"></script>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
 
 <!-- HEADER -->
@@ -205,7 +206,7 @@
       </div>
     </div>
 
-    <form id="regForm" class="px-6 md:px-10 py-8">
+    <form id="regForm" class="px-6 md:px-10 py-8" novalidate>
 
       <!-- STEP 1: Member Info -->
       <div class="step-section active" data-step="1">
@@ -245,17 +246,19 @@
                 <button type="button" class="toggle-btn flex-1 h-[44px] rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-group="gender" data-value="Other">Other</button>
               </div>
             </div>
-            <label class="block">
+            <label class="block" id="phoneFieldWrap">
               <div class="flex items-center justify-between mb-1.5">
-                <div class="text-[11px] font-semibold tracking-[0.08em] text-neutral-700">Phone *</div>
+                <div class="text-[11px] font-semibold tracking-[0.08em] text-neutral-700" data-field="phoneLabel">Phone *</div>
+                <div id="phoneGuardianHint" class="hidden text-[10px] text-neutral-500">Managed by guardian</div>
               </div>
-              <input class="input" placeholder="+234 ..." name="phone" required>
+              <input class="input" placeholder="+234 ..." name="phone">
             </label>
-            <label class="block">
+            <label class="block" id="emailFieldWrap">
               <div class="flex items-center justify-between mb-1.5">
-                <div class="text-[11px] font-semibold tracking-[0.08em] text-neutral-700">Email *</div>
+                <div class="text-[11px] font-semibold tracking-[0.08em] text-neutral-700" data-field="emailLabel">Email *</div>
+                <div id="emailGuardianHint" class="hidden text-[10px] text-neutral-500">Managed by guardian</div>
               </div>
-              <input type="email" class="input" placeholder="you@email.com" name="email" required>
+              <input type="email" class="input" placeholder="you@email.com" name="email">
             </label>
           </div>
           <label class="block">
@@ -728,13 +731,33 @@
         <p class="text-[11px] text-neutral-500 leading-[1.5]">Guardian details are pre-filled automatically — you only complete the new member's information.</p>
       </div>
 
-      <button type="button" onclick="leaveConfirmation()" class="h-[44px] rounded-full border border-neutral-200 bg-white text-neutral-600 text-[13px] font-medium hover:border-black transition">Done</button>
+      <!-- was: onclick="leaveConfirmation()" -->
+    <button type="button" onclick="openPortalPrompt()" class="h-[44px] rounded-full border border-neutral-200 bg-white text-neutral-600 text-[13px] font-medium hover:border-black transition">Done</button>
     </div>
 
     <div class="mt-6 pt-5 border-t border-neutral-200 flex justify-between text-[11px] text-neutral-400">
       <span>Powered by TTOSR</span>
       <span>CITY FITNESS KARATE CLUB</span>
     </div>
+  </div>
+</div>
+
+<!-- PORTAL PROMPT -->
+<div id="portalPrompt" class="hidden fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="modal-enter bg-white rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.15)] border border-neutral-200 max-w-[460px] w-full p-7 text-center">
+    <div class="w-14 h-14 mx-auto rounded-full bg-brand/10 flex items-center justify-center text-[24px]">🥋</div>
+    <h2 class="mt-4 text-[22px] font-extrabold tracking-tight leading-tight">Set up your Member Portal</h2>
+    <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
+      Registration ID <b class="text-neutral-900" id="ppRef">CFK-?????</b> is ready to link.
+      Sign up with: <b class="text-neutral-900" id="ppEmail">—</b>
+    </p>
+    <button onclick="goPortal()" class="mt-5 h-[48px] w-full rounded-full bg-brand text-white font-semibold text-[14px] hover:bg-brand-dark transition">Open the Portal →</button>
+    <div id="ppConvert" class="hidden mt-3 pt-3 border-t border-neutral-100">
+      <p class="text-[11.5px] text-neutral-500 leading-[1.5]">Registered yourself earlier? Turn that account into a parent account:</p>
+      <button onclick="goPortalConvert()" class="mt-2 h-[44px] w-full rounded-full border-[1.5px] border-black bg-white text-black font-semibold text-[13px] hover:bg-neutral-50 transition">Use my member account (<span id="ppSelfEmail"></span>)</button>
+      <p class="mt-1.5 text-[10.5px] text-neutral-400">It becomes a parent account, manages this child — and your own training stays visible.</p>
+    </div>
+    <button onclick="closePortalPrompt()" class="mt-3 h-[42px] w-full rounded-full border border-neutral-200 bg-white text-neutral-600 text-[13px] font-medium hover:border-black transition">Maybe later</button>
   </div>
 </div>
 
@@ -912,6 +935,8 @@
     };
     registration = { type: app.type, for: forWho };
     app.registration = { ...registration };
+    // update phone/email requirement for child
+    setTimeout(updateMemberContactRequirements, 0);
 
     resetFormUI();
 
@@ -947,6 +972,7 @@
   function applyApp(app, stepTo) {
     store.activeId = app.id;
     registration = app.registration || { type: app.type, for: app.for };
+    setTimeout(updateMemberContactRequirements, 0);
     passportData = app.passportData || '';
     karateStyle = app.karateStyle || '';
 
@@ -1129,6 +1155,52 @@
   }
 
   // --- Required-field validation per logical step ---
+  function isChildRegistration() {
+    return registration && registration.for === 'child';
+  }
+
+  function updateMemberContactRequirements() {
+    const f = $('regForm');
+    if (!f) return;
+    const isChild = isChildRegistration();
+    const phoneEl = f.elements['phone'];
+    const emailEl = f.elements['email'];
+    if (phoneEl) {
+      phoneEl.required = !isChild;
+      if (isChild) {
+        phoneEl.removeAttribute('required');
+        phoneEl.placeholder = 'Optional — managed by guardian';
+      } else {
+        phoneEl.setAttribute('required','');
+        phoneEl.placeholder = '+234 ...';
+      }
+    }
+    if (emailEl) {
+      emailEl.required = !isChild;
+      if (isChild) {
+        emailEl.removeAttribute('required');
+        emailEl.placeholder = 'Optional — managed by guardian';
+      } else {
+        emailEl.setAttribute('required','');
+        emailEl.placeholder = 'you@email.com';
+      }
+    }
+    document.querySelectorAll('[data-field="phoneLabel"]').forEach(el => {
+      el.textContent = isChild ? 'Phone' : 'Phone *';
+    });
+    document.querySelectorAll('[data-field="emailLabel"]').forEach(el => {
+      el.textContent = isChild ? 'Email' : 'Email *';
+    });
+    const ph = document.getElementById('phoneGuardianHint');
+    const eh = document.getElementById('emailGuardianHint');
+    if (ph) ph.classList.toggle('hidden', !isChild);
+    if (eh) eh.classList.toggle('hidden', !isChild);
+    const pw = document.getElementById('phoneFieldWrap');
+    const ew = document.getElementById('emailFieldWrap');
+    if (pw) pw.style.opacity = isChild ? '0.8' : '1';
+    if (ew) ew.style.opacity = isChild ? '0.8' : '1';
+  }
+
   function stepMissing(logicalId) {
     const steps = getSteps();
     const step = steps.find(s => s.id === logicalId);
@@ -1139,8 +1211,12 @@
 
     switch (step.section) {
       case 1:
-        if (!g('fullName') || !g('dob') || !g('nationality') || !g('phone') || !g('email')) return true;
+        if (!g('fullName') || !g('dob') || !g('nationality')) return true;
         if (!toggles.gender) return true;
+        // Phone & Email required only for self, optional for child (guardian manages)
+        if (!isChildRegistration()) {
+          if (!g('phone') || !g('email')) return true;
+        }
         return false;
       case 2:
         return !(g('pFullName') && g('pRelationship') && g('pPhone') && g('pEmail'));
@@ -1207,6 +1283,7 @@
     $('progressBar').style.width = `${(logicalStepNum / steps.length) * 100}%`;
     $('nextBtn').style.display = logicalStepNum === steps.length ? 'none' : '';
 
+    updateMemberContactRequirements();
     renderStepList();
     if (logicalStepNum === steps.length) populateReview();
     saveDraft();
@@ -1392,7 +1469,9 @@
     const f = $('regForm');
     const d = collectAllData();
 
-    if (!d.FullName || !d.DOB || !d.Nationality || !d.Phone || !d.Email || !toggles.gender) {
+    // For child, phone/email are optional - managed by guardian
+    const isChildSubmit = registration && registration.for === 'child';
+    if (!d.FullName || !d.DOB || !d.Nationality || !toggles.gender || (!isChildSubmit && (!d.Phone || !d.Email))) {
       toast('Please complete the required member details first.');
       showStep(1); return;
     }
@@ -1451,6 +1530,7 @@
     toast(isResubmit && result === 'updated'
       ? `Your existing record was updated — Ref unchanged: ${ref}`
       : 'Application submitted. Ref: ' + ref);
+    if (window.CIFIKA_SUPABASE) CIFIKA_SUPABASE.syncNow();
   }
 
   // ===== Add another member from the confirmation screen =====
@@ -1746,7 +1826,7 @@
         `Ref: ${(app && app.ref) || '—'}\n` +
         `Name: ${d.FullName || '—'}\n` +
         `Nationality: ${d.Nationality || '—'}\n` +
-        `Phone: ${d.Phone || '—'}\n` +
+        `Phone: ${d.Phone || (d.GuardianPhone ? d.GuardianPhone + ' (guardian)' : '—')}\n` + (d.RegisteredFor === 'Child / Ward' && !d.Phone ? `Guardian Phone: ${d.GuardianPhone || '—'}\n` : '') +
         `Status: Received\n\n` +
         `Hello! I have just submitted my membership registration. My application PDF` +
         (d.PassportAttached === 'Yes' ? ' (with my passport photograph embedded)' : '') +
@@ -1765,6 +1845,43 @@
   loadStore();
   populateGrids();
   renderReturningBanner();
+
+/* ---- PORTAL PROMPT ---- */
+function getRegContext() {
+  const m = document.getElementById('refNum')?.textContent.match(/CFK-\d{3,}/i);
+  const ref = m && !/^CFK-0+$/.test(m[0]) ? m[0].toUpperCase() : '';
+  const memberEmail   = document.querySelector('#regForm [name="email"]')?.value.trim()  || '';
+  const guardianEmail = document.querySelector('#regForm [name="pEmail"]')?.value.trim() || '';
+  const hasGuardian = guardianEmail !== '';
+  const email = memberEmail || guardianEmail;   // YOUR RULE: member email first, guardian as fallback
+  const role  = memberEmail ? 'student' : (hasGuardian ? 'parent' : 'student');
+  return { ref, email, role, hasGuardian };
+}
+function openPortalPrompt() {
+  const ctx = getRegContext();
+  // remember self-registrations this session (for the convert option)
+  if (!ctx.hasGuardian && ctx.email) sessionStorage.setItem('cifika_self_email', ctx.email);
+
+  document.getElementById('ppRef').textContent   = ctx.ref || 'CFK-?????';
+  document.getElementById('ppEmail').textContent = ctx.email || 'your registration email';
+
+  const selfEmail = sessionStorage.getItem('cifika_self_email');
+  const showConvert = ctx.hasGuardian && !!selfEmail;
+  document.getElementById('ppConvert').classList.toggle('hidden', !showConvert);
+  if (showConvert) document.getElementById('ppSelfEmail').textContent = selfEmail;
+
+  document.getElementById('portalPrompt').classList.remove('hidden');
+}
+function closePortalPrompt() { document.getElementById('portalPrompt').classList.add('hidden'); }
+function goPortal() {
+  const { ref, role, email } = getRegContext();
+  location.href = 'portal.html?ref=' + encodeURIComponent(ref) + '&role=' + encodeURIComponent(role) + '&email=' + encodeURIComponent(email);
+}
+function goPortalConvert() {
+  const { ref } = getRegContext();
+  const selfEmail = sessionStorage.getItem('cifika_self_email') || '';
+  location.href = 'portal.html?ref=' + encodeURIComponent(ref) + '&convert=1&email=' + encodeURIComponent(selfEmail);
+}
 </script>
 </body>
 </html>
