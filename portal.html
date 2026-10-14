@@ -22,6 +22,7 @@
     }
   }
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   .input { width:100%; height:44px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
@@ -436,11 +437,19 @@ async function viewChild(i) {
 
 /* ═══════════════ DASHBOARD (shared by student & parent views) ═══════════════ */
 async function renderDashboard(student, opts = {}) {
-  const [{ data: attendance }, { data: gradings }] = await Promise.all([
+    const [{ data: attendance }, { data: gradings }, { data: scores }, { data: anns }] = await Promise.all([
     sb.from('attendance').select('*').eq('student_id', student.id).order('class_date', { ascending: false }).limit(60),
     sb.from('gradings').select('*').eq('student_id', student.id).order('grading_date', { ascending: false }),
+    sb.from('grading_scores').select('*').eq('student_id', student.id),
+    sb.from('announcements').select('*').eq('status', 'published')
+      .in('audience', ['all', student.training_category === 'child' ? 'child' : 'adult'])
+      .order('is_pinned', { ascending: false })
+      .order('event_date', { ascending: true, nullsFirst: false })
+      .limit(6),
   ]);
   const att = attendance || [], grd = gradings || [];
+  const scoreById = {}; (scores || []).forEach(s => scoreById[s.grading_id] = s);
+  window._certData = { grd, student };
 
   const attended = att.filter(a => a.status === 'present' || a.status === 'late').length;
   const rate = att.length ? Math.round(attended / att.length * 100) : null;
@@ -508,6 +517,9 @@ async function renderDashboard(student, opts = {}) {
       ${statCard('NEXT GRADING', nextBelt ? nextBelt.belt_name : '—', nextBelt ? `min ${nextBelt.minimum_months_at_previous ?? '—'} months at rank` : 'kyu path complete')}
     </div>
 
+    ${announcementsHTML(anns || [])}
+    <div id="tab-gradings" class="hidden p-5 md:p-6">${gradingsTabHTML(grd, scoreById)}</div>
+
     <!-- BELT JOURNEY -->
     <div class="card p-6 md:p-7">
       <div class="flex items-center justify-between">
@@ -555,7 +567,7 @@ function beltJourneyHTML(currentBelt) {
   const pct = last > 0 ? (curIdx / last) * 100 : 100;
   return `
   <div class="mt-6 overflow-x-auto scroll-x">
-    <div class="min-w-[520px] relative">
+    <div class="relative" style="min-width:${Math.max(520, beltLevels.length * 56)}px">
       <div class="absolute left-2 right-2 top-[9px] h-[6px] rounded-full bg-neutral-200"></div>
       <div class="absolute left-2 top-[9px] h-[6px] rounded-full bg-gradient-to-r from-brand to-brand-dark" style="width:calc(${pct}% - 8px)"></div>
       <div class="relative flex justify-between" style="margin-top:-14px">
@@ -691,6 +703,125 @@ function profileTabHTML(s) {
         </div>`).join('')}
     </div>
     <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>`;
+}
+
+function announcementsHTML(list) {
+  if (!list.length) return '';
+  const typeCls = { grading:'bg-brand text-white', event:'bg-black text-white', seminar:'bg-purple-600 text-white',
+                    promotion:'bg-emerald-600 text-white', announcement:'bg-blue-600 text-white', update:'bg-neutral-500 text-white' };
+  const meta = a => [a.event_date ? fmtDate(a.event_date) : '',
+                     a.start_time ? a.start_time + (a.end_time ? '–' + a.end_time : '') : '',
+                     a.location || ''].filter(Boolean).join(' • ');
+  return `
+  <div class="card p-6 md:p-7">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-[12px] font-bold tracking-[0.14em]">CLUB UPDATES</div>
+      <div class="text-[11px] text-neutral-400">announcements • events • seminars</div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-3">
+      ${list.map(a => `
+      <div class="rounded-[16px] border ${a.is_pinned ? 'border-brand/40 bg-brand-light/40' : 'border-neutral-200 bg-neutral-50/60'} p-4">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold tracking-[0.1em] uppercase ${typeCls[a.type] || typeCls.update}">${escapeHtml(a.type)}</span>
+          ${a.is_pinned ? '<span class="text-[9.5px] font-bold tracking-[0.1em] text-brand uppercase">📌 Pinned</span>' : ''}
+          ${a.price ? `<span class="ml-auto text-[12.5px] font-extrabold text-brand">₦${Number(a.price).toLocaleString()}</span>` : ''}
+        </div>
+        <div class="mt-2 text-[13.5px] font-bold leading-snug">${escapeHtml(a.title)}</div>
+        ${a.body ? `<div class="mt-1 text-[12px] text-neutral-600 leading-[1.6]">${escapeHtml(a.body)}</div>` : ''}
+        ${meta(a) ? `<div class="mt-2 text-[11px] font-semibold text-neutral-500">📅 ${escapeHtml(meta(a))}</div>` : ''}
+        ${a.price_note ? `<div class="text-[10.5px] text-neutral-400 mt-0.5">${escapeHtml(a.price_note)}</div>` : ''}
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function gradingsTabHTML(grd, scoresById = {}) {
+  if (!grd.length) return emptyState('🥋', 'No gradings yet', 'Your first grading will appear here with examiner, result, score report and certificate.');
+  const ROWS = [['Attendance','attendance',10],['Character','character',20],['Kihon','kihon',20],
+                ['Kata','kata',20],['Kumite','kumite',20],['Fitness','fitness',10]];
+  return `<div class="grid gap-3">
+    ${grd.map(g => {
+      const sc = scoresById[g.id];
+      const total = sc ? ROWS.reduce((s,[,k]) => s + (sc[k] || 0), 0) : null;
+      return `
+      <div class="rounded-[16px] border border-neutral-200 p-4">
+        <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+          <div class="flex flex-wrap items-center gap-2">
+            ${beltChipHTML(g.previous_belt)}<span class="text-neutral-400">→</span>${beltChipHTML(g.new_belt)}
+            <span class="text-[12px] text-neutral-500 md:ml-2">${fmtDate(g.grading_date)} • Examiner: ${escapeHtml(g.examiner_name || '—')}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            ${resultPill(g.result)}
+            ${g.certificate_issued ? `<button onclick="downloadCertificate('${g.id}')" class="h-8 px-4 rounded-full bg-black text-white text-[10.5px] font-bold hover:bg-neutral-800 transition">📜 Certificate PDF</button>` : ''}
+          </div>
+        </div>
+        ${g.remarks ? `<div class="mt-2 text-[12px] text-neutral-500 italic">"${escapeHtml(g.remarks)}"</div>` : ''}
+        ${sc ? `
+        <div class="mt-3 rounded-[12px] bg-neutral-50 border border-neutral-100 p-4">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-500">PERFORMANCE REPORT</span>
+            <span class="text-[16px] font-extrabold ${total >= 50 ? 'text-emerald-600' : 'text-amber-600'}">${total}%</span>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
+            ${ROWS.map(([label, key, max]) => `
+            <div>
+              <div class="flex justify-between text-[10.5px] font-semibold text-neutral-600"><span>${label}</span><span>${sc[key] || 0}/${max}</span></div>
+              <div class="mt-0.5 h-[6px] rounded-full bg-neutral-200 overflow-hidden">
+                <div class="h-full rounded-full bg-brand" style="width:${Math.round((sc[key] || 0) / max * 100)}%"></div>
+              </div>
+            </div>`).join('')}
+          </div>
+          ${sc.notes ? `<div class="mt-3 text-[11.5px] text-neutral-500 italic">Examiner: "${escapeHtml(sc.notes)}"</div>` : ''}
+        </div>` : ''}
+      </div>`;}).join('')}
+  </div>`;
+}
+
+function downloadCertificate(gid) {
+  const d = window._certData; if (!d) return;
+  const g = d.grd.find(x => x.id === gid), s = d.student;
+  if (!g) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const W = 297, H = 210;
+  doc.setFillColor(255,106,0); doc.rect(0,0,W,6,'F'); doc.rect(0,H-6,W,6,'F');
+  doc.setDrawColor(17,17,17); doc.setLineWidth(1.2); doc.rect(10,12,W-20,H-24);
+  doc.setLineWidth(0.4); doc.rect(13,15,W-26,H-30);
+  doc.setFillColor(17,17,17); doc.rect(14,16,W-28,26,'F');
+  doc.setFillColor(255,106,0); doc.rect(14,16,10,26,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('CITY FITNESS KARATE CLUB', 31, 28);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(170,170,170);
+  doc.text('TRADITIONAL KARATE  •  STRENGTH  •  DISCIPLINE   —   SUN CITY, GALADIMAWA, ABUJA FCT', 31, 35);
+  doc.setTextColor(255,106,0); doc.setFont('helvetica','bold'); doc.setFontSize(26);
+  doc.text('CERTIFICATE OF GRADING', W/2, 62, { align: 'center' });
+  doc.setTextColor(110,110,110); doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('This is to certify that', W/2, 78, { align: 'center' });
+  doc.setTextColor(17,17,17); doc.setFontSize(24); doc.setFont('helvetica','bold');
+  doc.text((s.full_name || 'Member').toUpperCase(), W/2, 92, { align: 'center' });
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(110,110,110);
+  doc.text('has successfully been graded to', W/2, 104, { align: 'center' });
+  doc.setTextColor(255,106,0); doc.setFontSize(22); doc.setFont('helvetica','bold');
+  doc.text((g.new_belt || '') + ' Belt', W/2, 120, { align: 'center' });
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  const rows = [['Grading Date', g.grading_date ? fmtDate(g.grading_date) : '—'],
+                ['Examiner', g.examiner_name || '—'],
+                ['Registration No.', s.registration_ref || '—'],
+                ['Certificate No.', g.certificate_no || '—']];
+  rows.forEach(([k, v], i) => {
+    const x = 40 + (i % 2) * 120, y = 145 + Math.floor(i / 2) * 10;
+    doc.setTextColor(130,130,130); doc.text(k.toUpperCase(), x, y);
+    doc.setTextColor(17,17,17); doc.setFont('helvetica','bold'); doc.text(String(v), x + 40, y);
+    doc.setFont('helvetica','normal');
+  });
+  doc.setDrawColor(17,17,17); doc.setLineWidth(0.5);
+  doc.line(30, 172, 90, 172); doc.line(W - 90, 172, W - 30, 172);
+  doc.setFontSize(9); doc.setTextColor(100,100,100);
+  doc.text('Sensei / Examiner', W - 60, 178, { align: 'center' });
+  doc.text('Club Director', 60, 178, { align: 'center' });
+  doc.setFontSize(8); doc.setTextColor(160,160,160);
+  doc.text('Issued via the CIFIKA Member Portal  •  verify with the club using the certificate number', W/2, H - 20, { align: 'center' });
+  doc.save(`CIFIKA_Certificate_${(s.full_name || 'member').replace(/\s+/g, '_')}_${(g.new_belt || '').replace(/\s+/g, '')}.pdf`);
 }
 
 /* ═══════════════ ADMIN (preview  ═══════════════ */
