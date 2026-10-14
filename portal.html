@@ -84,6 +84,21 @@
         <input id="suEmail" type="email" class="input" placeholder="Email — must match your registration" autocomplete="email" onblur="if(document.getElementById('suRef').value.trim()) verifyRef(false)">
         <input id="suPassword" type="password" class="input" placeholder="Create password (min. 6 characters)" autocomplete="new-password">
         <button id="suBtn" type="submit" class="h-[46px] rounded-full bg-brand text-white text-[13.5px] font-semibold hover:bg-brand-dark transition">Create Account →</button>
+        <!-- SOAP for unregistered visitor on Sign In -->
+        <div class="text-center mt-1">
+          <p class="text-[12px] text-neutral-500">Don't have an account yet? <a href="registration.html" class="font-semibold text-brand hover:text-brand-dark underline underline-offset-4">Register to get an ID</a></p>
+        </div>
+        <!-- MAIN SOAP / FALLBACK BANNER - Always visible for unregistered -->
+      <div class="mt-6 p-4 rounded-[16px] bg-[#FFF5EB] border border-[#FFD4A8] flex items-start gap-3">
+        <div class="w-9 h-9 rounded-full bg-white border border-[#FFD4A8] flex items-center justify-center shrink-0">🪪</div>
+        <div class="flex-1">
+          <div class="text-[12.5px] font-bold">No Registration ID?</div>
+          <div class="text-[11.5px] text-neutral-600 mt-1 leading-[1.5]">You need to register first to get your <span class="font-semibold text-black">CFK-xxxxx</span> ID before you can access the portal.</div>
+          <a href="registration.html" id="registerLink" class="inline-flex mt-3 h-[36px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition items-center gap-1">
+            Register to get an ID →
+          </a>
+        </div>
+      </div>
       </form>
     </div>
     <p class="text-center text-[11px] text-neutral-400 mt-5">Use the email address you registered with at the dojo.</p>
