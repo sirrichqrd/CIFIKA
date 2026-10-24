@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000">
+<title>City Fitness Karate Club — Check In</title>
+<!--
+  ════════════════════════════════════════════════════════════════════
+  CIFIKA — OPENING CEREMONY CHECK-IN PAGE
+  ────────────────────────────────────────────────────────────────────
+  QUICK SETUP (takes ~2 minutes):
+
+  1. Create a Google Sheet with these EXACT headers in row 1:
+       A1: Timestamp    B1: Name    C1: Email    D1: Experience
+
+  2. Go to https://sheetdb.io → Sign up (free, no credit card)
+     → "Create new API" → connect that Google Sheet
+     → copy your API URL (looks like https://sheetdb.io/api/v1/xxxxxx)
+
+  3. Scroll to the <script> near the bottom of THIS file and paste
+     your URL into the SHEETDB_URL line. Save.
+
+  4. Reload this page, submit one test check-in, and confirm a new
+     row appears in your Google Sheet. Done — you're live!
+
+  SAFETY NET: every check-in is also saved on the device (with
+  automatic retry until Google Sheets confirms it). The
+  "Export check-ins backup (CSV)" link at the bottom downloads
+  everything from this device at any time.
+
+  The orange warning banner at the top disappears automatically
+  once SheetDB is linked and working.
+  ════════════════════════════════════════════════════════════════════
+-->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="icon" type="image/svg" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="shortcut icon" type="image/svg" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        colors: {
+          brand: {
+            DEFAULT: '#FF6B00',
+            dark: '#E65A00',
+            light: '#FFF5EB',
+            border: '#FFD4A8',
+            text: '#B34700'
+          },
+          wa: '#25D366'
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  ::selection { background-color: rgba(255, 107, 0, 0.2); }
+  .input {
+    width: 100%; height: 46px; border-radius: 9999px;
+    border: 1.5px solid #e5e5e5; background: white;
+    padding: 0 16px; font-size: 14px; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+  .input.invalid { border-color: #ef4444; }
+  .toggle-btn { transition: all 0.15s ease; }
+  .toggle-btn.active { background: #111; color: white; border-color: #111; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.45s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .shake { animation: shake 0.35s ease-in-out; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .ring-pulse { animation: ringPulse 1.6s ease-out; }
+  @keyframes ringPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255,107,0,0.45); }
+    100% { box-shadow: 0 0 0 22px rgba(255,107,0,0); }
+  }
+  .spin { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen bg-[#f8f7f6] text-neutral-900 flex flex-col">
+
+<!-- ═══════════ HEADER — same style as registration page ═══════════ -->
+<header class="bg-black text-white border-b border-neutral-800">
+  <div class="max-w-[1200px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="index.html"><img src="assets/logo/cifika-w-logo.png" height="auto" width="200px" alt="City Fitness Karate Club"></a>
+    </div>
+    <div class="hidden sm:flex items-center gap-2 text-[11px] text-neutral-400 tracking-[0.08em]">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      OPENING CEREMONY • LIVE CHECK-IN
+    </div>
+  </div>
+  <div class="h-[3px] w-full bg-neutral-800">
+    <div class="h-full bg-brand w-full"></div>
+  </div>
+</header>
+
+<!-- ═══════════ SETUP WARNING (auto-hides once SheetDB works) ═══════════ -->
+<div id="setupWarning" class="hidden max-w-[1200px] mx-auto px-5 md:px-8 pt-5 w-full">
+  <div class="rounded-[14px] bg-amber-50 border border-amber-300 p-4 text-[12px] leading-[1.6] text-amber-900 flex items-start gap-3">
+    <span class="text-[16px] leading-none mt-0.5">⚠️</span>
+    <span id="setupWarningText"></span>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="flex-1 w-full max-w-[1200px] mx-auto px-5 md:px-8 py-10 md:py-14 flex items-start justify-center">
+  <div class="w-full max-w-[480px]">
+
+    <!-- ───────── SCREEN 1 — CHECK-IN FORM ───────── -->
+    <section id="checkinScreen" class="screen active">
+      <div class="bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.10)] border border-neutral-200 p-6 md:p-9">
+        <div class="flex items-center justify-between">
+          <div class="w-14 h-14 rounded-full bg-brand/10 flex items-center justify-center text-[26px]">🥋</div>
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black text-white text-[10px] font-bold tracking-[0.14em]">
+            OPENING CEREMONY • 2026
+          </div>
+        </div>
+
+        <h1 class="mt-6 text-[30px] md:text-[34px] font-black leading-[1.08] tracking-[-0.03em]">
+          Welcome to Our <span class="text-brand">Official Opening!</span>
+        </h1>
+        <p class="mt-2.5 text-[14px] text-neutral-600 leading-[1.6]">We're glad to have you with us today! Check in below — it only takes a few seconds.</p>
+
+        <form id="checkinForm" class="mt-7 grid gap-4" novalidate>
+          <label class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">NAME <span class="text-brand">*</span></div>
+            <input class="input" placeholder="Your full name" name="name" autocomplete="name" autocapitalize="words">
+            <div class="err text-[11px] text-red-500 mt-1.5 hidden">Please enter your name.</div>
+          </label>
+
+          <label class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">EMAIL <span class="text-brand">*</span></div>
+            <input type="email" class="input" placeholder="you@email.com" name="email" autocomplete="email">
+            <div class="err text-[11px] text-red-500 mt-1.5 hidden">Please enter a valid email address.</div>
+          </label>
+
+          <div class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">KARATE EXPERIENCE</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="toggle-btn active h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="New to karate">New to karate</button>
+              <button type="button" class="toggle-btn h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="Has some experience">Have some experience</button>
+            </div>
+          </div>
+
+          <button type="submit" id="checkinBtn" class="mt-2 h-[52px] rounded-full bg-brand text-white font-bold text-[15px] tracking-[0.04em] hover:bg-brand-dark transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            CHECK IN
+          </button>
+
+          <p class="text-[11px] text-neutral-400 text-center leading-[1.6]">Your details are used for club membership &amp; communication only.</p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ───────── SCREEN 2 — YOU'RE ALL SET ───────── -->
+    <section id="successScreen" class="screen">
+      <div class="bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.10)] border border-neutral-200 p-6 md:p-9 text-center">
+        <div class="w-16 h-16 mx-auto rounded-full bg-brand/10 flex items-center justify-center text-[30px] ring-pulse">🥋</div>
+
+        <h1 class="mt-6 text-[30px] md:text-[34px] font-black leading-[1.08] tracking-[-0.03em]">You're All Set<span id="successName"></span>!</h1>
+        <p class="mt-2.5 text-[14px] text-neutral-600 leading-[1.6]">We're excited to have you join us. Stay Connected!</p>
+
+        <div class="mt-6 rounded-[18px] bg-brand-light border border-brand-border p-5 text-left">
+          <div class="flex items-center gap-2 text-[13px] font-bold text-neutral-900">
+            <span class="w-6 h-6 rounded-full bg-wa/15 text-wa flex items-center justify-center text-[12px]">✓</span>
+            Join our WhatsApp Community
+          </div>
+          <p class="mt-2 text-[12.5px] text-neutral-700 leading-[1.65]">Receive updates about training sessions, upcoming events, registration opportunities, and club announcements.</p>
+        </div>
+
+        <a id="waBtn" href="https://whatsapp.com/channel/0029VbDclCNEwEjzVxAtTR0C" target="_blank" rel="noopener"
+           class="mt-4 h-[52px] rounded-full bg-wa text-white font-bold text-[13.5px] tracking-[0.02em] flex items-center justify-center gap-2.5 hover:bg-[#1eb85a] active:scale-[0.99] transition">
+          <svg viewBox="0 0 448 512" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
+          JOIN OUR WHATSAPP COMMUNITY
+        </a>
+
+        <p class="mt-5 text-[13px] text-neutral-500 italic">We look forward to seeing you on the dojo floor!</p>
+
+        <div class="mt-7 pt-5 border-t border-neutral-100">
+          <button type="button" id="resetBtn" class="h-[44px] px-6 rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-medium hover:border-black transition">← Check in another person</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BACKUP EXPORT -->
+    <div class="mt-4 text-center">
+      <button type="button" id="exportBtn" class="text-[11px] text-neutral-400 hover:text-neutral-700 underline decoration-neutral-300 underline-offset-2 transition">Export check-ins backup (CSV)</button>
+    </div>
+
+  </div>
+</main>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="bg-white border-t border-neutral-200">
+  <div class="max-w-[1200px] mx-auto px-5 py-4 text-center text-[11px] text-neutral-500 tracking-[0.04em]">
+    • Powered by TTOSR&nbsp;&nbsp;|&nbsp;&nbsp;City Fitness Karate Club . EST 2026 • CIFIKA •
+  </div>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   ⚙️ SETUP — YOU ONLY NEED TO EDIT *ONE LINE* BELOW
+   ─────────────────────────────────────────────────────────────────
+   1. Google Sheet headers in row 1 must be EXACTLY:
+        Timestamp | Name | Email | Experience
+   2. sheetdb.io → Sign up (free) → Create new API → connect the sheet
+   3. Paste your API URL below (it looks like https://sheetdb.io/api/v1/xxxx)
+   4. Reload, do a test check-in, confirm the row appears. Done!
+   ═══════════════════════════════════════════════════════════════════ */
+const SHEETDB_URL  = "https://sheetdb.io/api/v1/xtfg90yp7fw6q";  // ← EDIT THIS LINE
+const WHATSAPP_URL = "https://whatsapp.com/channel/0029VbDclCNEwEjzVxAtTR0C";  // WhatsApp community channel
+
+const LS_KEY = 'cifika_checkins';
+const $ = (s) => document.querySelector(s);
+
+const form       = $('#checkinForm');
+const nameInput  = form.querySelector('input[name="name"]');
+const emailInput = form.querySelector('input[name="email"]');
+const checkinBtn = $('#checkinBtn');
+let experience   = 'New to karate';
+
+/* apply WhatsApp link */
+$('#waBtn').href = WHATSAPP_URL;
+
+/* ── experience toggle ── */
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    experience = btn.dataset.value;
+  });
+});
+
+/* ── validation helpers ── */
+function setInvalid(input, bad) {
+  input.classList.toggle('invalid', bad);
+  const err = input.closest('label').querySelector('.err');
+  if (err) err.classList.toggle('hidden', !bad);
+}
+const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+
+/* ── local backup store (safety net — data is never lost) ── */
+function loadLocal() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch (e) { return []; } }
+function storeLocal(list) { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch (e) {} }
+function fmtTime(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+/* ── warning banner ── */
+function warn(msg) { $('#setupWarning').classList.remove('hidden'); $('#setupWarningText').textContent = msg; }
+function clearWarn() { $('#setupWarning').classList.add('hidden'); }
+function isConfigured() { return /sheetdb\.io\/api\/v1\//.test(SHEETDB_URL.trim()); }
+
+function refreshWarning() {
+  if (!isConfigured()) {
+    warn('Setup needed: SheetDB is not linked yet, so check-ins are only saved on this device. Open checkin.html, find the SETUP block in the script near the bottom, and paste your SheetDB API URL into SHEETDB_URL.');
+    return;
+  }
+  const pending = loadLocal().filter(r => !r.synced).length;
+  if (pending > 0) {
+    warn(pending + ' check-in' + (pending > 1 ? 's are' : ' is') + ' saved on this device but not yet in Google Sheets. They will retry automatically — check your SheetDB URL and that the sheet headers are exactly: Timestamp, Name, Email, Experience.');
+  } else {
+    clearWarn();
+  }
+}
+
+/* ── send one record to SheetDB (Google Sheets) ── */
+async function pushRecord(rec) {
+  if (!isConfigured()) return false;
+  try {
+    const res = await fetch(SHEETDB_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ data: [{ 'Timestamp': rec.Timestamp, 'Name': rec.Name, 'Email': rec.Email, 'Experience': rec.Experience }] })
+    });
+    return res.ok;
+  } catch (e) { return false; }
+}
+
+/* retry any check-ins that didn't reach Google Sheets earlier */
+async function flushPending() {
+  if (!isConfigured()) { refreshWarning(); return; }
+  const list = loadLocal();
+  let changed = false;
+  for (const r of list) {
+    if (!r.synced) {
+      const ok = await pushRecord(r);
+      if (ok) { r.synced = true; changed = true; }
+    }
+  }
+  if (changed) storeLocal(list);
+  refreshWarning();
+}
+
+/* ── submit ── */
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const name  = nameInput.value.trim().replace(/\s+/g, ' ');
+  const email = emailInput.value.trim().toLowerCase();
+
+  const badName  = name.length < 2;
+  const badEmail = !emailOk(email);
+  setInvalid(nameInput, badName);
+  setInvalid(emailInput, badEmail);
+  if (badName || badEmail) {
+    form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake');
+    return;
+  }
+
+  checkinBtn.disabled = true;
+  checkinBtn.innerHTML = '<span class="spin inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full"></span> CHECKING IN\u2026';
+
+  /* 1) always keep a local backup first — data can never be lost */
+  const rec = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), Timestamp: fmtTime(new Date()), Name: name, Email: email, Experience: experience, synced: false };
+  const list = loadLocal(); list.push(rec); storeLocal(list);
+
+  /* 2) push to Google Sheets in the background (never blocks the guest) */
+  if (await pushRecord(rec)) {
+    rec.synced = true;
+    const l2 = loadLocal(); const i = l2.findIndex(x => x.id === rec.id);
+    if (i > -1) { l2[i] = rec; storeLocal(l2); }
+  }
+  refreshWarning();
+
+  /* 3) restore button for the next guest, then show the welcome screen */
+  checkinBtn.disabled = false;
+  checkinBtn.innerHTML = 'CHECK IN';
+  showSuccess(name);
+});
+
+/* ── success screen ── */
+function showSuccess(name) {
+  const first = (name.split(' ')[0] || '').trim();
+  $('#successName').textContent = first ? ', ' + first : '';
+  $('#checkinScreen').classList.remove('active');
+  $('#successScreen').classList.remove('active');
+  void $('#successScreen').offsetWidth;
+  $('#successScreen').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ── reset for the next guest ── */
+$('#resetBtn').addEventListener('click', () => {
+  form.reset();
+  nameInput.classList.remove('invalid'); emailInput.classList.remove('invalid');
+  form.querySelectorAll('.err').forEach(el => el.classList.add('hidden'));
+  $('#successScreen').classList.remove('active');
+  $('#checkinScreen').classList.add('active');
+  nameInput.focus();
+});
+
+/* ── CSV backup export ── */
+$('#exportBtn').addEventListener('click', () => {
+  const rows = loadLocal();
+  if (!rows.length) { alert('No check-ins saved on this device yet.'); return; }
+  const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const csv = ['Timestamp,Name,Email,Experience,SyncedToSheet']
+    .concat(rows.map(r => [r.Timestamp, r.Name, r.Email, r.Experience, r.synced ? 'yes' : 'no'].map(esc).join(',')))
+    .join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cifika-checkins-backup.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* on load: retry anything pending, then set the banner */
+flushPending();
+</script>
+</body>
+</html>
