@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Front Desk — City Fitness Karate Club</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+      colors: { brand: { DEFAULT:'#FF6B00', dark:'#E65A00', light:'#FFF5EB', border:'#FFD4A8', text:'#B34700' } }
+    }}
+  }
+</script>
+<style>
+  body { font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:clip; }
+  .input { width:100%; height:42px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
+           padding:0 14px; font-size:13px; outline:none; transition:border-color .15s, box-shadow .15s; }
+  .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.06); }
+  textarea.input { height:auto; border-radius:14px; padding:10px 14px; }
+  select.input { appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,#888 50%),linear-gradient(135deg,#888 50%,transparent 50%);
+    background-position:calc(100% - 16px) calc(50% - 2px),calc(100% - 11px) calc(50% - 2px);
+    background-size:5px 5px,5px 5px; background-repeat:no-repeat; }
+  .card { background:#fff; border:1px solid #e5e5e5; border-radius:18px; }
+  .fade-in { animation:fadeIn .3s ease-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .nav-btn { transition:all .15s ease; }
+  .nav-btn.active { background:#111; color:#fff; }
+  .modal-enter { animation:modalIn .22s ease-out; }
+  @keyframes modalIn { from{opacity:0;transform:scale(.96) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .spin { animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
+
+<!-- AUTH -->
+<div id="authView" class="hidden min-h-screen flex items-center justify-center px-5 py-10">
+  <div class="w-full max-w-[400px]">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-[14px] font-bold">空</span>
+        <span class="text-[12px] font-bold tracking-[0.16em]">CIFIKA <span class="text-brand">FRONT DESK</span></span>
+      </div>
+      <h1 class="mt-4 text-[26px] font-extrabold tracking-tight">Front Desk Sign In</h1>
+      <p class="text-[12.5px] text-neutral-500 mt-1.5">Payments, session activations & check-ins.</p>
+    </div>
+    <div class="card shadow-[0_16px_48px_rgba(0,0,0,0.07)] p-6">
+      <div id="authError" class="hidden mb-3 text-[12px] px-4 py-3 rounded-[14px] border bg-red-50 border-red-200 text-red-700"></div>
+      <form class="grid gap-3" onsubmit="event.preventDefault(); doSignIn();">
+        <input id="siEmail" type="email" class="input" placeholder="Staff email" autocomplete="email">
+        <input id="siPassword" type="password" class="input" placeholder="Password" autocomplete="current-password">
+        <button id="siBtn" type="submit" class="h-[46px] rounded-full bg-black text-white text-[13.5px] font-semibold hover:bg-neutral-800 transition">Sign In →</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- UNAUTHORIZED -->
+<div id="unauthView" class="hidden min-h-screen flex items-center justify-center px-5">
+  <div class="card p-8 text-center max-w-[440px]">
+    <div class="text-[28px]">🔒</div>
+    <h2 class="mt-3 text-[18px] font-extrabold">No front desk access</h2>
+    <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
+      <span id="unauthEmail" class="font-semibold text-neutral-700"></span> doesn't have the <b>frontdesk</b>, admin or instructor role.
+      Ask an admin to grant it in Admin Console → Staff &amp; Roles.
+    </p>
+    <div class="mt-5 flex gap-2 justify-center">
+      <a href="portal.html" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold flex items-center hover:border-black transition">Member Portal</a>
+      <button onclick="signOut()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="hidden">
+  <header class="sticky top-0 z-40 bg-black text-white border-b border-neutral-800">
+    <div class="max-w-[1280px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
+        <span class="text-[12px] font-bold tracking-[0.14em]">CIFIKA <span class="text-brand">FRONT DESK</span></span>
+        <span class="hidden md:inline text-[9px] font-bold tracking-[0.1em] text-neutral-500 border border-neutral-700 rounded-full px-2 py-0.5">v2.2</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate"></span>
+        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-6">
+    <nav id="navWrap" class="flex gap-1.5 overflow-x-auto pb-1"></nav>
+    <main id="content" class="mt-6 min-w-0"></main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalWrap" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start md:items-center justify-center p-4 overflow-y-auto">
+  <div id="modalBox" class="modal-enter bg-white rounded-[22px] shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-neutral-200 max-w-[560px] w-full my-6"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-black text-white text-[12px] font-medium px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] max-w-[90vw] text-center"></div>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
+
+const $ = id => document.getElementById(id);
+const DAY_NAMES = { 0:'Sunday', 5:'Friday', 6:'Saturday' };
+
+let sb, currentUser, currentProfile, section = 'today';
+let balances = [];        // from get_all_balances()
+let packages = [];        // session_packages
+let paymentsLog = [];     // payments w/ member + staff
+let todayCheckins = [];
+let todayQrStart = null;  // today's QR start time for late/remark math
+let roster = [];          // full students rows (registered clients)
+let rosterFilter = 'all';
+let payModalStudent = null;
+let pkgEditing = null;
+
+const TABS = [
+  ['today',    '🚪', 'Today'],
+  ['alerts',   '🔔', 'Renewal Alerts'],
+  ['members',  '👥', 'Members'],
+  ['payments', '💳', 'Payment Log'],
+  ['packages', '🏷️', 'Packages'],
+];
+
+/* ═══════════ ALERT LEVELS ═══════════ */
+const ALERT = {
+  green:  { chip:'bg-emerald-50 text-emerald-700 border-emerald-200',  dot:'bg-emerald-500',  label:'OK' },
+  orange: { chip:'bg-[#FFF5EB] text-[#B34700] border-[#FFD4A8]',       dot:'bg-[#FF6B00]',    label:'3 LEFT' },
+  yellow: { chip:'bg-amber-50 text-amber-700 border-amber-300',        dot:'bg-amber-400',    label:'2 LEFT' },
+  red:    { chip:'bg-red-50 text-red-700 border-red-300',              dot:'bg-red-500',      label:'RENEW NOW' },
+};
+
+/* ═══════════ BOOT ═══════════ */
+window.addEventListener('DOMContentLoaded', boot);
+
+async function boot() {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) await gate(session.user);
+  else $('authView').classList.remove('hidden');
+  sb.auth.onAuthStateChange((_e, s) => { if (s?.user && !currentUser) gate(s.user); });
+}
+
+async function gate(user) {
+  currentUser = user;
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (!profile || !['frontdesk','admin','instructor'].includes(profile.role)) {
+    $('authView').classList.add('hidden');
+    $('unauthEmail').textContent = user.email || '';
+    $('unauthView').classList.remove('hidden');
+    return;
+  }
+  currentProfile = profile;
+  $('authView').classList.add('hidden');
+  $('unauthView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('hdrEmail').textContent = user.email;
+  renderNav();
+  await loadPackages();
+  await show('today');
+}
+
+async function doSignIn() {
+  const email = $('siEmail').value.trim(), password = $('siPassword').value;
+  if (!email || !password) return authErr('Enter email and password.');
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) authErr(error.message);
+}
+function authErr(m) { const e = $('authError'); e.textContent = m; e.classList.remove('hidden'); }
+async function signOut() { await sb.auth.signOut(); location.reload(); }
+
+/* ═══════════ SHELL ═══════════ */
+function renderNav() {
+  $('navWrap').innerHTML = TABS.map(([id, icon, label]) => `
+    <button onclick="show('${id}')" data-nav="${id}"
+      class="nav-btn ${section === id ? 'active' : 'bg-white text-neutral-700 hover:border-black'}
+             shrink-0 h-10 px-4 rounded-full border border-neutral-200 text-[12.5px] font-semibold flex items-center gap-2 whitespace-nowrap">
+      <span>${icon}</span><span>${label}</span>
+    </button>`).join('');
+}
+
+async function show(id) {
+  section = id;
+  document.querySelectorAll('[data-nav]').forEach(b =>
+    b.classList.toggle('active', b.dataset.nav === id));
+  await refreshBalances();
+  ({ today: showToday, alerts: showAlerts, members: showMembers, payments: showPayments, packages: showPackages })[id]();
+}
+
+/* ═══════════ DATA ═══════════ */
+async function refreshBalances() {
+  const { data } = await sb.rpc('get_all_balances');
+  balances = (data && data.status === 'ok') ? (data.rows || []) : [];
+}
+async function loadPackages() {
+  const { data } = await sb.from('session_packages').select('*').order('sort_order').order('sessions');
+  packages = data || [];
+}
+async function loadPaymentsLog() {
+  const { data } = await sb.from('payments')
+    .select('id, student_id, package_name, sessions_purchased, amount, payment_method, reference, status, notes, activated_at, activated_by_role, students(full_name, registration_ref), profiles(full_name, email)')
+    .order('activated_at', { ascending: false }).limit(150);
+  paymentsLog = data || [];
+}
+async function loadTodayCheckins() {
+  const today = lagosToday();
+  const [att, qr] = await Promise.all([
+    sb.from('attendance')
+      .select('id, class_date, status, check_in_source, session_consumed, alert_level, created_at, students(full_name, registration_ref, current_belt)')
+      .eq('class_date', today).eq('class_type', 'regular')
+      .order('created_at', { ascending: false }),
+    sb.from('attendance_qr').select('start_time, end_time').eq('training_date', today).eq('is_active', true).maybeSingle(),
+  ]);
+  todayCheckins = att.data || [];
+  todayQrStart = qr.data?.start_time || null;
+}
+
+function minsAfterStart(ts) {
+  if (!todayQrStart || !ts) return null;
+  const [h, m] = String(todayQrStart).split(':').map(Number);
+  const t = new Date(ts);
+  const start = new Date(t); start.setHours(h, m, 0, 0);
+  return Math.round((t - start) / 60000);
+}
+function checkinTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+function checkinRemark(c) {
+  if (c.status === 'late') {
+    const m = minsAfterStart(c.created_at);
+    return m != null ? `Arrived ${m} min after start — gentle punctuality nudge` : 'Late arrival — gentle punctuality nudge';
+  }
+  const m = minsAfterStart(c.created_at);
+  if (m != null && m <= 0) return 'Early on the mat ⚡ — great discipline';
+  return 'On time ✓';
+}
+
+function lagosToday() {
+  // Africa/Lagos is UTC+1 with no DST
+  const t = new Date(Date.now() + 60 * 60 * 1000);
+  return t.toISOString().slice(0, 10);
+}
+
+/* ═══════════ TAB: TODAY ═══════════ */
+async function showToday() {
+  await loadTodayCheckins();
+  const renewals = balances.filter(b => ['orange','yellow','red'].includes(b.alert_level)).length;
+  const q = balances.find(b => b.membership_status === 'active') ? null : null;
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${statCard('CHECKED IN TODAY', todayCheckins.length, lagosToday())}
+      ${statCard('RENEWAL ALERTS', renewals, 'members at ≤ 3 sessions')}
+      ${statCard('ACTIVE MEMBERS', balances.filter(b => b.membership_status === 'active').length, '')}
+      ${statCard('NO SESSIONS LEFT', balances.filter(b => b.remaining <= 0).length, 'need renewal', 'text-red-600')}
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">WALK-UP CHECK-IN</div>
+      <p class="text-[12px] text-neutral-500 mb-3">Member forgot their phone? Enter their ID — same rules as QR check-in (session is consumed, alerts apply).</p>
+      <div class="flex flex-col sm:flex-row gap-2 max-w-[520px]">
+        <input id="walkRef" class="input flex-1" placeholder="CFK-00001" autocapitalize="characters" spellcheck="false" onkeydown="if(event.key==='Enter')walkIn()">
+        <button onclick="walkIn()" id="walkBtn" class="h-[42px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Check In →</button>
+      </div>
+      <div id="walkResult" class="hidden mt-3 rounded-[14px] border p-4 text-[12.5px] leading-[1.6]"></div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+        <div class="text-[12px] font-bold tracking-[0.14em]">TODAY'S CHECK-INS</div>
+        <div class="text-[11px] text-neutral-400">${todayCheckins.length} member${todayCheckins.length === 1 ? '' : 's'}</div>
+      </div>
+      ${todayCheckins.length ? `<div>${todayCheckins.map(c => {
+        const late = c.status === 'late';
+        return `
+        <div class="flex items-start gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+          <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[12px] font-bold shrink-0">${initial(c.students?.full_name)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[13px] font-semibold truncate">${escapeHtml(c.students?.full_name || '—')}</span>
+              <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${late ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">${late ? '⚠️ LATE' : '✓ ON TIME'} ${checkinTime(c.created_at)}</span>
+            </div>
+            <div class="text-[11px] text-neutral-500">${escapeHtml(c.students?.registration_ref || '')} • ${escapeHtml(c.students?.current_belt || '')} • ${escapeHtml(checkinRemark(c))}</div>
+          </div>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${c.check_in_source === 'qr' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}">${c.check_in_source === 'qr' ? '📱 QR' : '🖥️ DESK'}</span>
+            ${c.session_consumed ? '<span class="text-[10px] text-neutral-400 font-semibold">session counted</span>' : '<span class="text-[10px] text-neutral-300 font-semibold">no session left</span>'}
+          </div>
+        </div>`; }).join('')}</div>`
+      : `<div class="p-10 text-center text-[13px] text-neutral-400">No check-ins yet today.</div>`}
+    </div>
+  </div>`;
+}
+
+async function walkIn() {
+  const ref = $('walkRef').value.trim();
+  if (!ref) return toast('Enter the member ID.', true);
+  const btn = $('walkBtn'), box = $('walkResult');
+  btn.disabled = true; btn.textContent = 'Checking…';
+  const { data, error } = await sb.rpc('frontdesk_check_in', { p_ref: ref });
+  btn.disabled = false; btn.textContent = 'Check In →';
+  const d = !error && data;
+  box.classList.remove('hidden');
+  if (error || !d || d.status !== 'ok') {
+    box.className = 'mt-3 rounded-[14px] border p-4 text-[12.5px] leading-[1.6] bg-red-50 border-red-200 text-red-700';
+    box.textContent = '✗ ' + (d?.message || error?.message || 'Check-in failed.');
+    return;
+  }
+  const al = ALERT[d.alert_level] || ALERT.green;
+  box.className = 'mt-3 rounded-[14px] border p-4 text-[12.5px] leading-[1.6] ' + al.chip;
+  box.innerHTML = `<b>${escapeHtml(d.message)}</b>${d.alert_level && d.alert_level !== 'green' ? ' — remind them to renew at the desk.' : ''}`;
+  $('walkRef').value = '';
+  toast('✓ ' + (d.message || 'Checked in'));
+  await showToday();
+}
+
+/* ═══════════ TAB: ALERTS ═══════════ */
+function showAlerts() {
+  const tiers = [
+    ['red',    'RENEW NOW — payment complete / last session', 'Sessions used up or 1 remaining. Collect renewal at the desk.'],
+    ['yellow', '2 SESSIONS LEFT', 'Renewal reminder — charge soon.'],
+    ['orange', '3 SESSIONS LEFT', 'Gentle reminder — mention renewal after class.'],
+  ];
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">RENEWAL ALERTS</div>
+      <p class="text-[12px] text-neutral-500">Subscription is session-based: <span class="font-semibold text-[#B34700]">orange = 3 left</span> • <span class="font-semibold text-amber-600">yellow = 2 left</span> • <span class="font-semibold text-red-600">red = ≤ 1 / used up</span>. Members see the same colours when they check in and in their portal.</p>
+    </div>
+    ${tiers.map(([lvl, title, sub]) => {
+      const rows = balances.filter(b => b.alert_level === lvl);
+      return `
+      <div class="card overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-neutral-100 flex items-center gap-2.5">
+          <span class="w-2.5 h-2.5 rounded-full ${ALERT[lvl].dot}"></span>
+          <span class="text-[12px] font-bold tracking-[0.1em]">${title}</span>
+          <span class="ml-auto text-[11px] text-neutral-400">${rows.length}</span>
+        </div>
+        <p class="px-5 py-2 text-[11px] text-neutral-400">${sub}</p>
+        ${rows.length ? rows.map(b => `
+          <div class="flex items-center gap-3 px-5 py-3 border-t border-neutral-100">
+            <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[12px] font-bold shrink-0">${initial(b.full_name)}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[13px] font-semibold truncate">${escapeHtml(b.full_name || '—')}</div>
+              <div class="text-[11px] text-neutral-500">${escapeHtml(b.registration_ref || '')} • ${escapeHtml(b.current_belt || '')}</div>
+            </div>
+            <span class="text-[13px] font-extrabold shrink-0 ${lvl === 'red' ? 'text-red-600' : lvl === 'yellow' ? 'text-amber-600' : 'text-[#B34700]'}">${b.remaining}</span>
+            <button onclick="openPayModal('${b.student_id}')" class="h-9 px-4 rounded-full bg-brand text-white text-[11px] font-semibold hover:bg-brand-dark transition shrink-0">＋ Renew</button>
+          </div>`).join('') : `<div class="px-5 py-6 text-center text-[12.5px] text-neutral-400">None ✓</div>`}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ═══════════ TAB: MEMBERS — full registered clients roster ═══════════ */
+let memberQ = '';
+async function loadRoster() {
+  const { data } = await sb.from('students').select('*').order('created_at', { ascending: false });
+  roster = data || [];
+}
+function memStatusChip(s) {
+  const map = {
+    active:    'bg-emerald-50 text-emerald-700 border-emerald-200',
+    pending:   'bg-amber-50 text-amber-700 border-amber-200',
+    inactive:  'bg-neutral-100 text-neutral-500 border-neutral-200',
+    suspended: 'bg-red-50 text-red-600 border-red-200',
+  };
+  return `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${map[s] || map.inactive}">${cap(s || 'pending')}</span>`;
+}
+function memberAge(s) {
+  if (!s.date_of_birth) return cap(s.training_category === 'child' ? 'child' : 'adult');
+  const d = new Date(s.date_of_birth), t = new Date();
+  let a = t.getFullYear() - d.getFullYear();
+  const m = t.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < d.getDate())) a--;
+  return `${a}y • ${cap(s.training_category === 'child' ? 'child' : 'adult')}`;
+}
+async function showMembers() {
+  await loadRoster();
+  const balMap = Object.fromEntries(balances.map(b => [b.student_id, b]));
+  const counts = {
+    all: roster.length,
+    active: roster.filter(s => s.membership_status === 'active').length,
+    pending: roster.filter(s => s.membership_status === 'pending').length,
+    nosessions: roster.filter(s => (balMap[s.id]?.remaining ?? 0) <= 0).length,
+  };
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-4">
+      <input class="input" placeholder="Search name, ID, email, phone, guardian…" value="${escapeHtml(memberQ)}"
+             oninput="memberQ=this.value; renderMemberRows()">
+    </div>
+    <div class="flex gap-1.5 overflow-x-auto pb-1">
+      ${[['all','All','bg-black text-white border-black'],['active','Active','bg-emerald-50 text-emerald-700 border-emerald-200'],['pending','Pending','bg-amber-50 text-amber-700 border-amber-200'],['nosessions','No sessions','bg-red-50 text-red-600 border-red-200']].map(([k, l, cls]) => `
+      <button onclick="rosterFilter='${k}'; showMembers()" class="shrink-0 h-9 px-4 rounded-full border text-[11.5px] font-bold transition ${rosterFilter === k ? cls : 'bg-white text-neutral-600 border-neutral-200 hover:border-black'}">${l} (${counts[k]})</button>`).join('')}
+    </div>
+    <div class="card overflow-hidden"><div id="memberTable"></div></div>
+    <div class="text-[11px] text-neutral-400">${roster.length} registered clients • tap a member for contact details, payments and history</div>
+  </div>`;
+  renderMemberRows();
+}
+
+function renderMemberRows() {
+  const q = memberQ.toLowerCase();
+  const balMap = Object.fromEntries(balances.map(b => [b.student_id, b]));
+  let rows = roster.filter(s => {
+    if (rosterFilter === 'active' && s.membership_status !== 'active') return false;
+    if (rosterFilter === 'pending' && s.membership_status !== 'pending') return false;
+    if (rosterFilter === 'nosessions' && (balMap[s.id]?.remaining ?? 0) > 0) return false;
+    if (!q) return true;
+    return [s.full_name, s.registration_ref, s.email, s.phone, s.guardian_name]
+      .some(v => String(v || '').toLowerCase().includes(q));
+  });
+  $('memberTable').innerHTML = !rows.length
+    ? `<div class="p-10 text-center text-[13px] text-neutral-400">No members match.</div>`
+    : rows.map(s => {
+        const b = balMap[s.id];
+        const rem = b?.remaining;
+        const al = ALERT[b?.alert_level] || ALERT.green;
+        return `
+        <div class="flex items-center gap-3 px-5 py-3.5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 cursor-pointer transition" onclick="openMemberDrawer('${s.id}')">
+          <div class="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[13px] font-bold shrink-0">${initial(s.full_name)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-[13.5px] font-semibold truncate">${escapeHtml(s.full_name || '—')}</span>
+              ${memStatusChip(s.membership_status)}
+              ${s.belt_review_status === 'pending' ? '<span class="hidden sm:inline px-2 py-0.5 rounded-full text-[9.5px] font-bold border bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]">⏳ BELT REVIEW</span>' : ''}
+            </div>
+            <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(s.registration_ref || '')} • ${escapeHtml(s.current_belt || '')} • ${escapeHtml(memberAge(s))}${s.email ? ' • ' + escapeHtml(s.email) : ''}</div>
+          </div>
+          <div class="text-right shrink-0">
+            ${s.membership_status === 'pending'
+              ? `<div class="text-[10px] font-bold text-amber-600">AWAITING</div><div class="text-[9px] font-bold tracking-[0.08em] text-neutral-400">ACTIVATION</div>`
+              : `<div class="text-[15px] font-extrabold ${rem <= 1 ? 'text-red-600' : rem === 2 ? 'text-amber-600' : rem === 3 ? 'text-[#B34700]' : ''}">${rem ?? '—'}</div><div class="text-[9px] font-bold tracking-[0.08em] text-neutral-400">SESSIONS</div>`}
+          </div>
+          ${b ? `<span class="hidden sm:inline px-2.5 py-1 rounded-full text-[10px] font-bold border ${al.chip}">${al.label}</span>` : ''}
+        </div>`;
+      }).join('');
+}
+
+async function openMemberDrawer(id) {
+  const s = roster.find(x => x.id === id) || balances.find(x => x.student_id === id);
+  if (!s) return;
+  const b = balances.find(x => x.student_id === id);
+  const [{ data: pays }, { data: days }, { data: bal }] = await Promise.all([
+    sb.from('payments').select('*').eq('student_id', id).order('activated_at', { ascending: false }).limit(10),
+    sb.from('member_training_days').select('*').eq('student_id', id).maybeSingle(),
+    sb.rpc('get_session_balance', { p_student: id }),
+  ]);
+  const balance = (bal && bal.status === 'ok') ? bal : (b ? { purchased: 0, used: 0, remaining: b.remaining, alert_level: b.alert_level } : null);
+  const daysTxt = days ? `${DAY_NAMES[days.day_1]} + ${DAY_NAMES[days.day_2]}` : 'Not chosen yet';
+  const pending = s.membership_status === 'pending';
+
+  $('modalBox').innerHTML = `
+    <div class="px-6 py-5 border-b border-neutral-100 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <h3 class="text-[19px] font-extrabold tracking-tight truncate">${escapeHtml(s.full_name || '—')}</h3>
+        <div class="text-[11.5px] text-neutral-500">${escapeHtml(s.registration_ref || '')} • ${escapeHtml(s.current_belt || '')} • ${escapeHtml(cap(s.membership_status || ''))}</div>
+      </div>
+      <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center shrink-0">✕</button>
+    </div>
+    <div class="px-6 py-4 grid gap-4 max-h-[58vh] overflow-y-auto">
+      ${pending ? `<div class="rounded-[14px] bg-amber-50 border border-amber-200 p-3.5 text-[12px] leading-[1.55] text-amber-800"><b>Membership pending.</b> This member is awaiting admin activation — they can't check in until an admin approves them in the Admin Console → Members.</div>` : ''}
+      ${s.belt_review_status === 'pending' ? `<div class="rounded-[14px] bg-[#FFF5EB] border border-[#FFD4A8] p-3.5 text-[12px] leading-[1.55] text-[#B34700]"><b>⏳ Belt review pending.</b> Joined with prior experience — keeps their registered belt${s.previous_rank ? ` (${escapeHtml(s.previous_rank)})` : ''} until Sensei regularises it.</div>` : ''}
+      ${balance ? `
+      <div class="rounded-[14px] border ${ALERT[balance.alert_level]?.chip || ''} p-4 flex items-center justify-between">
+        <div>
+          <div class="text-[10.5px] font-bold tracking-[0.12em]">SESSION BALANCE</div>
+          <div class="text-[11px] mt-0.5">${balance.purchased} purchased • ${balance.used} used</div>
+        </div>
+        <div class="text-[30px] font-black ${balance.remaining <= 1 ? 'text-red-600' : balance.remaining === 2 ? 'text-amber-600' : balance.remaining === 3 ? 'text-[#B34700]' : 'text-emerald-600'}">${balance.remaining}</div>
+      </div>` : ''}
+      <div class="rounded-[14px] bg-neutral-50 border border-neutral-200 p-4 text-[12px] grid gap-1.5">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400 mb-0.5">REGISTERED CLIENT DETAILS</div>
+        ${s.email ? `<div><span class="text-neutral-500">Email:</span> <a href="mailto:${escapeHtml(s.email)}" class="font-semibold underline underline-offset-2">${escapeHtml(s.email)}</a></div>` : ''}
+        ${s.phone ? `<div><span class="text-neutral-500">Phone:</span> <a href="tel:${escapeHtml(s.phone)}" class="font-semibold">${escapeHtml(s.phone)}</a></div>` : ''}
+        ${s.gender ? `<div><span class="text-neutral-500">Gender:</span> <b>${escapeHtml(s.gender)}</b></div>` : ''}
+        ${s.date_of_birth ? `<div><span class="text-neutral-500">DOB:</span> <b>${fmtDate(s.date_of_birth)}</b> (${memberAge(s)})</div>` : ''}
+        ${s.registration_date ? `<div><span class="text-neutral-500">Registered:</span> <b>${fmtDate(String(s.registration_date).slice(0, 10))}</b></div>` : ''}
+        ${s.training_category === 'child' && s.guardian_name ? `<div><span class="text-neutral-500">Guardian:</span> <b>${escapeHtml(s.guardian_name)}</b></div>` : ''}
+        ${s.emergency_contact ? `<div><span class="text-neutral-500">Emergency:</span> <b>${escapeHtml(s.emergency_contact)}</b></div>` : ''}
+        ${s.previous_rank ? `<div><span class="text-neutral-500">Previous rank:</span> <b>${escapeHtml(s.previous_rank)}</b>${s.years_trained ? ` • ${escapeHtml(s.years_trained)} trained` : ''}</div>` : ''}
+      </div>
+      ${(s.medical_conditions || s.injuries) ? `
+      <div class="rounded-[14px] bg-red-50 border border-red-200 p-3.5 text-[11.5px] leading-[1.55] text-red-700">
+        <b>⚕️ Medical / injuries (front desk awareness):</b> ${escapeHtml([s.medical_conditions, s.injuries].filter(Boolean).join(' • '))}
+      </div>` : ''}
+      <div class="rounded-[14px] bg-neutral-50 border border-neutral-200 p-4 text-[12px]">
+        <span class="text-neutral-500">Training days:</span> <b>${escapeHtml(daysTxt)}</b> <span class="text-neutral-400">(member picks these in their portal — 2 flexible days / week)</span>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-500">PAYMENT HISTORY</div>
+          ${pending ? '' : `<button onclick="openPayModal('${id}')" class="h-8 px-4 rounded-full bg-brand text-white text-[11px] font-semibold hover:bg-brand-dark transition">＋ Activate Payment</button>`}
+        </div>
+        ${pays && pays.length ? `<div class="grid gap-1.5">${pays.map(p => `
+          <div class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-[12px] border ${p.status === 'void' ? 'border-neutral-100 bg-neutral-50 opacity-60' : 'border-neutral-100 bg-neutral-50/60'}">
+            <div class="min-w-0">
+              <div class="text-[12px] font-semibold truncate">${escapeHtml(p.package_name)} <span class="text-neutral-400 font-medium">+${p.sessions_purchased}</span></div>
+              <div class="text-[10.5px] text-neutral-500">${fmtDateTime(p.activated_at)} • ${escapeHtml(p.payment_method)}${p.amount ? ' • ₦' + Number(p.amount).toLocaleString() : ''}${p.notes ? ' • ' + escapeHtml(p.notes) : ''}</div>
+            </div>
+            ${p.status === 'void' ? '<span class="text-[10px] font-bold text-neutral-400">VOID</span>' : `<button onclick="voidPayment('${p.id}','${id}')" class="text-[10.5px] text-red-400 hover:text-red-600 font-medium shrink-0">Void</button>`}
+          </div>`).join('')}</div>`
+        : `<div class="text-[12px] text-neutral-400 py-2">No payments yet${pending ? '' : ' — activate their first package'}.</div>`}
+      </div>
+    </div>`;
+  $('modalWrap').classList.remove('hidden');
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function closeModal() { $('modalWrap').classList.add('hidden'); }
+
+/* ═══════════ PAYMENT MODAL ═══════════ */
+function openPayModal(studentId) {
+  payModalStudent = studentId;
+  const b = balances.find(x => x.student_id === studentId);
+  const active = packages.filter(p => p.is_active);
+  $('modalBox').innerHTML = `
+    <div class="px-6 py-5 border-b border-neutral-100 flex items-start justify-between gap-4">
+      <div>
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-500">ACTIVATE PAYMENT</div>
+        <h3 class="mt-1 text-[18px] font-extrabold tracking-tight">${escapeHtml(b?.full_name || '—')}</h3>
+        <div class="text-[11.5px] text-neutral-500">Current balance: <b>${b?.remaining ?? 0}</b> sessions</div>
+      </div>
+      <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center shrink-0">✕</button>
+    </div>
+    <div class="px-6 py-5 grid gap-4">
+      <label class="block">
+        <div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">PACKAGE (club payment structure)</div>
+        <select id="payPkg" class="input" onchange="payPkgChanged()">
+          ${active.map((p, i) => `<option value="${p.id}" data-sessions="${p.sessions}" data-price="${p.price}">${escapeHtml(p.name)} — ${p.sessions} session${p.sessions > 1 ? 's' : ''}${p.price ? ' • ₦' + Number(p.price).toLocaleString() : ''}</option>`).join('')}
+          <option value="custom" data-sessions="1" data-price="0">Custom…</option>
+        </select>
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">SESSIONS</div>
+          <input type="number" id="paySessions" class="input" min="1" value="${active[0]?.sessions || 1}"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">AMOUNT (₦)</div>
+          <input type="number" id="payAmount" class="input" min="0" value="${active[0]?.price || 0}"></label>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">METHOD</div>
+          <select id="payMethod" class="input"><option value="cash">Cash</option><option value="transfer">Transfer</option><option value="pos">POS</option><option value="other">Other</option></select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">REFERENCE</div>
+          <input id="payRef" class="input" placeholder="Receipt / transfer ref"></label>
+      </div>
+      <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">NOTES</div>
+        <input id="payNotes" class="input" placeholder="Optional — e.g. part payment, promo"></label>
+      <button onclick="submitPayment()" id="payBtn" class="h-[46px] rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition">Activate Payment →</button>
+      <p class="text-[10.5px] text-neutral-400">Activation is logged with your name & role. Void mistakes from the member's history.</p>
+    </div>`;
+  $('modalWrap').classList.remove('hidden');
+  payPkgChanged();
+}
+
+function payPkgChanged() {
+  const sel = $('payPkg');
+  const opt = sel.options[sel.selectedIndex];
+  if (sel.value === 'custom') return;
+  $('paySessions').value = opt.dataset.sessions;
+  $('payAmount').value = opt.dataset.price;
+}
+
+async function submitPayment() {
+  const sel = $('payPkg');
+  const isCustom = sel.value === 'custom';
+  const sessions = parseInt($('paySessions').value, 10);
+  const amount = parseFloat($('payAmount').value) || 0;
+  if (!sessions || sessions < 1) return toast('Sessions must be at least 1.', true);
+  const pkg = packages.find(p => p.id === sel.value);
+  const payload = {
+    student_id: payModalStudent,
+    package_id: isCustom ? null : sel.value,
+    package_name: isCustom ? `Custom — ${sessions} sessions` : (pkg?.name || 'Package'),
+    sessions_purchased: sessions,
+    amount,
+    payment_method: $('payMethod').value,
+    reference: $('payRef').value.trim() || null,
+    notes: $('payNotes').value.trim() || null,
+    activated_by: currentUser.id,
+    activated_by_role: currentProfile.role,
+  };
+  const btn = $('payBtn'); btn.disabled = true; btn.textContent = 'Activating…';
+  const { error } = await sb.from('payments').insert(payload);
+  btn.disabled = false; btn.textContent = 'Activate Payment →';
+  if (error) return toast('✗ ' + error.message, true);
+  toast(`✓ Payment activated — +${sessions} sessions`);
+  closeModal();
+  await refreshBalances();
+  if (['today','alerts','members'].includes(section)) show(section);
+}
+
+async function voidPayment(pid, studentId) {
+  if (!confirm('Void this payment? The sessions it purchased will no longer count.')) return;
+  const { error } = await sb.from('payments').update({ status: 'void' }).eq('id', pid);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Payment voided');
+  await refreshBalances();
+  openMemberDrawer(studentId);
+}
+
+/* ═══════════ TAB: PAYMENT LOG ═══════════ */
+async function showPayments() {
+  await loadPaymentsLog();
+  const monthKey = lagosToday().slice(0, 7);
+  const perStaff = {};
+  paymentsLog.forEach(p => {
+    if (p.status !== 'active') return;
+    if (String(p.activated_at || '').slice(0, 7) !== monthKey) return;
+    const k = p.profiles?.full_name || p.profiles?.email || 'Unknown';
+    perStaff[k] = (perStaff[k] || 0) + 1;
+  });
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${statCard('PAYMENTS (LOG)', paymentsLog.length, 'last 150')}
+      ${statCard('ACTIVE', paymentsLog.filter(p => p.status === 'active').length, '')}
+      ${statCard('VOIDED', paymentsLog.filter(p => p.status === 'void').length, '')}
+      ${statCard('THIS MONTH ₦', paymentsLog.filter(p => p.status === 'active' && String(p.activated_at || '').slice(0,7) === monthKey).reduce((s, p) => s + Number(p.amount || 0), 0).toLocaleString(), 'activated value')}
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">FRONT DESK ACTIVITY — THIS MONTH</div>
+      ${Object.keys(perStaff).length ? `<div class="grid sm:grid-cols-2 gap-2">${Object.entries(perStaff).map(([name, n]) => `
+        <div class="flex items-center justify-between px-4 py-2.5 rounded-[12px] bg-neutral-50 border border-neutral-100">
+          <span class="text-[12.5px] font-semibold truncate">${escapeHtml(name)}</span>
+          <span class="text-[12px] font-bold text-brand">${n} activation${n > 1 ? 's' : ''}</span>
+        </div>`).join('')}</div>`
+      : `<div class="text-[12.5px] text-neutral-400">No activations this month yet.</div>`}
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">ALL PAYMENTS</div>
+      ${paymentsLog.length ? paymentsLog.map(p => `
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate">${escapeHtml(p.students?.full_name || '—')} <span class="text-neutral-400 font-medium text-[11.5px]">${escapeHtml(p.students?.registration_ref || '')}</span></div>
+            <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(p.package_name)} • +${p.sessions_purchased} sessions • ${escapeHtml(p.payment_method)}${p.amount ? ' • ₦' + Number(p.amount).toLocaleString() : ''} • by ${escapeHtml(p.profiles?.full_name || p.activated_by_role || '—')}</div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-[11px] text-neutral-400">${fmtDateTime(p.activated_at)}</span>
+            ${p.status === 'void' ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-400 border border-neutral-200">VOID</span>'
+              : `<button onclick="voidPaymentLog('${p.id}')" class="text-[10.5px] text-red-400 hover:text-red-600 font-medium">Void</button>`}
+          </div>
+        </div>`).join('') : `<div class="p-10 text-center text-[13px] text-neutral-400">No payments yet.</div>`}
+    </div>
+  </div>`;
+}
+
+async function voidPaymentLog(pid) {
+  if (!confirm('Void this payment?')) return;
+  const { error } = await sb.from('payments').update({ status: 'void' }).eq('id', pid);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Payment voided');
+  await refreshBalances();
+  showPayments();
+}
+
+/* ═══════════ TAB: PACKAGES ═══════════ */
+function showPackages() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">${pkgEditing ? '✏️ EDIT PACKAGE' : '➕ NEW PACKAGE'}</div>
+      <p class="text-[12px] text-neutral-500 mb-3">Define the club's session-based payment structure. Only <b>active</b> packages appear when activating a member payment.</p>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">NAME *</div>
+          <input id="pkgName" class="input" placeholder="e.g. Monthly Standard — 8 Sessions" value="${pkgEditing ? escapeHtml(pkgEditing.name) : ''}"></label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">SESSIONS *</div>
+            <input type="number" id="pkgSessions" class="input" min="1" value="${pkgEditing ? pkgEditing.sessions : 8}"></label>
+          <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">PRICE (₦)</div>
+            <input type="number" id="pkgPrice" class="input" min="0" value="${pkgEditing ? Number(pkgEditing.price) : 0}"></label>
+        </div>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">NOTE</div>
+          <input id="pkgNote" class="input" placeholder="e.g. 2 sessions per week" value="${pkgEditing ? escapeHtml(pkgEditing.duration_note || '') : ''}"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">SORT ORDER</div>
+          <input type="number" id="pkgOrder" class="input" value="${pkgEditing ? pkgEditing.sort_order ?? 0 : packages.length + 1}"></label>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button onclick="savePackage()" class="h-[42px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">${pkgEditing ? 'Save Changes' : 'Add Package'} →</button>
+        ${pkgEditing ? `<button onclick="pkgEditing=null; showPackages()" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition">Cancel</button>` : ''}
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">ALL PACKAGES</div>
+      ${packages.length ? packages.map(p => `
+        <div class="flex items-center gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate">${escapeHtml(p.name)} ${p.is_active ? '' : '<span class="text-[10px] font-bold text-neutral-400">(inactive)</span>'}</div>
+            <div class="text-[11px] text-neutral-500">${p.sessions} sessions${p.price ? ' • ₦' + Number(p.price).toLocaleString() : ''}${p.duration_note ? ' • ' + escapeHtml(p.duration_note) : ''}</div>
+          </div>
+          <button onclick="togglePackage('${p.id}', ${!p.is_active})" class="h-8 px-3.5 rounded-full border text-[10.5px] font-bold transition ${p.is_active ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'border-neutral-200 bg-white hover:border-black'}">${p.is_active ? 'Active ✓' : 'Inactive'}</button>
+          <button onclick="pkgEditing=packages.find(x=>x.id==='${p.id}'); showPackages()" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Edit</button>
+        </div>`).join('') : `<div class="p-10 text-center text-[13px] text-neutral-400">No packages yet.</div>`}
+    </div>
+  </div>`;
+}
+
+async function savePackage() {
+  const name = $('pkgName').value.trim();
+  const sessions = parseInt($('pkgSessions').value, 10);
+  const price = parseFloat($('pkgPrice').value) || 0;
+  if (!name || !sessions) return toast('Name and sessions are required.', true);
+  const payload = { name, sessions, price, duration_note: $('pkgNote').value.trim() || null, sort_order: parseInt($('pkgOrder').value, 10) || 0 };
+  const { error } = pkgEditing
+    ? await sb.from('session_packages').update(payload).eq('id', pkgEditing.id)
+    : await sb.from('session_packages').insert(payload);
+  if (error) return toast('✗ ' + error.message, true);
+  toast(pkgEditing ? '✓ Package updated' : '✓ Package added');
+  pkgEditing = null;
+  await loadPackages();
+  showPackages();
+}
+
+async function togglePackage(id, val) {
+  const { error } = await sb.from('session_packages').update({ is_active: val }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  await loadPackages();
+  showPackages();
+}
+
+/* ═══════════ SHARED COMPONENTS ═══════════ */
+function statCard(label, value, sub, valueCls) {
+  return `<div class="card p-5">
+    <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">${label}</div>
+    <div class="mt-2 text-[24px] font-extrabold tracking-tight ${valueCls || ''}">${escapeHtml(String(value ?? '—'))}</div>
+    ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${escapeHtml(sub)}</div>` : ''}</div>`;
+}
+function statusPill(s) {
+  const map = {
+    present: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    late:    'bg-orange-50 text-orange-700 border-orange-200',
+    absent:  'bg-red-50 text-red-600 border-red-200',
+    excused: 'bg-amber-50 text-amber-700 border-amber-200',
+  };
+  return `<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${map[s] || map.present}">${cap(s || 'present')}</span>`;
+}
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function initial(name) { return (name || '?').trim()[0]?.toUpperCase() || '?'; }
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.background = isErr ? '#B91C1C' : '#111';
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 4200);
+}
+</script>
+</body>
+</html>

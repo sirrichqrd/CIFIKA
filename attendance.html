@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Attendance Check-In — City Fitness Karate Club</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: { brand: { DEFAULT:'#FF6B00', dark:'#E65A00', light:'#FFF5EB', border:'#FFD4A8', text:'#B34700' } }
+    }}
+  }
+</script>
+<style>
+  body { font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:clip; }
+  ::selection { background-color: rgba(255,107,0,.2); }
+  .input { width:100%; height:46px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
+           padding:0 16px; font-size:14px; outline:none; transition:border-color .15s, box-shadow .15s; }
+  .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.06); }
+  .input.invalid { border-color:#ef4444; }
+  .fade-in { animation:fadeIn .4s ease-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .shake { animation:shake .35s ease-in-out; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .spin { animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen bg-[#f8f7f6] text-neutral-900 flex flex-col">
+
+<!-- ═══ HEADER ═══ -->
+<header class="bg-black text-white border-b border-neutral-800">
+  <div class="max-w-[1200px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
+      <span class="text-[12px] font-bold tracking-[0.14em]">CITY FITNESS <span class="text-brand">KARATE</span></span>
+    </div>
+    <div class="flex items-center gap-2 text-[11px] text-neutral-400 tracking-[0.08em]">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="hidden sm:inline">ATTENDANCE CHECK-IN</span><span class="sm:hidden">CHECK-IN</span>
+      <span class="text-[9px] font-bold tracking-[0.1em] text-neutral-500 border border-neutral-700 rounded-full px-2 py-0.5">v2.2</span>
+    </div>
+  </div>
+  <div class="h-[3px] w-full bg-neutral-800"><div class="h-full bg-brand w-full"></div></div>
+</header>
+
+<!-- ═══ MAIN ═══ -->
+<main class="flex-1 w-full max-w-[1200px] mx-auto px-5 md:px-8 py-8 md:py-12 flex items-start justify-center">
+  <div class="w-full max-w-[480px]">
+
+    <!-- STEP 1 — SESSION + ID -->
+    <section id="entryScreen" class="fade-in">
+      <div class="bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.10)] border border-neutral-200 p-6 md:p-9">
+        <div class="flex items-center justify-between">
+          <div class="w-14 h-14 rounded-full bg-brand/10 flex items-center justify-center text-[26px]">🥋</div>
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black text-white text-[10px] font-bold tracking-[0.14em]">
+            DOJO CHECK-IN
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 gap-1.5 p-1.5 bg-neutral-100 rounded-full">
+          <button id="tabSelf" type="button" onclick="switchMode('self')" class="h-[40px] rounded-full text-[12px] font-bold tracking-[0.06em] transition">MYSELF</button>
+          <button id="tabFamily" type="button" onclick="switchMode('family')" class="h-[40px] rounded-full text-[12px] font-bold tracking-[0.06em] transition">PARENT / FAMILY</button>
+        </div>
+        <p id="modeHint" class="mt-2.5 text-[11.5px] text-neutral-400 px-1 leading-[1.5]">Checking in just yourself? Enter your member ID below.</p>
+
+        <h1 class="mt-4 text-[28px] md:text-[32px] font-black leading-[1.1] tracking-[-0.03em]">
+          Check In to <span class="text-brand">Training</span>
+        </h1>
+        <p class="mt-2 text-[13.5px] text-neutral-600 leading-[1.6]">Scan the dojo QR code with your phone, then confirm with your member ID below.</p>
+
+        <!-- manual code entry (when opened without ?qr=) -->
+        <div id="manualCodeWrap" class="hidden mt-6">
+          <label class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">TODAY'S CHECK-IN CODE</div>
+            <div class="flex gap-2">
+              <input id="manualCode" class="input flex-1" placeholder="e.g. CIF-20261030-7K2QXZ" autocapitalize="characters" spellcheck="false">
+              <button onclick="loadManualCode()" class="h-[46px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition shrink-0">Load</button>
+            </div>
+          </label>
+          <p class="text-[11px] text-neutral-400 mt-1.5 px-1">The code is printed under the QR code displayed at the dojo entrance.</p>
+        </div>
+
+        <!-- session info card -->
+        <div id="sessionCard" class="mt-6 rounded-[18px] border p-5 bg-neutral-50 border-neutral-200">
+          <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">TODAY'S SESSION</div>
+          <div id="sessionBody" class="mt-2 text-[13px] text-neutral-500">Loading session details…</div>
+          <div id="lateHint" class="hidden mt-3 pt-3 border-t border-neutral-200/70 text-[11.5px] text-neutral-500 leading-[1.55]">⏱️ Arriving <b class="text-neutral-700">more than 15 minutes</b> after the start time is marked as <b class="text-amber-600">LATE</b> on the attendance record.</div>
+        </div>
+
+        <!-- FAMILY MODE — multi-ID check-in -->
+        <div id="familyPanel" class="hidden mt-6 grid gap-4">
+          <label class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">MEMBER IDs — ONE PER LINE OR SEPARATED BY COMMAS</div>
+            <textarea id="familyRefs" rows="3" class="w-full rounded-[18px] border-[1.5px] border-neutral-200 bg-white px-4 py-3 text-[14px] outline-none transition focus:border-black focus:ring-0 font-mono" placeholder="CFK-00001, CFK-00002&#10;CFK-00003" autocapitalize="characters" autocomplete="off" spellcheck="false"></textarea>
+            <p class="text-[11px] text-neutral-400 mt-1.5 px-1">Parent or guardian checking in several family members at once — add every ID, then tap the button once. Each person is checked in and counted separately.</p>
+          </label>
+          <div id="familyError" class="hidden rounded-[14px] bg-red-50 border border-red-200 px-4 py-3 text-[12.5px] leading-[1.55] text-red-700"></div>
+          <button id="familyBtn" type="button" onclick="doFamilyCheckIn()" class="h-[52px] rounded-full bg-brand text-white font-bold text-[15px] tracking-[0.04em] hover:bg-brand-dark transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            CHECK IN ALL
+          </button>
+        </div>
+
+        <!-- check-in form (single mode) -->
+        <form id="checkinForm" class="mt-6 grid gap-4" novalidate>
+          <label class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">MEMBER ID <span class="text-brand">*</span></div>
+            <input id="memberRef" class="input" placeholder="CFK-00001" autocapitalize="characters" autocomplete="off" spellcheck="false">
+            <p class="text-[11px] text-neutral-400 mt-1.5 px-1">Your ID is on your registration confirmation — e.g. CFK-00001.</p>
+          </label>
+
+          <div id="entryError" class="hidden rounded-[14px] bg-red-50 border border-red-200 px-4 py-3 text-[12.5px] leading-[1.55] text-red-700"></div>
+
+          <button id="checkinBtn" type="submit" class="h-[52px] rounded-full bg-brand text-white font-bold text-[15px] tracking-[0.04em] hover:bg-brand-dark transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            CHECK IN
+          </button>
+        </form>
+      </div>
+
+      <p class="mt-4 text-center text-[11px] text-neutral-400">
+        Training days: <b class="text-neutral-600">Fri 4:30–6:00 PM</b> • <b class="text-neutral-600">Sat 8:00–10:00 AM</b> • <b class="text-neutral-600">Sun 4:30–6:00 PM</b><br>
+        <a href="./portal.html" class="underline underline-offset-2 hover:text-neutral-600">Open the Member Portal →</a>
+      </p>
+    </section>
+
+    <!-- STEP 2 — RESULT -->
+    <section id="resultScreen" class="hidden"></section>
+
+  </div>
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="bg-white border-t border-neutral-200">
+  <div class="max-w-[1200px] mx-auto px-5 py-4 text-center text-[11px] text-neutral-500 tracking-[0.04em]">
+    • Powered by TTOSR&nbsp;&nbsp;|&nbsp;&nbsp;City Fitness Karate Club . EST 2026 • CIFIKA •
+  </div>
+</footer>
+
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-black text-white text-[12px] font-medium px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] max-w-[90vw] text-center"></div>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
+
+const $ = id => document.getElementById(id);
+let sb, token = null, mode = 'self', sessionInfo = null;
+
+const ALERT_STYLES = {
+  green:  { ring:'border-emerald-200 bg-emerald-50',   dot:'bg-emerald-500',   text:'text-emerald-700',   label:'All good' },
+  orange: { ring:'border-[#FFD4A8] bg-[#FFF5EB]',      dot:'bg-[#FF6B00]',     text:'text-[#B34700]',     label:'Renew soon' },
+  yellow: { ring:'border-amber-300 bg-amber-50',       dot:'bg-amber-400',     text:'text-amber-700',     label:'Renew soon' },
+  red:    { ring:'border-red-300 bg-red-50',           dot:'bg-red-500',       text:'text-red-700',       label:'Renew now' },
+};
+
+/* ═══════════ BOOT ═══════════ */
+window.addEventListener('DOMContentLoaded', boot);
+
+async function boot() {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // PWA
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+  }
+
+  const params = new URLSearchParams(location.search);
+  token = params.get('qr') || params.get('t') || null;
+  if (!token) {
+    // opened directly — offer manual code entry
+    $('manualCodeWrap').classList.remove('hidden');
+    renderSession('no_token');
+  } else {
+    history.replaceState(null, '', location.pathname); // clean URL, keep token in memory
+    await loadSessionInfo();
+  }
+
+  $('checkinForm').addEventListener('submit', doCheckIn);
+  // remember last-used ID for convenience
+  const last = localStorage.getItem('cifika_last_ref');
+  if (last) { $('memberRef').value = last; }
+  switchMode('self');
+}
+
+/* ═══════════ MODE SWITCH (single ↔ family) ═══════════ */
+function switchMode(m) {
+  mode = m;
+  const on  = 'h-[40px] rounded-full text-[12px] font-bold tracking-[0.06em] transition bg-black text-white shadow-sm';
+  const off = 'h-[40px] rounded-full text-[12px] font-bold tracking-[0.06em] transition text-neutral-500 hover:text-black';
+  $('tabSelf').className   = m === 'self'   ? on : off;
+  $('tabFamily').className = m === 'family' ? on : off;
+  $('familyPanel').classList.toggle('hidden', m !== 'family');
+  $('checkinForm').classList.toggle('hidden', m !== 'self');
+  $('modeHint').textContent = m === 'family'
+    ? 'Parent or guardian? Add every member ID below and check them all in at once.'
+    : 'Checking in just yourself? Enter your member ID below.';
+  $('familyError').classList.add('hidden');
+}
+
+/* ═══════════ SESSION INFO ═══════════ */
+async function loadManualCode() {
+  const code = $('manualCode').value.trim();
+  if (!code) return toast('Enter the code shown under the QR at the dojo.', true);
+  token = code;
+  await loadSessionInfo();
+}
+
+async function loadSessionInfo() {
+  renderSession('loading');
+  const { data, error } = await sb.rpc('qr_session_info', { p_token: token });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') {
+    renderSession('invalid', d?.message || error?.message || 'Could not verify this QR code.');
+    return;
+  }
+  renderSession('ok', d);
+}
+
+function renderSession(state, info) {
+  const el = $('sessionBody');
+  const card = $('sessionCard');
+  if (state === 'no_token') {
+    el.innerHTML = `<div class="text-[13px] text-neutral-500 leading-[1.6]">No QR code detected. Scan the QR at the dojo entrance with your phone camera, or type today's check-in code above.</div>`;
+    card.className = 'mt-6 rounded-[18px] border p-5 bg-neutral-50 border-neutral-200';
+  } else if (state === 'loading') {
+    el.innerHTML = `<div class="flex items-center gap-2 text-[13px] text-neutral-500"><span class="spin inline-block w-4 h-4 border-2 border-neutral-300 border-t-brand rounded-full"></span> Verifying code…</div>`;
+    card.className = 'mt-6 rounded-[18px] border p-5 bg-neutral-50 border-neutral-200';
+  } else if (state === 'invalid') {
+    el.innerHTML = `<div class="text-[13px] text-red-700 leading-[1.6]">✗ ${escapeHtml(info || 'Invalid code.')}</div>`;
+    card.className = 'mt-6 rounded-[18px] border p-5 bg-red-50 border-red-200';
+    $('manualCodeWrap').classList.remove('hidden');
+  } else if (state === 'ok') {
+    sessionInfo = info;
+    const open = info.open;
+    const badge = open
+      ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>OPEN NOW</span>`
+      : reasonBadge(info.reason);
+    el.innerHTML = `
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <div class="text-[16px] font-extrabold tracking-tight">${escapeHtml(info.day_name)} Class</div>
+          <div class="text-[12px] text-neutral-500 mt-0.5">${fmtDate(info.training_date)} • ${fmtTime(info.start_time)} – ${fmtTime(info.end_time)}</div>
+        </div>
+        ${badge}
+      </div>
+      ${!open ? `<div class="mt-3 text-[12px] text-neutral-600 leading-[1.55]">${reasonHint(info.reason, info)}</div>` : ''}`;
+    card.className = 'mt-6 rounded-[18px] border p-5 ' + (open ? 'bg-emerald-50/60 border-emerald-200' : 'bg-amber-50/60 border-amber-200');
+    $('lateHint').classList.toggle('hidden', !open);
+  }
+}
+
+function reasonBadge(reason) {
+  const map = {
+    wrong_day: ['bg-neutral-100 text-neutral-600', 'NOT TODAY'],
+    too_early: ['bg-amber-100 text-amber-700', 'OPENS LATER'],
+    too_late:  ['bg-red-100 text-red-700', 'CLOSED'],
+  };
+  const [cls, label] = map[reason] || map.wrong_day;
+  return `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${cls}">${label}</span>`;
+}
+function reasonHint(reason, info) {
+  if (reason === 'too_early') return `Check-in opens at <b>${fmtTime(info.start_time)}</b> — come back then. You can still submit now and it will be rejected; better wait 🙂`;
+  if (reason === 'too_late') return `Today's window has closed (ended <b>${fmtTime(info.end_time)}</b>). If you trained, ask the front desk to mark you present.`;
+  return `This code is for <b>${fmtDate(info.training_date)}</b> — scan the QR displayed at the dojo on your training day.`;
+}
+
+/* ═══════════ CHECK IN ═══════════ */
+async function doCheckIn(e) {
+  e.preventDefault();
+  const refInput = $('memberRef');
+  const ref = refInput.value.trim().toUpperCase();
+  const err = $('entryError');
+
+  if (!token) { showEntryError('No QR code loaded — scan the dojo QR or enter today\'s code first.'); return; }
+  if (!/^CFK-[A-Z0-9]{3,10}$/i.test(ref)) {
+    refInput.classList.add('invalid');
+    showEntryError('Enter your member ID in the format CFK-00001 (it\'s on your registration confirmation).');
+    refInput.closest('form').classList.remove('shake'); void refInput.offsetWidth;
+    refInput.closest('form').classList.add('shake');
+    return;
+  }
+  refInput.classList.remove('invalid');
+  err.classList.add('hidden');
+
+  const btn = $('checkinBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full"></span> CHECKING IN…';
+
+  const { data, error } = await sb.rpc('check_in_with_qr', { p_token: token, p_ref: ref });
+
+  btn.disabled = false;
+  btn.innerHTML = 'CHECK IN';
+
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') {
+    showEntryError(d?.message || error?.message || 'Check-in failed — check your connection and try again.');
+    return;
+  }
+
+  localStorage.setItem('cifika_last_ref', ref);
+  renderResult(d);
+}
+
+function showEntryError(msg) {
+  const err = $('entryError');
+  err.textContent = msg;
+  err.classList.remove('hidden');
+}
+
+/* ═══════════ FAMILY CHECK-IN (multiple IDs at once) ═══════════ */
+function parseRefs(raw) {
+  return [...new Set(
+    String(raw || '').split(/[\s,;]+/).map(s => s.trim().toUpperCase()).filter(Boolean)
+  )];
+}
+
+async function doFamilyCheckIn() {
+  const errBox = $('familyError');
+  errBox.classList.add('hidden');
+
+  if (!token) { showFamilyError('No QR code loaded — scan the dojo QR or enter today\'s code first.'); return; }
+
+  const refs = parseRefs($('familyRefs').value);
+  if (!refs.length) { showFamilyError('Enter at least one member ID (e.g. CFK-00001).'); return; }
+  const bad = refs.filter(r => !/^CFK-[A-Z0-9]{3,10}$/i.test(r));
+  if (bad.length) { showFamilyError('These IDs don\'t look right: ' + bad.join(', ') + ' — the format is CFK-xxxxx.'); return; }
+  if (refs.length > 10) { showFamilyError('Maximum 10 members per check-in. Split large groups into two rounds.'); return; }
+
+  const btn = $('familyBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full"></span> CHECKING IN ' + refs.length + '…';
+
+  // render placeholder cards, then fill each as its RPC answers
+  const wrap = renderFamilyShell(refs);
+  const results = await Promise.all(refs.map((ref, i) =>
+    sb.rpc('check_in_with_qr', { p_token: token, p_ref: ref })
+      .then(({ data, error }) => ({ ref, d: (!error && data) || null, error }))
+      .catch(e => ({ ref, d: null, error: e }))
+  ));
+
+  results.forEach((r, i) => {
+    const slot = document.getElementById('fam-' + i);
+    if (!slot) return;
+    slot.outerHTML = familyCard(r);
+  });
+  renderFamilySummary(results);
+
+  btn.disabled = false;
+  btn.innerHTML = 'CHECK IN ALL';
+  const okCount = results.filter(r => r.d && r.d.status === 'ok').length;
+  localStorage.setItem('cifika_last_refs', JSON.stringify(results.map(r => r.ref)));
+  toast(okCount === results.length ? `✓ All ${okCount} checked in` : `${okCount}/${results.length} checked in — see cards below`, okCount !== results.length);
+}
+
+function showFamilyError(msg) {
+  const errBox = $('familyError');
+  errBox.textContent = msg;
+  errBox.classList.remove('hidden');
+}
+
+function renderFamilyShell(refs) {
+  const nowWAT = nowWatString();
+  $('resultScreen').innerHTML = `
+  <div class="fade-in">
+    <div class="bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.10)] border border-neutral-200 p-6 md:p-9">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h1 class="text-[24px] md:text-[28px] font-black tracking-[-0.03em] leading-[1.1]">Family Check-In</h1>
+          <p class="mt-1 text-[12.5px] text-neutral-500">${escapeHtml(sessionInfo ? sessionInfo.day_name + ' class' : '')} • ${nowWAT}</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center text-[22px] shrink-0">👨‍👩‍👧</div>
+      </div>
+      <div id="familySummary" class="mt-4"></div>
+      <div class="mt-4 grid gap-3">
+        ${refs.map((r, i) => `
+        <div id="fam-${i}" class="rounded-[18px] border border-neutral-200 bg-neutral-50 p-4 flex items-center gap-3">
+          <span class="spin inline-block w-5 h-5 border-2 border-neutral-300 border-t-brand rounded-full shrink-0"></span>
+          <div class="text-[13px] font-semibold text-neutral-500">Checking in ${escapeHtml(r)}…</div>
+        </div>`).join('')}
+      </div>
+      <div class="mt-7 grid gap-2.5">
+        <button onclick="backToFamilyEntry()" class="h-[48px] rounded-full bg-black text-white font-semibold text-[13.5px] flex items-center justify-center hover:bg-neutral-800 transition">Check in more members →</button>
+        <button onclick="switchMode('self'); $('resultScreen').classList.add('hidden'); $('entryScreen').classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'})" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-medium hover:border-black transition">Single check-in instead</button>
+      </div>
+    </div>
+    <p class="mt-4 text-center text-[11px] text-neutral-400">• Powered by TTOSR&nbsp;&nbsp;|&nbsp;&nbsp;City Fitness Karate Club . EST 2026 • CIFIKA •</p>
+  </div>`;
+  $('entryScreen').classList.add('hidden');
+  $('resultScreen').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  return document.getElementById('familySummary');
+}
+
+function familyCard(r) {
+  if (r.error || !r.d || r.d.status !== 'ok') {
+    const msg = (r.d && r.d.message) || (r.error && r.error.message) || 'Check-in failed.';
+    return `
+    <div class="rounded-[18px] border border-red-200 bg-red-50 p-4">
+      <div class="flex items-start gap-3">
+        <span class="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[12px] font-bold shrink-0">✗</span>
+        <div class="min-w-0">
+          <div class="text-[13px] font-bold text-red-700">${escapeHtml(r.ref)}</div>
+          <div class="text-[12px] text-red-600 leading-[1.55] mt-0.5">${escapeHtml(msg)}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+  const d = r.d, m = d.member || {};
+  const al = ALERT_STYLES[d.alert_level] || ALERT_STYLES.green;
+  const late = d.check_in_status === 'late';
+  const mins = minutesAfterStart();
+  const remark = remarkFor(d, mins);
+  const numColor = { green:'text-emerald-600', orange:'text-[#FF6B00]', yellow:'text-amber-500', red:'text-red-600' }[d.alert_level] || 'text-neutral-900';
+  return `
+  <div class="rounded-[18px] border ${al.ring} p-4">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-start gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-full bg-white border ${al.ring} flex items-center justify-center text-[15px] shrink-0">🥋</div>
+        <div class="min-w-0">
+          <div class="text-[14px] font-extrabold truncate">${escapeHtml((m.name || 'Member').split(' ')[0])} <span class="text-neutral-400 font-semibold text-[11px]">${escapeHtml(m.ref || r.ref)}</span></div>
+          <div class="text-[11.5px] mt-0.5 ${al.text} font-semibold">${late ? '⚠️ Marked LATE' : '✓ On time'} • checked in ${nowWatClock()}</div>
+          <div class="text-[11.5px] text-neutral-600 leading-[1.5] mt-1">${escapeHtml(remark)}</div>
+          ${m.belt_review_status === 'pending' ? `<div class="mt-1.5 text-[11px] text-[#B34700]">⏳ Belt review pending — training at registered belt until Sensei regularises it</div>` : ''}
+        </div>
+      </div>
+      <div class="text-right shrink-0">
+        <div class="text-[26px] font-black leading-none ${numColor}">${d.sessions_remaining ?? 0}</div>
+        <div class="text-[8.5px] font-bold tracking-[0.08em] text-neutral-400 mt-0.5">LEFT</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderFamilySummary(results) {
+  const ok = results.filter(r => r.d && r.d.status === 'ok');
+  const late = ok.filter(r => r.d.check_in_status === 'late');
+  const fail = results.length - ok.length;
+  const box = document.getElementById('familySummary');
+  if (!box) return;
+  box.innerHTML = `
+  <div class="rounded-[16px] bg-neutral-100 px-4 py-3 flex items-center gap-2 flex-wrap text-[12px] font-semibold">
+    <span class="text-emerald-700">${ok.length} checked in</span>
+    ${late.length ? `<span class="text-amber-600">• ${late.length} late</span>` : ''}
+    ${fail ? `<span class="text-red-600">• ${fail} failed</span>` : ''}
+    <span class="text-neutral-400 font-normal">— every ID counted separately on the attendance record</span>
+  </div>`;
+}
+
+function backToFamilyEntry() {
+  $('resultScreen').classList.add('hidden');
+  $('entryScreen').classList.remove('hidden');
+  switchMode('family');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ═══════════ TIME HELPERS + REMARKS ═══════════ */
+function nowWatString() {
+  return new Date(Date.now() + 60 * 60 * 1000).toLocaleString('en-GB', { weekday:'short', day:'numeric', month:'short' }) + '';
+}
+function nowWatClock() {
+  const d = new Date(Date.now() + 60 * 60 * 1000);
+  return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+}
+function minutesAfterStart() {
+  if (!sessionInfo || !sessionInfo.training_date || !sessionInfo.start_time) return null;
+  const [h, mi] = String(sessionInfo.start_time).split(':').map(Number);
+  const [y, mo, da] = String(sessionInfo.training_date).split('-').map(Number);
+  const startMs = Date.UTC(y, mo - 1, da, h, mi) - 60 * 60 * 1000; // WAT = UTC+1
+  return Math.round((Date.now() - startMs) / 60000);
+}
+function remarkFor(d, mins) {
+  if (d.already) return 'Already checked in for today\'s class ✓';
+  let t;
+  if (mins == null) t = 'Checked in';
+  else if (mins <= 0) t = 'Early on the mat ⚡ — great discipline';
+  else if (mins <= 15) t = 'Right on time ✓ — ' + mins + ' min in';
+  else t = 'Arrived ' + mins + ' min after start — let\'s aim to be on the mat by ' + fmtTime(sessionInfo?.start_time || '') + ' next time';
+  const r = d.sessions_remaining;
+  if (r === 0) t += ' • sessions now used up — renew at the desk';
+  else if (r === 1) t += ' • last paid session — renew soon';
+  else if (r === 2 || r === 3) t += ' • ' + r + ' sessions left — renewal coming up';
+  return t;
+}
+
+/* ═══════════ RESULT SCREEN ═══════════ */
+function renderResult(d) {
+  const al = ALERT_STYLES[d.alert_level] || ALERT_STYLES.green;
+  const m = d.member || {};
+  const remaining = d.sessions_remaining ?? 0;
+  const reviewed = m.belt_review_status === 'pending';
+
+  // big sessions counter styling
+  const numColor = { green:'text-emerald-600', orange:'text-[#FF6B00]', yellow:'text-amber-500', red:'text-red-600' }[d.alert_level] || 'text-neutral-900';
+
+  $('resultScreen').innerHTML = `
+  <div class="fade-in">
+    <div class="bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.10)] border border-neutral-200 p-6 md:p-9 text-center">
+      <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-[30px] ${al.ring} border">🥋</div>
+
+      <h1 class="mt-5 text-[28px] md:text-[32px] font-black tracking-[-0.03em] leading-[1.1]">You're Checked In${d.check_in_status === 'late' ? ' <span class="text-amber-500">(late)</span>' : ''}!</h1>
+      <p class="mt-2 text-[13.5px] text-neutral-600 leading-[1.6]">Welcome to the mat, <b>${escapeHtml((m.name || 'Member').split(' ')[0])}</b> <span class="text-neutral-400">(${escapeHtml(m.ref || '')})</span></p>
+      <p class="mt-1 text-[11.5px] text-neutral-400">Checked in at <b class="text-neutral-500">${nowWatClock()}</b> WAT${d.check_in_status !== 'late' ? ' • ' + remarkFor(d, minutesAfterStart()) : ''}</p>
+
+      <!-- alert banner -->
+      <div class="mt-6 rounded-[18px] border p-5 text-left ${al.ring}">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full ${al.dot}"></span>
+          <span class="text-[11px] font-bold tracking-[0.12em] uppercase ${al.text}">${al.label}</span>
+        </div>
+        <p class="mt-2 text-[13px] leading-[1.6] text-neutral-700">${escapeHtml(d.message || '')}</p>
+      </div>
+
+      <!-- sessions counter -->
+      <div class="mt-4 rounded-[18px] border border-neutral-200 bg-neutral-50 p-5 flex items-center justify-between">
+        <div class="text-left">
+          <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">SESSIONS REMAINING</div>
+          <div class="text-[11px] text-neutral-500 mt-0.5">of your current payment</div>
+        </div>
+        <div class="text-[40px] font-black leading-none ${numColor}">${remaining}</div>
+      </div>
+
+      ${reviewed ? `
+      <div class="mt-4 rounded-[18px] border border-[#FFD4A8] bg-[#FFF5EB] p-4 text-left flex items-start gap-3">
+        <span class="text-[16px] leading-none mt-0.5">⏳</span>
+        <div class="text-[12px] leading-[1.6] text-neutral-700">
+          <b>Belt review pending:</b> you'll train at your registered belt (${escapeHtml(m.belt || '')}) until Sensei regularises it to the CIFIKA standard.
+        </div>
+      </div>` : ''}
+
+      <div class="mt-7 grid gap-2.5">
+        <a href="./portal.html" class="h-[48px] rounded-full bg-black text-white font-semibold text-[13.5px] flex items-center justify-center hover:bg-neutral-800 transition">Open Member Portal →</a>
+        <button onclick="resetForNext()" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-medium hover:border-black transition">Check in another member</button>
+      </div>
+    </div>
+
+    <p class="mt-4 text-center text-[11px] text-neutral-400">• Powered by TTOSR&nbsp;&nbsp;|&nbsp;&nbsp;City Fitness Karate Club . EST 2026 • CIFIKA •</p>
+  </div>`;
+
+  $('entryScreen').classList.add('hidden');
+  $('resultScreen').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForNext() {
+  $('resultScreen').classList.add('hidden');
+  $('entryScreen').classList.remove('hidden');
+  $('memberRef').value = '';
+  $('entryError').classList.add('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ═══════════ UTILS ═══════════ */
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+}
+function fmtTime(t) {
+  if (!t) return '—';
+  const [h, m] = String(t).split(':');
+  const hh = parseInt(h, 10);
+  const ampm = hh >= 12 ? 'PM' : 'AM';
+  const h12 = hh % 12 || 12;
+  return `${h12}:${m} ${ampm}`;
+}
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.background = isErr ? '#B91C1C' : '#111';
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 4200);
+}
+</script>
+</body>
+</html>

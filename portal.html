@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Member Portal — City Fitness Karate Club</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#000000">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -24,7 +26,7 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: clip; }
   .input { width:100%; height:44px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
            padding:0 16px; font-size:13px; outline:none; transition: border-color .15s, box-shadow .15s; }
   .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.06); }
@@ -38,6 +40,7 @@
   .ring-pulse { animation: ringPulse 1.6s ease-out infinite; }
   @keyframes ringPulse { 0% { box-shadow:0 0 0 0 rgba(255,107,0,.4); } 100% { box-shadow:0 0 0 10px rgba(255,107,0,0); } }
   .scroll-x::-webkit-scrollbar { height:0; }
+  .scroll-x { -webkit-overflow-scrolling: touch; }
 </style>
 </head>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
@@ -113,6 +116,7 @@
       <div class="flex items-center gap-2.5">
         <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
         <span class="text-[12px] font-bold tracking-[0.14em]">CITY FITNESS <span class="text-brand">KARATE</span></span>
+        <span class="hidden md:inline text-[9px] font-bold tracking-[0.1em] text-neutral-500 border border-neutral-700 rounded-full px-2 py-0.5">v2.2</span>
       </div>
       <div class="flex items-center gap-3">
         <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
@@ -132,7 +136,7 @@
 const SUPABASE_URL     = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
 
-const CLUB = { nextClass: 'Tue & Thu • 6:00 PM  •  Sat • 10:00 AM' };
+const CLUB = { nextClass: 'Fri 4:30–6:00 PM • Sat 8:00–10:00 AM • Sun 4:30–6:00 PM' };
 
 /* ═══════════════ STATE ═══════════════ */
 let sb, currentUser, currentProfile, beltLevels = [], parentChildren = [];
@@ -437,7 +441,8 @@ async function viewChild(i) {
 
 /* ═══════════════ DASHBOARD (shared by student & parent views) ═══════════════ */
 async function renderDashboard(student, opts = {}) {
-    const [{ data: attendance }, { data: gradings }, { data: scores }, { data: anns }] = await Promise.all([
+    const [{ data: attendance }, { data: gradings }, { data: scores }, { data: anns },
+           { data: balData }, { data: daysData }, { data: openWindows }, { data: myEntries }] = await Promise.all([
     sb.from('attendance').select('*').eq('student_id', student.id).order('class_date', { ascending: false }).limit(60),
     sb.from('gradings').select('*').eq('student_id', student.id).order('grading_date', { ascending: false }),
     sb.from('grading_scores').select('*').eq('student_id', student.id),
@@ -446,10 +451,25 @@ async function renderDashboard(student, opts = {}) {
       .order('is_pinned', { ascending: false })
       .order('event_date', { ascending: true, nullsFirst: false })
       .limit(6),
+    sb.rpc('get_session_balance', { p_student: student.id }),
+    sb.from('member_training_days').select('*').eq('student_id', student.id).maybeSingle(),
+    sb.from('grading_windows').select('*').eq('is_open', true).order('created_at', { ascending: false }),
+    sb.from('grading_entries').select('*').eq('student_id', student.id),
   ]);
   const att = attendance || [], grd = gradings || [];
   const scoreById = {}; (scores || []).forEach(s => scoreById[s.grading_id] = s);
   window._certData = { grd, student };
+
+  /* sessions balance, training days, grading windows */
+  const bal = (balData && balData.status === 'ok') ? balData : { purchased: 0, used: 0, remaining: null, alert_level: 'green' };
+  const myDays = daysData || null;
+  const windows = openWindows || [];
+  const enteredWindows = new Set((myEntries || []).filter(e => e.status !== 'withdrawn').map(e => e.window_id));
+  const weekStart = startOfWeekLagos();
+  const thisWeek = att.filter(a => a.class_date >= weekStart && (a.status === 'present' || a.status === 'late')).length;
+  window._gw = { open: windows, entered: enteredWindows, student };
+  window._myDays = myDays ? { day_1: myDays.day_1, day_2: myDays.day_2 } : { day_1: null, day_2: null };
+  window._lastOpts = opts;
 
   const attended = att.filter(a => a.status === 'present' || a.status === 'late').length;
   const rate = att.length ? Math.round(attended / att.length * 100) : null;
@@ -475,7 +495,7 @@ async function renderDashboard(student, opts = {}) {
           ${nextBelt.minimum_months_at_previous ? `<li>Minimum ${nextBelt.minimum_months_at_previous} months at current rank</li>` : ''}
           ${nextBelt.minimum_age ? `<li>Minimum age ${nextBelt.minimum_age}</li>` : ''}
         </ul>
-        <button onclick="requestGrading('${escapeHtml(nextBelt.belt_name)}')" class="mt-4 h-9 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition">Request Grading →</button>
+        <div class="mt-4">${gradingEntryHTML(nextBelt)}</div>
       </div>` : `
       <div class="rounded-[16px] bg-black text-white p-5">
         <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">PATH COMPLETE</div>
@@ -486,6 +506,15 @@ async function renderDashboard(student, opts = {}) {
   <div class="fade-in grid gap-6">
      ${opts.back ? `<button onclick="renderParentHome()" class="w-fit h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">← ${escapeHtml(opts.backLabel || 'All my children')}</button>` : ''}
 
+    ${bal.remaining !== null && bal.alert_level && bal.alert_level !== 'green' ? `
+    <div class="rounded-[18px] border p-4 md:p-5 flex items-start gap-3 ${bal.alert_level === 'orange' ? 'bg-[#FFF5EB] border-[#FFD4A8]' : bal.alert_level === 'yellow' ? 'bg-amber-50 border-amber-300' : 'bg-red-50 border-red-300'}">
+      <span class="text-[18px] leading-none mt-0.5">${bal.remaining <= 1 ? '🔴' : '🟠'}</span>
+      <div>
+        <div class="text-[11px] font-bold tracking-[0.1em] uppercase ${bal.alert_level === 'orange' ? 'text-[#B34700]' : bal.alert_level === 'yellow' ? 'text-amber-700' : 'text-red-700'}">${bal.remaining === 0 ? 'Payment complete — renew to keep training' : bal.remaining === 1 ? 'Last session — renew now' : 'Renewal reminder'}</div>
+        <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${bal.remaining === 0 ? 'You have used all your paid sessions. Please renew your payment at the front desk — your next check-in will remind you too.' : bal.remaining === 1 ? 'Only <b>1 session</b> remains on your current payment. Renew at the front desk so you never miss a class.' : `You have <b>${bal.remaining} sessions</b> left. Consider renewing your payment at the front desk soon.`}</p>
+      </div>
+    </div>` : ''}
+
     <!-- WELCOME -->
     <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
@@ -493,6 +522,7 @@ async function renderDashboard(student, opts = {}) {
         <div class="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-neutral-500">
           ${beltChipHTML(student.current_belt)}
           <span class="px-2.5 py-0.5 rounded-full border font-semibold ${student.membership_status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">${escapeHtml(student.membership_status || 'pending')}</span>
+          ${student.belt_review_status === 'pending' ? '<span class="px-2.5 py-0.5 rounded-full border font-semibold bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]">⏳ Belt review pending</span>' : ''}
           <span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>
         </div>
       </div>
@@ -503,7 +533,7 @@ async function renderDashboard(student, opts = {}) {
     </div>
 
     <!-- STATS -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       <div class="card p-5">
         <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">CURRENT BELT</div>
         <div class="mt-2.5 flex items-center gap-2">
@@ -512,16 +542,45 @@ async function renderDashboard(student, opts = {}) {
         </div>
         <div class="text-[11px] text-neutral-500 mt-1">current rank</div>
       </div>
+      <div class="card p-5">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">SESSIONS LEFT</div>
+        <div class="mt-2 text-[20px] font-extrabold tracking-tight ${bal.remaining === null ? '' : bal.remaining <= 1 ? 'text-red-600' : bal.remaining === 2 ? 'text-amber-500' : bal.remaining === 3 ? 'text-brand' : 'text-emerald-600'}">${bal.remaining ?? '—'}</div>
+        <div class="text-[11px] text-neutral-500 mt-1">${bal.purchased ?? 0} purchased • ${bal.used ?? 0} used</div>
+      </div>
       ${statCard('CLASSES ATTENDED', attended, `of ${att.length} recorded`)}
       ${statCard('ATTENDANCE RATE', rate !== null ? rate + '%' : '—', '80% required for grading')}
       ${statCard('NEXT GRADING', nextBelt ? nextBelt.belt_name : '—', nextBelt ? `min ${nextBelt.minimum_months_at_previous ?? '—'} months at rank` : 'kyu path complete')}
     </div>
 
+    <!-- TRAINING PLAN -->
+    <div class="card p-6 md:p-7">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <div class="text-[12px] font-bold tracking-[0.14em]">TRAINING PLAN</div>
+          <div class="text-[11px] text-neutral-400 mt-0.5">Pick your 2 flexible days — complete 2 sessions per week</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[22px] font-black ${thisWeek >= 2 ? 'text-emerald-600' : ''}">${thisWeek}</span>
+          <span class="text-[12px] text-neutral-500">/ 2 sessions this week</span>
+        </div>
+      </div>
+      <div class="h-2 rounded-full bg-neutral-100 overflow-hidden mb-4 max-w-[420px]">
+        <div class="h-full rounded-full ${thisWeek >= 2 ? 'bg-emerald-500' : 'bg-brand'}" style="width:${Math.min(100, thisWeek / 2 * 100)}%"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 max-w-[460px]">
+        ${[[5,'Friday','4:30–6:00 PM'],[6,'Saturday','8:00–10:00 AM'],[0,'Sunday','4:30–6:00 PM']].map(([d, name, time]) => {
+          const sel = window._myDays && (window._myDays.day_1 === d || window._myDays.day_2 === d);
+          return `<button onclick="toggleTrainingDay(${d})" class="py-3 rounded-[14px] border-[1.5px] text-[12px] font-semibold transition ${sel ? 'bg-black text-white border-black' : 'bg-white text-neutral-700 border-neutral-200 hover:border-black'}">
+            <div>${name}</div><div class="text-[10px] ${sel ? 'text-neutral-300' : 'text-neutral-400'} font-medium mt-0.5">${time}</div></button>`;
+        }).join('')}
+      </div>
+      <p class="text-[10.5px] text-neutral-400 mt-2.5">Choose exactly 2 days. You may still check in on any training day — your selections are your regular weekly plan.</p>
+    </div>
+
     ${announcementsHTML(anns || [])}
-    <div id="tab-gradings" class="hidden p-5 md:p-6">${gradingsTabHTML(grd, scoreById)}</div>
 
     <!-- BELT JOURNEY -->
-    <div class="card p-6 md:p-7">
+    <div class="card p-6 md:p-7 min-w-0">
       <div class="flex items-center justify-between">
         <div class="text-[12px] font-bold tracking-[0.14em]">BELT JOURNEY</div>
         <div class="text-[11px] text-neutral-400">${beltLevels.length} ranks</div>
@@ -533,6 +592,7 @@ async function renderDashboard(student, opts = {}) {
           <div class="mt-2">${beltChipHTML(student.current_belt)}</div>
           <div class="mt-2.5 text-[12px] text-neutral-500">Achieved: <b class="text-neutral-700">${fmtDate(student.last_grading_date)}</b></div>
           <div class="text-[12px] text-neutral-500">Member since: <b class="text-neutral-700">${fmtDate(student.registration_date)}</b></div>
+          ${student.belt_review_status === 'pending' ? `<div class="mt-2.5 rounded-[12px] bg-[#FFF5EB] border border-[#FFD4A8] p-3 text-[11.5px] leading-[1.55] text-neutral-700"><b>⏳ Belt review pending.</b> You'll keep training at your registered belt until Sensei reviews your previous experience and regularises it to the CIFIKA standard.</div>` : ''}
         </div>
         ${nextCard}
       </div>
@@ -546,7 +606,7 @@ async function renderDashboard(student, opts = {}) {
         <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('profile')">👤 Profile</button>
       </div>
       <div id="tab-attendance" class="p-5 md:p-6">${attendanceTabHTML(att, rate)}</div>
-      <div id="tab-gradings" class="hidden p-5 md:p-6">${gradingsTabHTML(grd)}</div>
+      <div id="tab-gradings" class="hidden p-5 md:p-6">${gradingsTabHTML(grd, scoreById)}</div>
       <div id="tab-profile" class="hidden p-5 md:p-6">${profileTabHTML(student)}</div>
     </div>
   </div>`;
@@ -864,8 +924,60 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.add('hidden'), 4200);
 }
-function requestGrading(name) {
-  toast(`Grading request noted for ${name} Belt. Confirm with Sensei in class — 80% attendance required.`);
+/* ═══════════ GRADING ENTRY (windows — replaces self-requests) ═══════════ */
+function gradingEntryHTML(nextBelt) {
+  const gw = window._gw || { open: [], entered: new Set() };
+  if (!gw.open.length) {
+    return `<div class="rounded-[12px] bg-white/10 border border-neutral-700 p-3 text-[11.5px] text-neutral-300 leading-[1.55]">Grading windows open when Sensei announces one — watch <b>Club Updates</b>. Members can't request a grading directly.</div>`;
+  }
+  const w = gw.open[0];
+  if (gw.entered.has(w.id)) {
+    return `<div class="rounded-[12px] bg-emerald-500/15 border border-emerald-500/40 p-3 text-[11.5px] text-emerald-300 leading-[1.55]"><b>✓ You're entered:</b> ${escapeHtml(w.title)}${w.grading_date ? ' — ' + fmtDate(w.grading_date) : ''}. Speak to Sensei about your preparation.</div>`;
+  }
+  return `<button onclick="enterGradingWindow('${w.id}','${escapeHtml(nextBelt.belt_name)}')" class="h-10 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition">🥋 Enter Grading — ${escapeHtml(w.title)} →</button>`;
+}
+
+async function enterGradingWindow(windowId, targetBelt) {
+  const s = window._gw?.student; if (!s) return;
+  const { data, error } = await sb.rpc('enter_grading', { p_student_id: s.id, p_window_id: windowId, p_target_belt: targetBelt });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not enter.'), true);
+  toast(`✓ You're entered for ${d.title || 'the grading'} — ${d.target_belt || targetBelt} Belt`);
+  renderDashboard(s, window._lastOpts || {});
+}
+
+/* ═══════════ TRAINING DAYS PICKER ═══════════ */
+async function toggleTrainingDay(d) {
+  const s = window._gw?.student; if (!s) return;
+  const cur = window._myDays || { day_1: null, day_2: null };
+  let sel = [cur.day_1, cur.day_2].filter(v => v !== null && v !== undefined);
+  if (sel.includes(d)) sel = sel.filter(x => x !== d);
+  else { sel.push(d); if (sel.length > 2) sel = sel.slice(1); }
+  window._myDays = { day_1: sel[0] ?? null, day_2: sel[1] ?? null };
+  if (window._myDays.day_1 !== null && window._myDays.day_2 !== null) {
+    const { data, error } = await sb.rpc('save_training_days', { p_student_id: s.id, p_day1: window._myDays.day_1, p_day2: window._myDays.day_2 });
+    const dd = !error && data;
+    if (error || !dd || dd.status !== 'ok') {
+      toast('✗ ' + (dd?.message || error?.message || 'Could not save training days.'), true);
+      return;
+    }
+    toast('✓ Training days saved — ' + DAY_LABEL[window._myDays.day_1] + ' + ' + DAY_LABEL[window._myDays.day_2]);
+  }
+  renderDashboard(s, window._lastOpts || {});
+}
+const DAY_LABEL = { 0: 'Sunday', 5: 'Friday', 6: 'Saturday' };
+
+function startOfWeekLagos() {
+  const nowLagos = new Date(Date.now() + 60 * 60 * 1000); // WAT = UTC+1, no DST
+  const d = new Date(nowLagos.toISOString().slice(0, 10) + 'T00:00:00');
+  const dow = d.getDay();
+  d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1)); // week starts Monday
+  return d.toISOString().slice(0, 10);
+}
+
+/* ═══════════ PWA ═══════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 }
 </script>
 </body>

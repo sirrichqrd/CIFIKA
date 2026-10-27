@@ -6,6 +6,7 @@
 <title>Admin Console — City Fitness Karate Club</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <!-- Favicons & Manifest -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -39,6 +40,12 @@
 </style>
 </head>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
+
+<!-- BOOT GUARD — visible only if JavaScript fails to start (bad/partial upload) -->
+<div id="bootGuard" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] bg-red-600 text-white text-[12px] font-semibold px-5 py-3 rounded-full shadow-lg text-center max-w-[92vw]">
+  ⚠ JavaScript didn't start — re-upload this file fresh (unopened, unedited) to your hosting folder.
+</div>
+<noscript><div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] bg-red-600 text-white text-[12px] font-semibold px-5 py-3 rounded-full">JavaScript is disabled — enable it to use the Admin Console.</div></noscript>
 
 <!-- AUTH -->
 <div id="authView" class="hidden min-h-screen flex items-center justify-center px-5 py-10">
@@ -84,6 +91,7 @@
       <div class="flex items-center gap-2.5">
         <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
         <span class="text-[12px] font-bold tracking-[0.14em]">CIFIKA <span class="text-brand">ADMIN</span></span>
+        <span class="hidden md:inline text-[9px] font-bold tracking-[0.1em] text-neutral-500 border border-neutral-700 rounded-full px-2 py-0.5">v2.2</span>
       </div>
       <div class="flex items-center gap-3">
         <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate"></span>
@@ -114,6 +122,15 @@
 const SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
 
+/* Training schedule (Africa/Lagos) — used to prefill QR windows.
+   JS getDay(): Friday=5, Saturday=6, Sunday=0.
+   NOTE: brief said "Sunday 4:30am" — change the Sunday row if it really is AM. */
+const TRAINING_SCHEDULE = {
+  5: { name: 'Friday',   start: '16:30', end: '18:00' },
+  6: { name: 'Saturday', start: '08:00', end: '10:00' },
+  0: { name: 'Sunday',   start: '16:30', end: '18:00' },
+};
+
 /* ═══════════ STATE ═══════════ */
 let sb, currentUser, currentProfile;
 let membersList = [], beltLevels = [], profilesList = [];
@@ -128,7 +145,12 @@ const SECTIONS = [
   ['dashboard', '📊', 'Dashboard'],
   ['members',   '👥', 'Members'],
   ['attendance','📅', 'Attendance'],
+  ['qrlog',     '📋', 'Check-in Log'],
+  ['consistency','🔥', 'Consistency'],
+  ['qrcode',    '🔳', 'QR Check-in'],
+  ['payments',  '💳', 'Payments'],
   ['gradings',  '🥋', 'Gradings'],
+  ['reviews',   '⏳', 'Belt Reviews'],
   ['announcements','📢','Announcements'],
   ['linking',   '🔗', 'Linking'],
   ['reports',   '📈', 'Reports'],
@@ -139,10 +161,18 @@ const SECTIONS = [
 window.addEventListener('DOMContentLoaded', boot);
 
 async function boot() {
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) await gate(session.user); else $('authView').classList.remove('hidden');
-  sb.auth.onAuthStateChange((_e, s) => { if (s?.user && !currentUser) gate(s.user); });
+  try {
+    $('bootGuard').classList.add('hidden');
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) await gate(session.user); else $('authView').classList.remove('hidden');
+    sb.auth.onAuthStateChange((_e, s) => { if (s?.user && !currentUser) gate(s.user).catch(showBootError); });
+  } catch (e) { showBootError(e); }
+}
+function showBootError(e) {
+  const g = $('bootGuard');
+  g.classList.remove('hidden');
+  g.textContent = '⚠ Start-up problem: ' + (e?.message || e) + ' — check your connection, then re-upload admin.html fresh if this repeats.';
 }
 
 async function gate(user) {
@@ -203,7 +233,9 @@ function show(id) {
   document.querySelectorAll('[data-nav]').forEach(b =>
     b.className = b.className.replace(/ active/g,'') + (b.dataset.nav === id ? ' active' : ''));
   ({ dashboard: showDashboard, members: showMembers, attendance: showAttendance,
-     gradings: showGradings, announcements: showAnnouncements, linking: showLinking, reports: showReports, staff: showStaff })[id]();
+     qrlog: showQrLog, consistency: showConsistency,
+     qrcode: showQr, payments: showPayments, gradings: showGradings, reviews: showReviews,
+     announcements: showAnnouncements, linking: showLinking, reports: showReports, staff: showStaff })[id]?.();
 }
 
 /* ═══════════ DASHBOARD ═══════════ */
@@ -490,6 +522,10 @@ function showGradings() {
 
   $('content').innerHTML = `
   <div class="fade-in grid gap-4">
+    <div class="card p-6" id="gwCard">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">GRADING WINDOWS</div>
+      <div class="text-[13px] text-neutral-400">Loading…</div>
+    </div>
     <div class="card p-6">
       <div class="text-[12px] font-bold tracking-[0.14em] mb-4">RECORD A GRADING</div>
       <div class="grid md:grid-cols-2 gap-3">
@@ -528,6 +564,7 @@ function showGradings() {
 
   suggestNextBelt();
   loadRecentGradings();
+  loadGradingWindows();
 }
 
 function suggestNextBelt() {
@@ -841,6 +878,7 @@ function showStaff() {
       <div class="text-[12px] font-bold tracking-[0.14em] mb-1">STAFF & ROLES</div>
       <p class="text-[12px] text-neutral-500 mb-4">
         <b>admin</b> = full console access • <b>instructor</b> = can record attendance & gradings •
+        <b>frontdesk</b> = frontdesk.html (payments, session activations, check-ins) •
         <b>student/parent</b> = member portal only. You can't demote yourself.
       </p>
       <div class="grid gap-2">
@@ -851,7 +889,7 @@ function showStaff() {
             <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(p.email)}${p.id === currentUser.id ? ' — you' : ''}</div>
           </div>
           <select id="role-${p.id}" class="input sm:w-[150px]">
-            ${['student','parent','instructor','admin'].map(r=>`<option ${p.role===r?'selected':''}>${r}</option>`).join('')}
+            ${['student','parent','frontdesk','instructor','admin'].map(r=>`<option ${p.role===r?'selected':''}>${r}</option>`).join('')}
           </select>
           <button onclick="saveRole('${p.id}')" class="h-[42px] px-5 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition shrink-0 sm:w-auto">Save</button>
         </div>`).join('')}
@@ -998,6 +1036,608 @@ async function delAnn(id) {
   const { error } = await sb.from('announcements').delete().eq('id', id);
   if (error) return toast('✗ ' + error.message, true);
   toast('Item deleted'); loadAnnouncements();
+}
+
+/* ═══════════ QR CHECK-IN CODES ═══════════ */
+let qrList = [];
+
+function nextTrainingDayISO() {
+  const now = new Date();
+  for (let i = 0; i < 8; i++) {
+    const probe = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    if (TRAINING_SCHEDULE[probe.getDay()]) {
+      return probe.getFullYear() + '-' + String(probe.getMonth() + 1).padStart(2, '0') + '-' + String(probe.getDate()).padStart(2, '0');
+    }
+  }
+  return now.toISOString().slice(0, 10);
+}
+
+function showQr() {
+  const dstr = nextTrainingDayISO();
+  const day = TRAINING_SCHEDULE[new Date(dstr + 'T00:00:00').getDay()] || { start: '16:30', end: '18:00' };
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">GENERATE TRAINING QR CODE</div>
+      <p class="text-[12px] text-neutral-500 mb-4">One unique code per training day, valid only inside the session window (Africa/Lagos). Print it and display it at the dojo entrance — members scan → enter their CFK ID → checked in, one session consumed, renewal alerts shown automatically.</p>
+      <div class="grid md:grid-cols-[170px_1fr_1fr_auto] gap-2 items-end">
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">TRAINING DATE</div>
+          <input type="date" id="qrDate" class="input" value="${dstr}" onchange="qrDateChanged()"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">STARTS</div>
+          <input type="time" id="qrStart" class="input" value="${day.start}"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">ENDS</div>
+          <input type="time" id="qrEnd" class="input" value="${day.end}"></label>
+        <button onclick="generateQr()" id="qrGenBtn" class="h-[42px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">Generate QR →</button>
+      </div>
+      <div id="qrDayHint" class="mt-2 text-[11px] text-neutral-400"></div>
+      <div id="qrResult" class="mt-4"></div>
+    </div>
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">RECENT QR CODES</div>
+      <div id="qrListWrap"><div class="p-6 text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+  qrDateChanged();
+  loadQrList();
+}
+
+function qrDateChanged() {
+  const d = $('qrDate').value;
+  if (!d) return;
+  const dow = new Date(d + 'T00:00:00').getDay();
+  const s = TRAINING_SCHEDULE[dow];
+  if (s) {
+    $('qrStart').value = s.start; $('qrEnd').value = s.end;
+    $('qrDayHint').innerHTML = `📅 <b>${s.name}</b> — scheduled ${s.start}–${s.end} (editable). `;
+  } else {
+    $('qrDayHint').innerHTML = `⚠️ <b>${new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' })}</b> is not a regular training day (Fri / Sat / Sun) — set custom hours if needed. `;
+  }
+  $('qrDayHint').innerHTML += `Times are enforced server-side in Africa/Lagos (WAT).`;
+}
+
+function qrTokenFor(dateStr) {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  let rand = ''; for (const b of bytes) rand += chars[b % chars.length];
+  return 'CIF-' + dateStr.replaceAll('-', '') + '-' + rand;
+}
+
+function qrLinkFor(token) {
+  try { return new URL('attendance.html?qr=' + token, location.href).href; }
+  catch (e) { return 'attendance.html?qr=' + token; }
+}
+
+async function generateQr() {
+  const dateStr = $('qrDate').value;
+  const start = $('qrStart').value, end = $('qrEnd').value;
+  if (!dateStr || !start || !end || end <= start) return toast('Set a valid date and time window (end must be after start).', true);
+  const btn = $('qrGenBtn'); btn.disabled = true; btn.textContent = 'Generating…';
+  // one active code per training day → retire any previous one first
+  await sb.from('attendance_qr').update({ is_active: false }).eq('training_date', dateStr).eq('is_active', true);
+  const token = qrTokenFor(dateStr);
+  const dow = new Date(dateStr + 'T00:00:00').getDay();
+  const { error } = await sb.from('attendance_qr').insert({
+    token, training_date: dateStr,
+    day_name: TRAINING_SCHEDULE[dow]?.name || new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' }),
+    start_time: start, end_time: end, is_active: true, created_by: currentUser.id,
+  });
+  btn.disabled = false; btn.textContent = 'Generate QR →';
+  if (error) return toast('✗ ' + error.message, true);
+  toast('✓ QR generated for ' + fmtDate(dateStr));
+  showQrResult(token, dateStr, start, end);
+  loadQrList();
+}
+
+function showQrResult(token, dateStr, start, end) {
+  const link = qrLinkFor(token);
+  $('qrResult').innerHTML = `
+    <div class="rounded-[18px] border-2 border-brand/30 bg-brand-light/40 p-5 grid sm:grid-cols-[190px_1fr] gap-5 items-center">
+      <div id="qrCanvas" class="bg-white rounded-[14px] p-3 border border-brand-border w-fit mx-auto"></div>
+      <div class="min-w-0">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">ACTIVE — ${escapeHtml(fmtDate(dateStr))} • ${escapeHtml(start)}–${escapeHtml(end)} WAT</div>
+        <div class="mt-1 text-[16px] font-extrabold tracking-tight">${escapeHtml(token)}</div>
+        <div class="mt-1 text-[11px] text-neutral-500 break-all">${escapeHtml(link)}</div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button onclick="printQr('${token}','${dateStr}','${start}','${end}')" class="h-9 px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition">🖨️ Print</button>
+          <button onclick="copyQrLink('${token}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Copy link</button>
+        </div>
+        <div class="mt-2 text-[11px] text-neutral-500">Display at the dojo entrance — the printed sheet includes the code in text form as backup.</div>
+      </div>
+    </div>`;
+  $('qrCanvas').innerHTML = '';
+  new QRCode($('qrCanvas'), { text: link, width: 166, height: 166, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+}
+
+function printQr(token, dateStr, start, end) {
+  const canvas = $('qrCanvas') ? $('qrCanvas').querySelector('canvas') : null;
+  const img = canvas ? canvas.toDataURL('image/png') : '';
+  const w = window.open('', '_blank', 'width=600,height=800');
+  if (!w) return toast('Allow pop-ups for this site to print.', true);
+  w.document.write(`<!DOCTYPE html><html><head><title>CIFIKA QR ${dateStr}</title><style>
+    body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff}
+    .box{text-align:center;padding:44px 48px;border:3px solid #111;border-radius:28px}
+    h1{margin:0;font-size:22px;letter-spacing:1px}.sub{font-size:12px;color:#555;margin-top:5px}
+    img{width:330px;height:330px;margin-top:18px}.tok{font-size:19px;font-weight:800;margin-top:14px;letter-spacing:2px}
+    .hrs{font-size:14px;font-weight:700;margin-top:4px}</style></head><body><div class="box">
+    <h1>CITY FITNESS KARATE CLUB</h1><div class="sub">Scan with your phone camera to check in — Powered by TTOSR</div>
+    <img src="${img}" alt="QR code"><div class="tok">${token}</div>
+    <div class="hrs">${new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} • ${start}–${end}</div>
+    <div class="sub">Valid only during the session window • CIFIKA</div></div></body></html>`);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 350);
+}
+
+async function copyQrLink(token) {
+  try { await navigator.clipboard.writeText(qrLinkFor(token)); toast('✓ Link copied'); }
+  catch (e) { toast('Copy failed — copy the link shown above manually.', true); }
+}
+
+async function loadQrList() {
+  const { data } = await sb.from('attendance_qr')
+    .select('*').order('training_date', { ascending: false }).order('created_at', { ascending: false }).limit(14);
+  qrList = data || [];
+  const today = new Date().toISOString().slice(0, 10);
+  $('qrListWrap').innerHTML = !qrList.length
+    ? `<div class="p-6 text-[13px] text-neutral-400">No QR codes yet — generate the first one above.</div>`
+    : qrList.map(q => `
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-semibold truncate">${escapeHtml(q.day_name)} ${escapeHtml(fmtDate(q.training_date))} ${q.training_date === today ? '<span class="text-[9.5px] font-bold tracking-[0.1em] text-brand uppercase">Today</span>' : ''}</div>
+        <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(String(q.start_time).slice(0, 5))}–${escapeHtml(String(q.end_time).slice(0, 5))} • ${escapeHtml(q.token)}</div>
+      </div>
+      ${q.is_active ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">ACTIVE</span>' : '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-500 border border-neutral-200 shrink-0">RETIRED</span>'}
+      <div class="flex gap-1.5 shrink-0">
+        <button onclick="showQrResult('${q.token}','${q.training_date}','${String(q.start_time).slice(0, 5)}','${String(q.end_time).slice(0, 5)}'); window.scrollTo({top:0,behavior:'smooth'})" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Show</button>
+        ${q.is_active ? `<button onclick="deactivateQr('${q.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Retire</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function deactivateQr(id) {
+  const { error } = await sb.from('attendance_qr').update({ is_active: false }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Code retired — members can no longer check in with it.');
+  loadQrList();
+}
+
+/* ═══════════ PAYMENTS OVERSIGHT (front desk activity) ═══════════ */
+async function showPayments() {
+  const [p, pkg] = await Promise.all([
+    sb.from('payments')
+      .select('id, student_id, package_name, sessions_purchased, amount, payment_method, status, activated_at, activated_by_role, students(full_name, registration_ref), profiles(full_name, email)')
+      .order('activated_at', { ascending: false }).limit(150),
+    sb.from('session_packages').select('*').order('sort_order'),
+  ]);
+  const rows = p.data || [];
+  const packagesList = pkg.data || [];
+  const monthKey = new Date().toISOString().slice(0, 7);
+  const perStaff = {};
+  rows.forEach(x => {
+    if (x.status === 'active' && String(x.activated_at || '').slice(0, 7) === monthKey) {
+      const k = x.profiles?.full_name || x.profiles?.email || 'Unknown';
+      perStaff[k] = (perStaff[k] || 0) + 1;
+    }
+  });
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${statCard('PAYMENTS LOGGED', rows.length, 'last 150')}
+      ${statCard('ACTIVE', rows.filter(x => x.status === 'active').length, '')}
+      ${statCard('VOIDED', rows.filter(x => x.status === 'void').length, '')}
+      ${statCard('THIS MONTH ₦', rows.filter(x => x.status === 'active' && String(x.activated_at || '').slice(0, 7) === monthKey).reduce((s, x) => s + Number(x.amount || 0), 0).toLocaleString(), 'activated value')}
+    </div>
+
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <div class="text-[12px] font-bold tracking-[0.14em]">FRONT DESK ACTIVITY — THIS MONTH</div>
+        <a href="frontdesk.html" class="h-9 px-4 rounded-full bg-black text-white text-[11px] font-semibold flex items-center hover:bg-neutral-800 transition">Open Front Desk Console →</a>
+      </div>
+      ${Object.keys(perStaff).length ? `<div class="grid sm:grid-cols-2 gap-2">${Object.entries(perStaff).map(([name, n]) => `
+        <div class="flex items-center justify-between px-4 py-2.5 rounded-[12px] bg-neutral-50 border border-neutral-100">
+          <span class="text-[12.5px] font-semibold truncate">${escapeHtml(name)}</span>
+          <span class="text-[12px] font-bold text-brand">${n} activation${n > 1 ? 's' : ''}</span>
+        </div>`).join('')}</div>`
+      : `<div class="text-[12.5px] text-neutral-400">No activations this month yet.</div>`}
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">PAYMENT STRUCTURE (managed in Front Desk → Packages)</div>
+      ${packagesList.length ? `<div>${packagesList.map(pk => `
+        <div class="flex items-center justify-between gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+          <div class="min-w-0">
+            <div class="text-[13px] font-semibold truncate">${escapeHtml(pk.name)} ${pk.is_active ? '' : '<span class="text-[10px] font-bold text-neutral-400">(inactive)</span>'}</div>
+            <div class="text-[11px] text-neutral-500">${pk.sessions} sessions${pk.price ? ' • ₦' + Number(pk.price).toLocaleString() : ''}${pk.duration_note ? ' • ' + escapeHtml(pk.duration_note) : ''}</div>
+          </div>
+          <span class="text-[12px] font-extrabold text-brand shrink-0">+${pk.sessions}</span>
+        </div>`).join('')}</div>`
+      : `<div class="p-6 text-[13px] text-neutral-400">No packages defined yet.</div>`}
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">ALL PAYMENTS</div>
+      ${rows.length ? rows.map(x => `
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate">${escapeHtml(x.students?.full_name || '—')} <span class="text-[11.5px] text-neutral-400 font-medium">${escapeHtml(x.students?.registration_ref || '')}</span></div>
+            <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(x.package_name)} • +${x.sessions_purchased} sessions • ${escapeHtml(x.payment_method)}${x.amount ? ' • ₦' + Number(x.amount).toLocaleString() : ''} • by ${escapeHtml(x.profiles?.full_name || x.activated_by_role || '—')}</div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="text-[11px] text-neutral-400">${x.activated_at ? new Date(x.activated_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+            ${x.status === 'void' ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-400 border border-neutral-200">VOID</span>' : ''}
+          </div>
+        </div>`).join('') : `<div class="p-10 text-center text-[13px] text-neutral-400">No payments yet — front desk activations appear here.</div>`}
+    </div>
+  </div>`;
+}
+
+/* ═══════════ BELT REVIEWS (Sensei queue) ═══════════ */
+function showReviews() {
+  const pending = membersList.filter(m => m.belt_review_status === 'pending');
+  const approved = membersList.filter(m => m.belt_review_status === 'approved')
+    .sort((a, b) => String(b.belt_reviewed_at || '').localeCompare(String(a.belt_reviewed_at || '')))
+    .slice(0, 12);
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">BELT REVIEWS — SENSEI QUEUE</div>
+      <p class="text-[12px] text-neutral-500">Members who joined with prior karate experience keep their registered belt but sit as <b>pending review</b>. Once reviewed here, their belt is regularised to the CIFIKA standard and the pending flag clears in their portal automatically.</p>
+    </div>
+
+    ${pending.length ? `<div class="grid gap-3">${pending.map(m => `
+      <div class="card p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-[13px] font-bold text-amber-700 shrink-0">${initial(m.full_name)}</div>
+            <div class="min-w-0">
+              <div class="text-[13.5px] font-semibold truncate">${escapeHtml(m.full_name || '—')} <span class="text-[11px] text-neutral-400 font-medium">${escapeHtml(m.registration_ref || '')}</span></div>
+              <div class="text-[11.5px] text-neutral-500 mt-1 flex items-center gap-1.5 flex-wrap">Registered: ${beltChipHTML(m.current_belt)}
+                ${m.previous_rank ? `<span>• previous rank: <b>${escapeHtml(m.previous_rank)}</b></span>` : ''}
+                ${m.years_trained ? `<span>• ${escapeHtml(m.years_trained)} training</span>` : ''}</div>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 items-center shrink-0">
+            <select id="rb-${m.id}" class="input lg:w-[160px]">
+              ${beltLevels.map(b => `<option value="${escapeHtml(b.belt_name)}" ${b.belt_name === m.current_belt ? 'selected' : ''}>${escapeHtml(b.belt_name)}</option>`).join('')}
+            </select>
+            <input id="rbn-${m.id}" class="input lg:w-[190px]" placeholder="Review note (optional)">
+            <button onclick="approveReview('${m.id}')" class="h-[42px] px-5 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition shrink-0">✓ Regularise</button>
+          </div>
+        </div>
+      </div>`).join('')}</div>`
+    : `<div class="card p-8 text-center text-[13px] text-neutral-400">No pending belt reviews — all caught up ✓</div>`}
+
+    ${approved.length ? `
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">RECENTLY REGULARISED</div>
+      ${approved.map(m => `
+        <div class="flex items-center justify-between gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(m.full_name || '—')} <span class="text-[11px] text-neutral-400 font-medium">${escapeHtml(m.registration_ref || '')}</span></div>
+          <div class="flex items-center gap-2 shrink-0">${beltChipHTML(m.current_belt)}<span class="text-[11px] text-neutral-400">${m.belt_reviewed_at ? fmtDate(String(m.belt_reviewed_at).slice(0, 10)) : ''}</span></div>
+        </div>`).join('')}
+    </div>` : ''}
+  </div>`;
+}
+
+async function approveReview(id) {
+  const belt = $('rb-' + id)?.value;
+  const note = $('rbn-' + id)?.value.trim() || null;
+  if (!belt) return toast('Pick the correct belt first.', true);
+  const m = membersList.find(x => x.id === id);
+  const { data, error } = await sb.rpc('regularize_belt', { p_student_id: id, p_new_belt: belt, p_note: note });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message), true);
+  toast(`✓ ${m?.full_name || 'Member'} regularised to ${belt} Belt`);
+  await refreshMembers();
+  showReviews();
+}
+
+/* ═══════════ GRADING WINDOWS ═══════════ */
+let gwEntries = [];
+
+async function loadGradingWindows() {
+  const [w, e] = await Promise.all([
+    sb.from('grading_windows').select('*').order('created_at', { ascending: false }).limit(10),
+    sb.from('grading_entries')
+      .select('id, window_id, student_id, target_belt, status, entered_at, students(full_name, registration_ref, current_belt)')
+      .order('entered_at', { ascending: false }).limit(200),
+  ]);
+  const windows = w.data || [];
+  gwEntries = e.data || [];
+  const card = $('gwCard');
+  if (!card) return;
+
+  card.innerHTML = `
+    <div class="flex items-center justify-between mb-1 gap-3 flex-wrap">
+      <div class="text-[12px] font-bold tracking-[0.14em]">GRADING WINDOWS</div>
+      <div class="text-[11px] text-neutral-400">members can only enter while a window is open</div>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-2 mb-4 mt-3">
+      <input id="gwTitle" class="input md:col-span-2" placeholder="Title — e.g. Autumn Kyu Grading">
+      <input type="date" id="gwDate" class="input" title="Grading date">
+      <button onclick="createWindow()" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition">Open Window →</button>
+    </div>
+    ${windows.length ? `<div class="grid gap-2">${windows.map(wd => {
+      const entries = gwEntries.filter(x => x.window_id === wd.id);
+      return `
+      <div class="rounded-[14px] border ${wd.is_open ? 'border-emerald-200 bg-emerald-50/50' : 'border-neutral-200 bg-neutral-50/60'} p-4">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 justify-between">
+          <div class="min-w-0">
+            <div class="text-[13.5px] font-semibold truncate">${escapeHtml(wd.title)}
+              ${wd.is_open ? '<span class="ml-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-100 text-emerald-700">OPEN</span>' : '<span class="ml-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-neutral-100 text-neutral-500">CLOSED</span>'}
+            </div>
+            <div class="text-[11px] text-neutral-500 mt-0.5">${wd.grading_date ? 'Grading: ' + fmtDate(wd.grading_date) + ' • ' : ''}scope: ${escapeHtml(wd.belt_scope || 'all')} • ${entries.length} member${entries.length === 1 ? '' : 's'} entered</div>
+          </div>
+          <div class="flex gap-1.5 shrink-0">
+            <button onclick="toggleWindow('${wd.id}', ${!wd.is_open})" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">${wd.is_open ? 'Close window' : 'Re-open'}</button>
+            <button onclick="toggleGwEntries('${wd.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Entries</button>
+          </div>
+        </div>
+        <div id="gwEntries-${wd.id}" class="hidden mt-3 grid gap-1.5">
+          ${entries.length ? entries.map(en => `
+            <div class="flex items-center justify-between gap-3 px-3.5 py-2 rounded-[10px] bg-white border border-neutral-100">
+              <span class="text-[12px] font-medium truncate">${escapeHtml(en.students?.full_name || '—')} <span class="text-neutral-400 text-[10.5px]">${escapeHtml(en.students?.registration_ref || '')}</span></span>
+              <span class="text-[11px] text-neutral-500 shrink-0">→ ${escapeHtml(en.target_belt || en.students?.current_belt || '')}</span>
+            </div>`).join('') : '<div class="text-[11.5px] text-neutral-400 px-1">No entries yet.</div>'}
+        </div>
+      </div>`;
+    }).join('')}</div>` : `<div class="text-[12.5px] text-neutral-400">No grading windows yet — open one to let members enter.</div>`}
+    <div class="text-[10.5px] text-neutral-400 mt-2">Members no longer request gradings — you announce a window here, they enter from their portal, then you record results as usual.</div>`;
+}
+
+async function createWindow() {
+  const title = $('gwTitle').value.trim();
+  if (!title) return toast('Give the grading window a title.', true);
+  const { error } = await sb.from('grading_windows').insert({
+    title, belt_scope: 'all', grading_date: $('gwDate').value || null, is_open: true, announced_by: currentUser.id,
+  });
+  if (error) return toast('✗ ' + error.message, true);
+  toast('✓ Grading window open — members can now enter from their portal');
+  $('gwTitle').value = ''; $('gwDate').value = '';
+  loadGradingWindows();
+}
+
+async function toggleWindow(id, val) {
+  const { error } = await sb.from('grading_windows').update({ is_open: val }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast(val ? 'Window open — portal entry enabled' : 'Window closed');
+  loadGradingWindows();
+}
+
+function toggleGwEntries(id) {
+  const el = $('gwEntries-' + id);
+  if (el) el.classList.toggle('hidden');
+}
+
+/* ═══════════ CHECK-IN LOG (per-ID time, late chips, remarks) ═══════════ */
+let qrlogDate = null;   // null = today (WAT)
+
+function lagosToday() {
+  const t = new Date(Date.now() + 60 * 60 * 1000); // WAT = UTC+1, no DST
+  return t.toISOString().slice(0, 10);
+}
+
+async function showQrLog() {
+  const dateVal = qrlogDate || lagosToday();
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-5 flex flex-col sm:flex-row sm:items-end gap-3">
+      <div class="flex-1">
+        <div class="text-[12px] font-bold tracking-[0.14em] mb-1">CHECK-IN LOG</div>
+        <p class="text-[12px] text-neutral-500">Every ID's exact check-in time, punctuality and a light remark — QR and front-desk check-ins together.</p>
+      </div>
+      <label class="block">
+        <div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">TRAINING DAY</div>
+        <input type="date" id="qrlogDate" class="input" value="${dateVal}" onchange="qrlogDate=this.value; renderQrLog()">
+      </label>
+      <button onclick="renderQrLog()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition">Refresh</button>
+      <button onclick="exportQrLog()" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition">⬇ CSV</button>
+    </div>
+    <div id="qrlogBody" class="grid gap-4"></div>
+  </div>`;
+  renderQrLog();
+}
+
+function logRemark(r) {
+  const parts = [];
+  if (r.minutes_after_start == null) parts.push('no QR window that day');
+  else if (r.minutes_after_start <= 0) parts.push('Early on the mat ⚡');
+  else if (r.minutes_after_start <= 15) parts.push(`On time ✓ (${r.minutes_after_start} min in)`);
+  else parts.push(`Late — ${r.minutes_after_start} min after start`);
+  const wc = r.week_count ?? 1;
+  if (wc >= 2) parts.push(`${wc} sessions this week 🎯 target hit`);
+  else if (wc === 1) parts.push('1st session this week');
+  return parts.join(' • ');
+}
+
+async function renderQrLog() {
+  const dateVal = qrlogDate || lagosToday();
+  const { data, error } = await sb.rpc('attendance_log', { p_date: qrlogDate || null });
+  const d = !error && data;
+  const rows = (d && d.rows) || [];
+  const onTime = rows.filter(r => r.status !== 'late');
+  const late = rows.filter(r => r.status === 'late');
+
+  $('qrlogBody').innerHTML = (error || !d || d.status !== 'ok') ? `
+    <div class="card p-6 text-[12.5px] leading-[1.6] bg-amber-50 border-amber-200 text-amber-800">
+      <b>Couldn't load the log.</b> ${escapeHtml(d?.message || error?.message || 'Unknown error.')}<br>
+      If it says the function doesn't exist: run <b>cifika_v2_migration.sql</b> once in Supabase → SQL Editor, then come back.
+    </div>` : `
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${statCard('CHECK-INS', rows.length, fmtDate(d.date))}
+      ${statCard('ON TIME', onTime.length, rows.length ? Math.round(onTime.length / rows.length * 100) + '% of check-ins' : '')}
+      ${statCard('LATE', late.length, '15+ min after start', late.length ? 'text-amber-600' : '')}
+      ${statCard('SESSIONS CONSUMED', rows.filter(r => r.session_consumed).length, 'counted against balance')}
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+        <div class="text-[12px] font-bold tracking-[0.14em]">PER-ID RECORDS</div>
+        <div class="text-[11px] text-neutral-400">${escapeHtml(d.day_name || '')} ${fmtDate(d.date)}${d.start_time ? ' • class ' + String(d.start_time).slice(0,5) : ''}</div>
+      </div>
+      ${rows.length ? rows.map(r => `
+      <div class="flex items-start gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+        <div class="text-center shrink-0 w-[52px]">
+          <div class="text-[14px] font-extrabold leading-none">${escapeHtml(r.at_local || '—')}</div>
+          <div class="text-[8.5px] font-bold tracking-[0.08em] text-neutral-400 mt-1">WAT</div>
+        </div>
+        <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[12px] font-bold shrink-0">${initial(r.full_name)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[13px] font-semibold truncate">${escapeHtml(r.full_name || '—')}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.status === 'late' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">${r.status === 'late' ? '⚠️ LATE' : '✓ ON TIME'}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.check_in_source === 'qr' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}">${r.check_in_source === 'qr' ? '📱 QR' : '🖥️ DESK'}</span>
+          </div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">${escapeHtml(r.registration_ref || '')} • ${escapeHtml(r.current_belt || '')}</div>
+          <div class="text-[11.5px] text-neutral-600 mt-1">${escapeHtml(logRemark(r))}</div>
+        </div>
+        <div class="text-right shrink-0">
+          ${r.session_consumed
+            ? '<span class="text-[10px] font-bold text-neutral-400">SESSION COUNTED</span>'
+            : '<span class="text-[10px] font-bold text-neutral-300">NO SESSION USED</span>'}
+          ${r.alert_level && r.alert_level !== 'green' ? `<div class="mt-1 text-[9.5px] font-bold ${r.alert_level === 'red' ? 'text-red-600' : r.alert_level === 'yellow' ? 'text-amber-600' : 'text-[#B34700]'}">RENEWAL ${r.alert_level.toUpperCase()}</div>` : ''}
+        </div>
+      </div>`).join('')
+      : `<div class="p-10 text-center text-[13px] text-neutral-400">No check-ins recorded for this day.</div>`}
+    </div>`;
+}
+
+function exportQrLog() {
+  // uses whatever is currently rendered — re-fetch to be safe
+  sb.rpc('attendance_log', { p_date: qrlogDate || null }).then(({ data }) => {
+    const rows = (data && data.rows) || [];
+    download(`cifika-checkin-log-${qrlogDate || lagosToday()}.csv`, csv([[
+      'Date', 'Check-in Time (WAT)', 'Member ID', 'Name', 'Belt', 'Status', 'Source',
+      'Minutes After Start', 'Sessions This Week', 'Session Consumed', 'Renewal Alert'],
+      ...rows.map(r => [qrlogDate || lagosToday(), r.at_local, r.registration_ref, r.full_name,
+        r.current_belt, r.status, r.check_in_source, r.minutes_after_start ?? '',
+        r.week_count ?? '', r.session_consumed ? 'yes' : 'no', r.alert_level || 'green'])
+    ]));
+    toast('✓ CSV downloaded');
+  });
+}
+
+/* ═══════════ CONSISTENCY (weekly 2-session tracking) ═══════════ */
+let consWeeks = 6;
+
+async function showConsistency() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-5 flex flex-col sm:flex-row sm:items-end gap-3">
+      <div class="flex-1">
+        <div class="text-[12px] font-bold tracking-[0.14em] mb-1">CONSISTENCY</div>
+        <p class="text-[12px] text-neutral-500">Sessions per week against the club target of <b>2 per week</b> — spot perfect streaks and silent drop-offs early.</p>
+      </div>
+      <div class="flex gap-1.5">
+        ${[4, 6, 8].map(w => `<button onclick="consWeeks=${w}; showConsistency()" class="h-9 px-4 rounded-full border text-[11.5px] font-bold transition ${consWeeks === w ? 'bg-black text-white border-black' : 'bg-white text-neutral-600 border-neutral-200 hover:border-black'}">${w}w</button>`).join('')}
+      </div>
+    </div>
+    <div id="consBody" class="grid gap-4"></div>
+  </div>`;
+  await renderConsistency();
+}
+
+function streakOf(weekMap, weeks) {
+  let s = 0;
+  for (let i = weeks.length - 1; i >= 0; i--) {
+    const n = Number(weekMap[weeks[i]] || 0);
+    if (n >= 2) s++;
+    else if (i === weeks.length - 1) continue; // current week still in progress — don't break the streak
+    else break;
+  }
+  return s;
+}
+
+function weekLabel(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+async function renderConsistency() {
+  const { data, error } = await sb.rpc('attendance_consistency', { p_weeks: consWeeks });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') {
+    $('consBody').innerHTML = `
+    <div class="card p-6 text-[12.5px] leading-[1.6] bg-amber-50 border-amber-200 text-amber-800">
+      <b>Couldn't load consistency data.</b> ${escapeHtml(d?.message || error?.message || 'Unknown error.')}<br>
+      If it says the function doesn't exist: run <b>cifika_v2_migration.sql</b> once in Supabase → SQL Editor.
+    </div>`;
+    return;
+  }
+  const weeks = d.weeks || [];
+  const rows = d.rows || [];
+  const prevWk = weeks.length >= 2 ? weeks[weeks.length - 2] : null;
+  const curWk = weeks[weeks.length - 1] || null;
+
+  const perfectPrev = prevWk ? rows.filter(r => Number(r.week_map?.[prevWk] || 0) >= 2).length : 0;
+  const silentPrev  = prevWk ? rows.filter(r => Number(r.week_map?.[prevWk] || 0) === 0) : [];
+  const activeCur   = curWk ? rows.filter(r => Number(r.week_map?.[curWk] || 0) > 0).length : 0;
+
+  const cell = n => n >= 2 ? 'bg-emerald-500 text-white'
+                : n === 1 ? 'bg-amber-300 text-amber-900'
+                : 'bg-neutral-100 text-neutral-300';
+
+  $('consBody').innerHTML = `
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    ${statCard('MEMBERS TRACKED', rows.length, `last ${weeks.length} weeks`)}
+    ${statCard('PERFECT LAST WEEK', perfectPrev, prevWk ? '2 of 2 sessions' : '', perfectPrev ? 'text-emerald-600' : '')}
+    ${statCard('TRAINED THIS WEEK', activeCur, 'at least 1 session so far')}
+    ${statCard('WATCHLIST', silentPrev.length, '0 sessions last week', silentPrev.length ? 'text-red-600' : '')}
+  </div>
+
+  ${silentPrev.length ? `
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">⚠️ WATCHLIST — TRAINED 0× LAST WEEK</div>
+    <div class="px-5 py-2 text-[11px] text-neutral-500">Reach out before the habit breaks — a WhatsApp nudge works wonders.</div>
+    ${silentPrev.map(r => `
+    <div class="flex items-center gap-3 px-5 py-2.5 border-t border-neutral-100">
+      <div class="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[11px] font-bold shrink-0">${initial(r.full_name)}</div>
+      <div class="text-[12.5px] font-semibold truncate flex-1">${escapeHtml(r.full_name || '—')} <span class="text-neutral-400 text-[10.5px]">${escapeHtml(r.registration_ref || '')}</span></div>
+      <span class="text-[10.5px] text-neutral-400 shrink-0">${escapeHtml(r.current_belt || '')}</span>
+    </div>`).join('')}
+  </div>` : ''}
+
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between flex-wrap gap-2">
+      <div class="text-[12px] font-bold tracking-[0.14em]">WEEK-BY-WEEK (target 2/week)</div>
+      <div class="flex items-center gap-3 text-[10px] text-neutral-400 font-semibold">
+        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500"></span>2+</span>
+        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-300"></span>1</span>
+        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-neutral-100 border border-neutral-200"></span>0</span>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[12px]" style="min-width:${380 + weeks.length * 44}px">
+        <thead><tr class="text-[10px] text-neutral-400 tracking-[0.08em]">
+          <th class="text-left font-bold px-5 py-2.5">MEMBER</th>
+          ${weeks.map(w => `<th class="font-bold px-1 py-2.5 text-center">${weekLabel(w)}</th>`).join('')}
+          <th class="font-bold px-3 py-2.5 text-center">STREAK</th>
+          <th class="font-bold px-3 py-2.5 text-center">TOTAL</th>
+        </tr></thead>
+        <tbody>
+          ${rows.length ? rows.map(r => {
+            const streak = streakOf(r.week_map || {}, weeks);
+            const total = r.total ?? 0;
+            const rate = Math.round(total / (weeks.length * 2) * 100);
+            return `
+            <tr class="border-t border-neutral-100 hover:bg-neutral-50/60">
+              <td class="px-5 py-2.5">
+                <div class="font-semibold truncate max-w-[220px]">${escapeHtml(r.full_name || '—')}</div>
+                <div class="text-[10px] text-neutral-400">${escapeHtml(r.registration_ref || '')} • ${escapeHtml(r.current_belt || '')}</div>
+              </td>
+              ${weeks.map(w => {
+                const n = Number(r.week_map?.[w] || 0);
+                return `<td class="px-1 py-2.5 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded-lg text-[10.5px] font-bold ${cell(n)}">${n || '·'}</span></td>`;
+              }).join('')}
+              <td class="px-3 py-2.5 text-center"><span class="text-[12px] font-extrabold ${streak >= 3 ? 'text-emerald-600' : streak > 0 ? 'text-neutral-700' : 'text-neutral-300'}">${streak > 0 ? '🔥' + streak : '—'}</span></td>
+              <td class="px-3 py-2.5 text-center"><span class="text-[12px] font-bold ${rate >= 75 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-red-500'}">${total}</span><div class="text-[9px] text-neutral-400">${rate}%</div></td>
+            </tr>`;
+          }).join('') : `<tr><td colspan="${weeks.length + 3}" class="px-5 py-10 text-center text-[13px] text-neutral-400">No members to track yet.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-3 text-[10.5px] text-neutral-400 border-t border-neutral-100">Weeks run Monday–Sunday (WAT). 🔥 = consecutive weeks with both sessions done. Current week updates live as members check in.</div>
+  </div>`;
 }
 
 /* ═══════════ SHARED COMPONENTS ═══════════ */
