@@ -5,34 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#000000">
 <title>City Fitness Karate Club — Check In</title>
-<!--
-  ════════════════════════════════════════════════════════════════════
-  CIFIKA — OPENING CEREMONY CHECK-IN PAGE
-  ────────────────────────────────────────────────────────────────────
-  QUICK SETUP (takes ~2 minutes):
 
-  1. Create a Google Sheet with these EXACT headers in row 1:
-       A1: Timestamp    B1: Name    C1: Email    D1: Experience
-
-  2. Go to https://sheetdb.io → Sign up (free, no credit card)
-     → "Create new API" → connect that Google Sheet
-     → copy your API URL (looks like https://sheetdb.io/api/v1/xxxxxx)
-
-  3. Scroll to the <script> near the bottom of THIS file and paste
-     your URL into the SHEETDB_URL line. Save.
-
-  4. Reload this page, submit one test check-in, and confirm a new
-     row appears in your Google Sheet. Done — you're live!
-
-  SAFETY NET: every check-in is also saved on the device (with
-  automatic retry until Google Sheets confirms it). The
-  "Export check-ins backup (CSV)" link at the bottom downloads
-  everything from this device at any time.
-
-  The orange warning banner at the top disappears automatically
-  once SheetDB is linked and working.
-  ════════════════════════════════════════════════════════════════════
--->
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="icon" type="image/svg" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
@@ -71,6 +44,11 @@
   .input.invalid { border-color: #ef4444; }
   .toggle-btn { transition: all 0.15s ease; }
   .toggle-btn.active { background: #111; color: white; border-color: #111; }
+  .session-btn { transition: border-color 0.15s, background 0.15s; }
+  .session-btn:hover { border-color: #d4d4d4; }
+  .sess-check { transition: all 0.15s ease; color: transparent; }
+  .session-btn.active { border-color: #FF6B00; background: #FFF5EB; }
+  .session-btn.active .sess-check { background: #FF6B00; border-color: #FF6B00; color: #ffffff; }
   .screen { display: none; }
   .screen.active { display: block; animation: fadeIn 0.45s ease-out; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -95,7 +73,7 @@
     </div>
     <div class="hidden sm:flex items-center gap-2 text-[11px] text-neutral-400 tracking-[0.08em]">
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-      OPENING CEREMONY • LIVE CHECK-IN
+      COMPLIMENTARY SESSIONS • LIVE CHECK-IN
     </div>
   </div>
   <div class="h-[3px] w-full bg-neutral-800">
@@ -121,33 +99,87 @@
         <div class="flex items-center justify-between">
           <div class="w-14 h-14 rounded-full bg-brand/10 flex items-center justify-center text-[26px]">🥋</div>
           <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black text-white text-[10px] font-bold tracking-[0.14em]">
-            OPENING CEREMONY • 2026
+            3 FREE SESSIONS • OCT 30 – NOV 1
           </div>
         </div>
 
         <h1 class="mt-6 text-[30px] md:text-[34px] font-black leading-[1.08] tracking-[-0.03em]">
-          Welcome to Our <span class="text-brand">Official Opening!</span>
+          Welcome to Our 3-Day <span class="text-brand">Complimentary Sessions!</span>
         </h1>
-        <p class="mt-2.5 text-[14px] text-neutral-600 leading-[1.6]">We're glad to have you with us today! Check in below — it only takes a few seconds.</p>
+        <p class="mt-2.5 text-[14px] text-neutral-600 leading-[1.6]">Classes kickstart this weekend with free training! Pick the session(s) you'll be available for and check in below — it only takes a few seconds.</p>
 
         <form id="checkinForm" class="mt-7 grid gap-4" novalidate>
-          <label class="block">
-            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">NAME <span class="text-brand">*</span></div>
-            <input class="input" placeholder="Your full name" name="name" autocomplete="name" autocapitalize="words">
-            <div class="err text-[11px] text-red-500 mt-1.5 hidden">Please enter your name.</div>
-          </label>
 
+          <!-- ── SESSION SELECTION (multi-select) ── -->
+          <div class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">SELECT YOUR SESSIONS <span class="text-brand">*</span></div>
+            <p class="text-[11.5px] text-neutral-500 leading-[1.55] mb-2.5">Select which session(s) you'll be available for — you can pick one, two, or all three.</p>
+            <div class="grid gap-2">
+              <button type="button" class="session-btn w-full flex items-center gap-3 rounded-2xl border-[1.5px] border-neutral-200 bg-white px-4 py-3 text-left" data-value="Friday 30 Oct, 4:30 PM" aria-pressed="false">
+                <span class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-[17px] shrink-0">🥋</span>
+                <span class="flex-1 min-w-0">
+                  <span class="block text-[14px] font-bold text-neutral-900 leading-tight">Friday, 30th October</span>
+                  <span class="block text-[12px] text-neutral-500 mt-0.5">4:30 PM</span>
+                </span>
+                <span class="sess-check w-6 h-6 rounded-full border-[1.5px] border-neutral-300 flex items-center justify-center text-[12px] shrink-0">✓</span>
+              </button>
+              <button type="button" class="session-btn w-full flex items-center gap-3 rounded-2xl border-[1.5px] border-neutral-200 bg-white px-4 py-3 text-left" data-value="Saturday 31 Oct, 8:00 AM" aria-pressed="false">
+                <span class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-[17px] shrink-0">🥋</span>
+                <span class="flex-1 min-w-0">
+                  <span class="block text-[14px] font-bold text-neutral-900 leading-tight">Saturday, 31st October</span>
+                  <span class="block text-[12px] text-neutral-500 mt-0.5">8:00 AM</span>
+                </span>
+                <span class="sess-check w-6 h-6 rounded-full border-[1.5px] border-neutral-300 flex items-center justify-center text-[12px] shrink-0">✓</span>
+              </button>
+              <button type="button" class="session-btn w-full flex items-center gap-3 rounded-2xl border-[1.5px] border-neutral-200 bg-white px-4 py-3 text-left" data-value="Sunday 1 Nov, 4:30 PM" aria-pressed="false">
+                <span class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center text-[17px] shrink-0">🥋</span>
+                <span class="flex-1 min-w-0">
+                  <span class="block text-[14px] font-bold text-neutral-900 leading-tight">Sunday, 1st November</span>
+                  <span class="block text-[12px] text-neutral-500 mt-0.5">4:30 PM</span>
+                </span>
+                <span class="sess-check w-6 h-6 rounded-full border-[1.5px] border-neutral-300 flex items-center justify-center text-[12px] shrink-0">✓</span>
+              </button>
+            </div>
+            <div id="sessionErr" class="err text-[11px] text-red-500 mt-1.5 hidden">Please select at least one session.</div>
+          </div>
+
+          <!-- ── SELF / FAMILY ── -->
+          <div class="block">
+            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">WHO'S CHECKING IN?</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="toggle-btn type-btn active h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="Self">👤 Self</button>
+              <button type="button" class="toggle-btn type-btn h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="Family">👪 Family</button>
+            </div>
+          </div>
+
+          <!-- ── NAME(S) ── -->
+          <p id="familyHint" class="hidden text-[11.5px] text-neutral-500 leading-[1.55] -mt-1">Add the full name of everyone attending — one email is enough for the whole family.</p>
+
+          <div id="namesWrap" class="grid gap-3">
+            <label class="block name-row">
+              <div id="primaryNameLabel" class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">NAME <span class="text-brand">*</span></div>
+              <input class="input" placeholder="Your full name" name="name" autocomplete="name" autocapitalize="words">
+              <div class="err text-[11px] text-red-500 mt-1.5 hidden">Please enter your name.</div>
+            </label>
+          </div>
+
+          <button type="button" id="addMemberBtn" class="hidden h-[46px] rounded-full border-[1.5px] border-dashed border-neutral-300 bg-white text-[13px] font-semibold text-neutral-600 hover:border-brand hover:text-brand transition flex items-center justify-center gap-1.5">
+            <span class="text-[15px] leading-none">+</span> Add family member
+          </button>
+
+          <!-- ── EMAIL (one for the whole party) ── -->
           <label class="block">
-            <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">EMAIL <span class="text-brand">*</span></div>
+            <div id="emailLabel" class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">EMAIL <span class="text-brand">*</span></div>
             <input type="email" class="input" placeholder="you@email.com" name="email" autocomplete="email">
             <div class="err text-[11px] text-red-500 mt-1.5 hidden">Please enter a valid email address.</div>
           </label>
 
+          <!-- ── KARATE EXPERIENCE ── -->
           <div class="block">
             <div class="text-[11px] font-semibold tracking-[0.1em] text-neutral-700 mb-1.5">KARATE EXPERIENCE</div>
             <div class="grid grid-cols-2 gap-2">
-              <button type="button" class="toggle-btn active h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="New to karate">New to karate</button>
-              <button type="button" class="toggle-btn h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="Has some experience">Have some experience</button>
+              <button type="button" class="toggle-btn exp-btn active h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="New to karate">New to karate</button>
+              <button type="button" class="toggle-btn exp-btn h-[46px] px-2 rounded-full border border-neutral-200 bg-white text-[13px] font-medium" data-value="Has some experience">Have some experience</button>
             </div>
           </div>
 
@@ -166,9 +198,17 @@
         <div class="w-16 h-16 mx-auto rounded-full bg-brand/10 flex items-center justify-center text-[30px] ring-pulse">🥋</div>
 
         <h1 class="mt-6 text-[30px] md:text-[34px] font-black leading-[1.08] tracking-[-0.03em]">You're All Set<span id="successName"></span>!</h1>
-        <p class="mt-2.5 text-[14px] text-neutral-600 leading-[1.6]">We're excited to have you join us. Stay Connected!</p>
+        <p id="successSub" class="mt-2.5 text-[14px] text-neutral-600 leading-[1.6]">You're booked in for the complimentary sessions — we can't wait to see you on the mat!</p>
 
         <div class="mt-6 rounded-[18px] bg-brand-light border border-brand-border p-5 text-left">
+          <div class="flex items-center gap-2 text-[13px] font-bold text-neutral-900">
+            <span class="w-6 h-6 rounded-full bg-brand/15 text-brand flex items-center justify-center text-[12px]">🗓</span>
+            <span>Your complimentary sessions (<span id="sessionCount"></span>)</span>
+          </div>
+          <ul id="sessionSummary" class="mt-3 grid gap-2"></ul>
+        </div>
+
+        <div class="mt-4 rounded-[18px] bg-brand-light border border-brand-border p-5 text-left">
           <div class="flex items-center gap-2 text-[13px] font-bold text-neutral-900">
             <span class="w-6 h-6 rounded-full bg-wa/15 text-wa flex items-center justify-center text-[12px]">✓</span>
             Join our WhatsApp Community
@@ -210,12 +250,17 @@
    ⚙️ SETUP — YOU ONLY NEED TO EDIT *ONE LINE* BELOW
    ─────────────────────────────────────────────────────────────────
    1. Google Sheet headers in row 1 must be EXACTLY:
-        Timestamp | Name | Email | Experience
+        Timestamp | Name | Email | Experience | Sessions | Attendee Type
    2. sheetdb.io → Sign up (free) → Create new API → connect the sheet
    3. Paste your API URL below (it looks like https://sheetdb.io/api/v1/xxxx)
    4. Reload, do a test check-in, confirm the row appears. Done!
+
+   NOTES:
+   - Family check-ins save ONE ROW PER PERSON (same email & sessions).
+   - Sessions column holds the selected days, e.g.
+       "Friday 30 Oct, 4:30 PM, Sunday 1 Nov, 4:30 PM"
    ═══════════════════════════════════════════════════════════════════ */
-const SHEETDB_URL  = "PASTE_YOUR_SHEETDB_API_URL_HERE";  // ← EDIT THIS LINE
+const SHEETDB_URL  = "https://sheetdb.io/api/v1/xtfg90yp7fw6q";  // ← EDIT THIS LINE
 const WHATSAPP_URL = "https://whatsapp.com/channel/0029VbDclCNEwEjzVxAtTR0C";  // WhatsApp community channel
 
 const LS_KEY = 'cifika_checkins';
@@ -226,14 +271,68 @@ const nameInput  = form.querySelector('input[name="name"]');
 const emailInput = form.querySelector('input[name="email"]');
 const checkinBtn = $('#checkinBtn');
 let experience   = 'New to karate';
+let attendeeType = 'Self';
 
 /* apply WhatsApp link */
 $('#waBtn').href = WHATSAPP_URL;
 
-/* ── experience toggle ── */
-document.querySelectorAll('.toggle-btn').forEach(btn => {
+/* ── session multi-select (1, 2 or all 3) ── */
+const selectedSessions = new Set();
+document.querySelectorAll('.session-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    const v = btn.dataset.value;
+    const on = !selectedSessions.has(v);
+    if (on) selectedSessions.add(v); else selectedSessions.delete(v);
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    $('#sessionErr').classList.add('hidden');
+  });
+});
+
+/* ── self / family toggle ── */
+function applyAttendeeMode() {
+  const family = attendeeType === 'Family';
+  $('#addMemberBtn').classList.toggle('hidden', !family);
+  $('#familyHint').classList.toggle('hidden', !family);
+  $('#primaryNameLabel').innerHTML = family
+    ? 'YOUR NAME (SIGNING IN) <span class="text-brand">*</span>'
+    : 'NAME <span class="text-brand">*</span>';
+  $('#emailLabel').innerHTML = family
+    ? 'EMAIL <span class="text-brand">*</span> <span class="font-normal text-neutral-400 tracking-normal">(one for the whole family)</span>'
+    : 'EMAIL <span class="text-brand">*</span>';
+  if (!family) document.querySelectorAll('#namesWrap .name-row.added').forEach(r => r.remove());
+}
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    attendeeType = btn.dataset.value;
+    applyAttendeeMode();
+  });
+});
+
+/* ── add / remove family member name rows ── */
+function addMemberRow() {
+  const wrap = $('#namesWrap');
+  if (wrap.querySelectorAll('.name-row').length >= 12) return;
+  const row = document.createElement('div');
+  row.className = 'name-row added';
+  row.innerHTML =
+    '<div class="flex items-center gap-2">' +
+      '<input class="input flex-1 min-w-0" placeholder="Family member\'s full name" autocomplete="off" autocapitalize="words">' +
+      '<button type="button" class="remove-row shrink-0 w-[46px] h-[46px] rounded-full border-[1.5px] border-neutral-200 bg-white text-neutral-400 hover:text-red-500 hover:border-red-300 transition flex items-center justify-center" aria-label="Remove family member">✕</button>' +
+    '</div>' +
+    '<div class="err text-[11px] text-red-500 mt-1.5 hidden">Please enter this name.</div>';
+  row.querySelector('.remove-row').addEventListener('click', () => row.remove());
+  wrap.appendChild(row);
+  row.querySelector('input').focus();
+}
+$('#addMemberBtn').addEventListener('click', addMemberRow);
+
+/* ── experience toggle ── */
+document.querySelectorAll('.exp-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.exp-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     experience = btn.dataset.value;
   });
@@ -242,7 +341,8 @@ document.querySelectorAll('.toggle-btn').forEach(btn => {
 /* ── validation helpers ── */
 function setInvalid(input, bad) {
   input.classList.toggle('invalid', bad);
-  const err = input.closest('label').querySelector('.err');
+  const row = input.closest('.name-row, label');
+  const err = row ? row.querySelector('.err') : null;
   if (err) err.classList.toggle('hidden', !bad);
 }
 const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
@@ -267,20 +367,27 @@ function refreshWarning() {
   }
   const pending = loadLocal().filter(r => !r.synced).length;
   if (pending > 0) {
-    warn(pending + ' check-in' + (pending > 1 ? 's are' : ' is') + ' saved on this device but not yet in Google Sheets. They will retry automatically — check your SheetDB URL and that the sheet headers are exactly: Timestamp, Name, Email, Experience.');
+    warn(pending + ' check-in' + (pending > 1 ? 's are' : ' is') + ' saved on this device but not yet in Google Sheets. They will retry automatically — check your SheetDB URL and that the sheet headers are exactly: Timestamp, Name, Email, Experience, Sessions, Attendee Type.');
   } else {
     clearWarn();
   }
 }
 
-/* ── send one record to SheetDB (Google Sheets) ── */
-async function pushRecord(rec) {
-  if (!isConfigured()) return false;
+/* ── send a batch of records to SheetDB (Google Sheets) ── */
+async function pushRecords(recs) {
+  if (!isConfigured() || !recs.length) return false;
   try {
     const res = await fetch(SHEETDB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ data: [{ 'Timestamp': rec.Timestamp, 'Name': rec.Name, 'Email': rec.Email, 'Experience': rec.Experience }] })
+      body: JSON.stringify({ data: recs.map(r => ({
+        'Timestamp': r.Timestamp,
+        'Name': r.Name,
+        'Email': r.Email,
+        'Experience': r.Experience,
+        'Sessions': r.Sessions,
+        'Attendee Type': r['Attendee Type']
+      })) })
     });
     return res.ok;
   } catch (e) { return false; }
@@ -290,14 +397,13 @@ async function pushRecord(rec) {
 async function flushPending() {
   if (!isConfigured()) { refreshWarning(); return; }
   const list = loadLocal();
-  let changed = false;
-  for (const r of list) {
-    if (!r.synced) {
-      const ok = await pushRecord(r);
-      if (ok) { r.synced = true; changed = true; }
-    }
+  const pending = list.filter(r => !r.synced);
+  if (!pending.length) { clearWarn(); return; }
+  if (await pushRecords(pending)) {
+    const ids = new Set(pending.map(r => r.id));
+    list.forEach(r => { if (ids.has(r.id)) r.synced = true; });
+    storeLocal(list);
   }
-  if (changed) storeLocal(list);
   refreshWarning();
 }
 
@@ -305,43 +411,72 @@ async function flushPending() {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const name  = nameInput.value.trim().replace(/\s+/g, ' ');
-  const email = emailInput.value.trim().toLowerCase();
+  /* sessions: at least one must be picked */
+  const sessions = [...selectedSessions];
+  $('#sessionErr').classList.toggle('hidden', sessions.length > 0);
 
-  const badName  = name.length < 2;
+  /* names: every row (self = 1 row, family = 1..n rows) */
+  const nameRows = [...form.querySelectorAll('#namesWrap .name-row input')];
+  let badName = nameRows.length === 0;
+  nameRows.forEach(inp => {
+    const bad = inp.value.trim().replace(/\s+/g, ' ').length < 2;
+    setInvalid(inp, bad);
+    if (bad) badName = true;
+  });
+
+  const email = emailInput.value.trim().toLowerCase();
   const badEmail = !emailOk(email);
-  setInvalid(nameInput, badName);
   setInvalid(emailInput, badEmail);
-  if (badName || badEmail) {
+
+  if (sessions.length === 0 || badName || badEmail) {
     form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake');
     return;
   }
 
+  const names = nameRows.map(i => i.value.trim().replace(/\s+/g, ' '));
+  const sessionsStr = sessions.join(', ');
+
   checkinBtn.disabled = true;
   checkinBtn.innerHTML = '<span class="spin inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full"></span> CHECKING IN\u2026';
 
-  /* 1) always keep a local backup first — data can never be lost */
-  const rec = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), Timestamp: fmtTime(new Date()), Name: name, Email: email, Experience: experience, synced: false };
-  const list = loadLocal(); list.push(rec); storeLocal(list);
+  /* 1) always keep a local backup first — data can never be lost (one row per person) */
+  const stamp = fmtTime(new Date());
+  const recs = names.map((n, idx) => ({
+    id: Date.now() + '-' + idx + '-' + Math.random().toString(36).slice(2, 7),
+    Timestamp: stamp,
+    Name: n,
+    Email: email,
+    Experience: experience,
+    'Sessions': sessionsStr,
+    'Attendee Type': attendeeType,
+    synced: false
+  }));
+  const list = loadLocal(); list.push(...recs); storeLocal(list);
 
   /* 2) push to Google Sheets in the background (never blocks the guest) */
-  if (await pushRecord(rec)) {
-    rec.synced = true;
-    const l2 = loadLocal(); const i = l2.findIndex(x => x.id === rec.id);
-    if (i > -1) { l2[i] = rec; storeLocal(l2); }
+  if (await pushRecords(recs)) {
+    const ids = new Set(recs.map(r => r.id));
+    const l2 = loadLocal(); l2.forEach(r => { if (ids.has(r.id)) r.synced = true; }); storeLocal(l2);
   }
   refreshWarning();
 
   /* 3) restore button for the next guest, then show the welcome screen */
   checkinBtn.disabled = false;
   checkinBtn.innerHTML = 'CHECK IN';
-  showSuccess(name);
+  showSuccess(names, sessions);
 });
 
 /* ── success screen ── */
-function showSuccess(name) {
-  const first = (name.split(' ')[0] || '').trim();
+function showSuccess(names, sessions) {
+  const first = (names[0].split(' ')[0] || '').trim();
   $('#successName').textContent = first ? ', ' + first : '';
+  $('#successSub').textContent = names.length > 1
+    ? names.length + ' family members are checked in — we can\u2019t wait to see you all at the complimentary sessions!'
+    : 'You\u2019re booked in for the complimentary sessions \u2014 we can\u2019t wait to see you on the mat!';
+  $('#sessionCount').textContent = sessions.length + (sessions.length === 1 ? ' session' : ' sessions');
+  $('#sessionSummary').innerHTML = sessions.map(s =>
+    '<li class="flex items-start gap-2 text-[13px] text-neutral-800 leading-[1.5]"><span class="text-wa font-bold shrink-0">✓</span><span>' + s + '</span></li>'
+  ).join('');
   $('#checkinScreen').classList.remove('active');
   $('#successScreen').classList.remove('active');
   void $('#successScreen').offsetWidth;
@@ -352,9 +487,20 @@ function showSuccess(name) {
 /* ── reset for the next guest ── */
 $('#resetBtn').addEventListener('click', () => {
   form.reset();
-  nameInput.classList.remove('invalid'); emailInput.classList.remove('invalid');
-  form.querySelectorAll('.err').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.value === 'Self'));
+  attendeeType = 'Self';
+  applyAttendeeMode();
+  document.querySelectorAll('.exp-btn').forEach(b => b.classList.toggle('active', b.dataset.value === 'New to karate'));
+  experience = 'New to karate';
+  selectedSessions.clear();
+  document.querySelectorAll('.session-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+  document.querySelectorAll('#namesWrap .name-row.added').forEach(r => r.remove());
+  document.querySelectorAll('#checkinForm .input').forEach(i => i.classList.remove('invalid'));
+  document.querySelectorAll('#checkinForm .err').forEach(el => el.classList.add('hidden'));
+  $('#sessionErr').classList.add('hidden');
   $('#successScreen').classList.remove('active');
+  $('#checkinScreen').classList.remove('active');
+  void $('#checkinScreen').offsetWidth;
   $('#checkinScreen').classList.add('active');
   nameInput.focus();
 });
@@ -364,8 +510,8 @@ $('#exportBtn').addEventListener('click', () => {
   const rows = loadLocal();
   if (!rows.length) { alert('No check-ins saved on this device yet.'); return; }
   const esc = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const csv = ['Timestamp,Name,Email,Experience,SyncedToSheet']
-    .concat(rows.map(r => [r.Timestamp, r.Name, r.Email, r.Experience, r.synced ? 'yes' : 'no'].map(esc).join(',')))
+  const csv = ['Timestamp,Name,Email,Experience,Sessions,Attendee Type,SyncedToSheet']
+    .concat(rows.map(r => [r.Timestamp, r.Name, r.Email, r.Experience || '', r.Sessions || '', r['Attendee Type'] || '', r.synced ? 'yes' : 'no'].map(esc).join(',')))
     .join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
