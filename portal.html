@@ -136,7 +136,31 @@
 const SUPABASE_URL     = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
 
-const CLUB = { nextClass: 'Fri 4:30–6:00 PM • Sat 8:00–10:00 AM • Sun 4:30–6:00 PM' };
+const CLUB = {
+  startDate: '2026-11-06',  // official classes kick off
+  nextClass: 'From Fri 6 Nov 2026 • Fri 4:30–6:00 PM • Sat 8:00–10:00 AM • Sun 4:30–6:00 PM',
+};
+const CLUB_RULES = [
+  'Members must bow upon entering and leaving the dojo and show respect to instructors and fellow students.',
+  'Clean, correct karate-gi must be worn; keep nails trimmed and remove jewellery.',
+  'Punctuality is required. If late, wait at dojo edge and seek permission to join.',
+  'Follow instructor directions at all times. Do not attempt techniques beyond your level without supervision.',
+  'No sparring or contact outside supervised class. Control is paramount.',
+  'Maintain hygiene and personal conduct befitting martial arts.',
+  'Fees must be paid by due date. Membership requires TTOSR affiliation.',
+  'Advise instructor of any injury or illness before training.',
+  'Children must be supervised before/after class; guardian pickup required for under 12.',
+  'Zero tolerance for bullying, discrimination or unsafe behaviour.',
+  'Dojo equipment must be cared for and returned.',
+  'Club may amend rules with notice; continued training constitutes acceptance.',
+];
+const DOJO_KUN = [
+  ['一、人格完成に努むること', 'I SHALL STRIVE FOR THE PERFECTION OF CHARACTER'],
+  ['一、誠の道を守ること', 'I SHALL DEFEND THE PATH OF TRUTH'],
+  ['一、努力の精神を養うこと', 'I SHALL FOSTER THE SPIRIT OF EFFORT'],
+  ['一、礼儀を重んずること', 'I SHALL HONOUR THE PRINCIPLES OF ETIQUETTE'],
+  ['一、血気の勇を戒むること', 'I SHALL GUARD AGAINST IMPETUOUS COURAGE'],
+];
 
 /* ═══════════════ STATE ═══════════════ */
 let sb, currentUser, currentProfile, beltLevels = [], parentChildren = [];
@@ -442,7 +466,8 @@ async function viewChild(i) {
 /* ═══════════════ DASHBOARD (shared by student & parent views) ═══════════════ */
 async function renderDashboard(student, opts = {}) {
     const [{ data: attendance }, { data: gradings }, { data: scores }, { data: anns },
-           { data: balData }, { data: daysData }, { data: openWindows }, { data: myEntries }] = await Promise.all([
+           { data: balData }, { data: daysData }, { data: openWindows }, { data: myEntries },
+           { data: myAbsences }, { data: myNotices }] = await Promise.all([
     sb.from('attendance').select('*').eq('student_id', student.id).order('class_date', { ascending: false }).limit(60),
     sb.from('gradings').select('*').eq('student_id', student.id).order('grading_date', { ascending: false }),
     sb.from('grading_scores').select('*').eq('student_id', student.id),
@@ -455,6 +480,8 @@ async function renderDashboard(student, opts = {}) {
     sb.from('member_training_days').select('*').eq('student_id', student.id).maybeSingle(),
     sb.from('grading_windows').select('*').eq('is_open', true).order('created_at', { ascending: false }),
     sb.from('grading_entries').select('*').eq('student_id', student.id),
+    sb.from('absence_requests').select('*').eq('student_id', student.id).order('created_at', { ascending: false }).limit(30),
+    sb.from('email_outbox').select('*').eq('student_id', student.id).order('created_at', { ascending: false }).limit(15),
   ]);
   const att = attendance || [], grd = gradings || [];
   const scoreById = {}; (scores || []).forEach(s => scoreById[s.grading_id] = s);
@@ -502,11 +529,27 @@ async function renderDashboard(student, opts = {}) {
         <p class="mt-2 text-[12.5px] text-neutral-300 leading-[1.6]">You've reached the top of the kyu path. Dan (black belt) gradings are arranged directly with Sensei.</p>
       </div>`;
 
+  const todayLagos = lagosTodayStr();
+  const daysToStart = Math.round((new Date(CLUB.startDate + 'T00:00:00') - new Date(todayLagos + 'T00:00:00')) / 86400000);
+  const startBanner = daysToStart >= 0 ? `
+    <div class="rounded-[18px] border border-brand-border bg-brand-light p-4 md:p-5 flex items-start gap-3">
+      <span class="text-[18px] leading-none mt-0.5">🥋</span>
+      <div>
+        <div class="text-[11px] font-bold tracking-[0.1em] uppercase text-brand-text">OFFICIAL CLASSES BEGIN ${fmtDate(CLUB.startDate).toUpperCase()}</div>
+        <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${daysToStart === 0 ? 'Classes kick off <b>today</b>! 🎉 ' : daysToStart === 1 ? 'Classes kick off <b>tomorrow</b> — ' : `<b>${daysToStart} days to go</b> — `}regular classes run <b>Friday 4:30–6:00 PM • Saturday 8:00–10:00 AM • Sunday 4:30–6:00 PM</b>. Pick your 2 training days below and come ready.</p>
+      </div>
+    </div>` : '';
+  const excBanner = (student.excused_from && student.excused_until) ? excusedBannerHTML(student, todayLagos) : '';
+  window._absData = { student, requests: myAbsences || [], notices: myNotices || [] };
+
   $('appMain').innerHTML = `
   <div class="fade-in grid gap-6">
      ${opts.back ? `<button onclick="renderParentHome()" class="w-fit h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">← ${escapeHtml(opts.backLabel || 'All my children')}</button>` : ''}
 
-    ${bal.remaining !== null && bal.alert_level && bal.alert_level !== 'green' ? `
+    ${startBanner}
+    ${excBanner}
+
+    ${bal.remaining !== null && bal.alert_level && bal.alert_level !== 'green' && !(bal.alert_level === 'red' && (bal.used ?? 0) === 0) ? `
     <div class="rounded-[18px] border p-4 md:p-5 flex items-start gap-3 ${bal.alert_level === 'orange' ? 'bg-[#FFF5EB] border-[#FFD4A8]' : bal.alert_level === 'yellow' ? 'bg-amber-50 border-amber-300' : 'bg-red-50 border-red-300'}">
       <span class="text-[18px] leading-none mt-0.5">${bal.remaining <= 1 ? '🔴' : '🟠'}</span>
       <div>
@@ -603,10 +646,14 @@ async function renderDashboard(student, opts = {}) {
       <div class="px-4 md:px-6 pt-4 pb-4 flex gap-2 border-b border-neutral-100 flex-wrap">
         <button class="tab-btn active h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('attendance')">📅 Attendance</button>
         <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('gradings')">🥋 Gradings</button>
+        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('absences')">🚫 Absences</button>
+        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('dojo')">📖 Dojo Code</button>
         <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('profile')">👤 Profile</button>
       </div>
       <div id="tab-attendance" class="p-5 md:p-6">${attendanceTabHTML(att, rate)}</div>
       <div id="tab-gradings" class="hidden p-5 md:p-6">${gradingsTabHTML(grd, scoreById)}</div>
+      <div id="tab-absences" class="hidden p-5 md:p-6">${absenceTabHTML(student)}</div>
+      <div id="tab-dojo" class="hidden p-5 md:p-6">${dojoCodeHTML()}</div>
       <div id="tab-profile" class="hidden p-5 md:p-6">${profileTabHTML(student)}</div>
     </div>
   </div>`;
@@ -614,7 +661,7 @@ async function renderDashboard(student, opts = {}) {
 
 /* ═══════════════ DASHBOARD COMPONENTS ═══════════════ */
 function switchTab(name) {
-  ['attendance', 'gradings', 'profile'].forEach(t =>
+  ['attendance', 'gradings', 'absences', 'dojo', 'profile'].forEach(t =>
     $('tab-' + t).classList.toggle('hidden', t !== name));
   document.querySelectorAll('.tab-btn').forEach(b =>
     b.classList.toggle('active', b.textContent.toLowerCase().includes(name)));
@@ -882,6 +929,143 @@ function downloadCertificate(gid) {
   doc.setFontSize(8); doc.setTextColor(160,160,160);
   doc.text('Issued via the CIFIKA Member Portal  •  verify with the club using the certificate number', W/2, H - 20, { align: 'center' });
   doc.save(`CIFIKA_Certificate_${(s.full_name || 'member').replace(/\s+/g, '_')}_${(g.new_belt || '').replace(/\s+/g, '')}.pdf`);
+}
+
+/* ═══════════════ ABSENCES & EXCUSED PERIOD ═══════════════ */
+function lagosTodayStr() {
+  return new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 10); // WAT = UTC+1
+}
+function addDaysStr(iso, n) {
+  return new Date(new Date(iso + 'T00:00:00').getTime() + n * 86400000).toISOString().slice(0, 10);
+}
+
+function excusedBannerHTML(s, today) {
+  const range = `${fmtDate(s.excused_from)} → ${fmtDate(s.excused_until)}`;
+  let head, body;
+  if (today < s.excused_from) {
+    head = 'Excused period starts ' + fmtDate(s.excused_from);
+    body = `Your sessions are frozen from ${fmtDate(s.excused_from)} to ${fmtDate(s.excused_until)} — nothing counts down while you are away. They resume counting after ${fmtDate(s.excused_until)} and will expire if not used.`;
+  } else if (today <= s.excused_until) {
+    head = 'Excused period active — ' + range;
+    body = `The club has excused you until <b>${fmtDate(s.excused_until)}</b>. Your paid sessions are frozen during this time; they resume counting afterwards and will expire if not used, so plan your return. Get well / see you soon! 🩹`;
+  } else if (new Date(today + 'T00:00:00') - new Date(s.excused_until + 'T00:00:00') <= 21 * 86400000) {
+    head = 'Excused period ended ' + fmtDate(s.excused_until);
+    body = 'Your paid sessions have resumed counting. Remember: unused sessions expire — see you on the mat!';
+  } else return '';
+  return `
+  <div class="rounded-[18px] border border-sky-200 bg-sky-50 p-4 md:p-5 flex items-start gap-3">
+    <span class="text-[18px] leading-none mt-0.5">🩹</span>
+    <div>
+      <div class="text-[11px] font-bold tracking-[0.1em] uppercase text-sky-700">${head}</div>
+      <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${body}</p>
+    </div>
+  </div>`;
+}
+
+function absStatusPill(s) {
+  const map = {
+    pending:  ['bg-amber-50 text-amber-700 border-amber-200', '⏳ Pending review'],
+    approved: ['bg-emerald-50 text-emerald-700 border-emerald-200', '✓ Approved — excused'],
+    declined: ['bg-red-50 text-red-600 border-red-200', '✕ Declined'],
+  };
+  const [cls, label] = map[s] || map.pending;
+  return `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border ${cls}">${label}</span>`;
+}
+
+function absenceTabHTML(student) {
+  const d = window._absData || { requests: [], notices: [] };
+  const today = lagosTodayStr();
+  return `
+    <div class="rounded-[14px] bg-neutral-50 border border-neutral-200 p-4 text-[12px] leading-[1.6] text-neutral-600">
+      <b>Can't make a class?</b> Submit the reason below. If the Sensei / front desk approves it, that class is marked <b>excused</b> and <b>no session is used</b>. Missing without an approved reason uses one of your paid sessions — and 3 consecutive absences trigger a subscription warning email.
+    </div>
+    <div class="mt-4 grid gap-3 max-w-[560px]">
+      <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">CLASS DATE YOU WILL MISS / MISSED *</div>
+        <input type="date" id="absDate" class="input" min="${addDaysStr(today, -30)}" max="${addDaysStr(today, 90)}"></label>
+      <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">REASON FOR ABSENCE *</div>
+        <textarea id="absReason" rows="3" class="w-full rounded-[14px] border-[1.5px] border-neutral-200 bg-white px-4 py-3 text-[13px] outline-none transition focus:border-black focus:ring-0" placeholder="e.g. School exam preparation, travelling with family, recovering from illness…"></textarea></label>
+      <button id="absBtn" onclick="submitAbsence()" class="h-[46px] rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition">Submit Request →</button>
+    </div>
+
+    <div class="mt-6">
+      <div class="text-[11px] font-bold tracking-[0.14em] text-neutral-500 mb-2.5">MY ABSENCE REQUESTS</div>
+      ${d.requests.length ? `<div class="grid gap-2">${d.requests.map(r => `
+        <div class="px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-[12.5px] font-semibold">${fmtDate(r.class_date)}</div>
+            ${absStatusPill(r.status)}
+          </div>
+          <div class="mt-1 text-[12px] text-neutral-600 leading-[1.55]">${escapeHtml(r.reason)}</div>
+          ${r.review_note ? `<div class="mt-1.5 text-[11.5px] text-neutral-500 italic">Club: "${escapeHtml(r.review_note)}"</div>` : ''}
+          <div class="mt-1 text-[10.5px] text-neutral-400">submitted ${fmtDate(String(r.created_at).slice(0, 10))}</div>
+        </div>`).join('')}</div>`
+      : `<div class="text-[12px] text-neutral-400 py-2">No absence requests yet — hope every class goes well! 🥋</div>`}
+    </div>
+
+    <div class="mt-6">
+      <div class="text-[11px] font-bold tracking-[0.14em] text-neutral-500 mb-2.5">CLUB NOTICES <span class="text-neutral-400 font-medium">(copies of emails sent to you)</span></div>
+      ${d.notices.length ? `<div class="grid gap-2">${d.notices.map(n => `
+        <div class="px-4 py-3 rounded-[14px] border ${n.kind === 'absence_warning' ? 'border-red-200 bg-red-50/50' : n.kind === 'excused_ending' ? 'border-amber-200 bg-amber-50/50' : 'border-sky-200 bg-sky-50/50'}">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="text-[12.5px] font-bold">${escapeHtml(n.subject)}</div>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-neutral-200 bg-white text-neutral-500">${n.status === 'sent' ? '📧 emailed' : n.status === 'queued' ? '📬 queued' : 'in-app copy'}</span>
+          </div>
+          <div class="mt-1.5 text-[12px] text-neutral-600 leading-[1.6] whitespace-pre-line">${escapeHtml(n.body)}</div>
+          <div class="mt-1 text-[10.5px] text-neutral-400">${fmtDate(String(n.created_at).slice(0, 10))}</div>
+        </div>`).join('')}</div>`
+      : `<div class="text-[12px] text-neutral-400 py-2">No club notices.</div>`}
+    </div>`;
+}
+
+async function submitAbsence() {
+  const s = window._gw?.student; if (!s) return;
+  const date = $('absDate').value, reason = ($('absReason')?.value || '').trim();
+  if (!date) return toast('✗ Pick the class date you will miss.', true);
+  if (reason.length < 5) return toast('✗ Describe the reason — a few words at least.', true);
+  const btn = $('absBtn'); btn.disabled = true; btn.textContent = 'Submitting…';
+  const { data, error } = await sb.rpc('submit_absence_request', { p_student_id: s.id, p_date: date, p_reason: reason });
+  btn.disabled = false; btn.textContent = 'Submit Request →';
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not submit.'), true);
+  toast('✓ ' + (d.message || 'Absence request submitted'));
+  renderDashboard(s, window._lastOpts || {});
+  setTimeout(() => switchTab('absences'), 80);
+}
+
+/* ═══════════════ DOJO CODE (rules, etiquette & consent texts) ═══════════════ */
+function dojoCodeHTML() {
+  return `
+    <div class="text-[12.5px] text-neutral-600 leading-[1.6] max-w-[70ch]">The rules, etiquette and code you agreed to when you registered — live by them on and off the mat.</div>
+
+    <div class="mt-5 rounded-[16px] border border-neutral-200 overflow-hidden">
+      <div class="px-5 py-3 bg-neutral-50 border-b border-neutral-200 text-[11px] font-bold tracking-[0.14em]">SECTION I — CLUB RULES (12)</div>
+      <ol class="list-decimal list-inside px-5 py-4 text-[12.5px] leading-6 text-neutral-700 grid gap-1.5">
+        ${CLUB_RULES.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
+      </ol>
+    </div>
+
+    <div class="mt-4 rounded-[16px] border border-neutral-200 p-5">
+      <div class="text-[11px] font-bold tracking-[0.14em]">SECTION J — DOJO KUN</div>
+      <div class="mt-3 grid gap-2.5">
+        ${DOJO_KUN.map(([jp, en], i) => `
+        <div class="flex items-start gap-3 px-4 py-3 rounded-[14px] bg-neutral-50 border border-neutral-100">
+          <div class="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-bold shrink-0">${i + 1}</div>
+          <div>
+            <div class="text-[13px] font-bold tracking-wide">${escapeHtml(en)}</div>
+            <div class="text-[11.5px] text-neutral-500 mt-0.5">${escapeHtml(jp)}</div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="mt-4 grid gap-2.5">
+      <div class="text-[11px] font-bold tracking-[0.14em]">SECTION K — CODE OF CONDUCT & PARTICIPATION</div>
+      <div class="px-4 py-3 rounded-[14px] border border-neutral-200 bg-white text-[12.5px] leading-[1.6] text-neutral-700"><b>Participation & safety:</b> karate is a contact martial art involving physical exertion and risk of injury. You participate voluntarily at your own risk, agree to follow safety instructions, and declare your health information is true and complete. Advise the club of any changes.</div>
+      <div class="px-4 py-3 rounded-[14px] border border-neutral-200 bg-white text-[12.5px] leading-[1.6] text-neutral-700"><b>Code of conduct:</b> respect, discipline, non-violence outside the dojo, and safeguarding of children. Misconduct may lead to suspension.</div>
+      <div class="px-4 py-3 rounded-[14px] border border-neutral-200 bg-white text-[12.5px] leading-[1.6] text-neutral-700"><b>Privacy & use of information:</b> City Fitness Karate Club & TTOSR collect member data for membership, grading, insurance, safety and communication. Data is stored securely and never sold.</div>
+    </div>
+
+    <div class="mt-4 text-[11px] text-neutral-400">You accepted these at registration — questions? Speak to Sensei.</div>`;
 }
 
 /* ═══════════════ ADMIN (preview  ═══════════════ */

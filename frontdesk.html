@@ -132,6 +132,7 @@ let pkgEditing = null;
 const TABS = [
   ['today',    '🚪', 'Today'],
   ['alerts',   '🔔', 'Renewal Alerts'],
+  ['absences', '🚫', 'Absences'],
   ['members',  '👥', 'Members'],
   ['payments', '💳', 'Payment Log'],
   ['packages', '🏷️', 'Packages'],
@@ -202,7 +203,7 @@ async function show(id) {
   document.querySelectorAll('[data-nav]').forEach(b =>
     b.classList.toggle('active', b.dataset.nav === id));
   await refreshBalances();
-  ({ today: showToday, alerts: showAlerts, members: showMembers, payments: showPayments, packages: showPackages })[id]();
+  ({ today: showToday, alerts: showAlerts, absences: showAbsences, members: showMembers, payments: showPayments, packages: showPackages })[id]();
 }
 
 /* ═══════════ DATA ═══════════ */
@@ -372,6 +373,123 @@ function showAlerts() {
   </div>`;
 }
 
+/* ═══════════ TAB: ABSENCES (excusal requests + outbox) ═══════════ */
+let absCache = { requests: [], outbox: [] };
+
+function showAbsences() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">ABSENCE REQUESTS</div>
+      <p class="text-[12px] text-neutral-500 mb-4">Members submit a reason for missing a class. <b>Excuse</b> marks that class EXCUSED and refunds the session — declined absences consume a session as normal. Admin, front desk and instructors can all review.</p>
+      <div id="absQueue"><div class="text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
+        <div class="text-[12px] font-bold tracking-[0.14em]">EMAIL NOTICES SENT TO MEMBERS</div>
+        <div class="text-[11px] text-neutral-400">outbox • add SMTP to deliver (see README)</div>
+      </div>
+      <div id="absOutbox"><div class="p-6 text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+  loadAbsenceData();
+}
+
+async function loadAbsenceData() {
+  const [req, out] = await Promise.all([
+    sb.from('absence_requests').select('id, student_id, class_date, reason, status, review_note, created_at, reviewed_at, students(full_name, registration_ref, current_belt)')
+      .order('created_at', { ascending: false }).limit(60),
+    sb.from('email_outbox').select('id, kind, subject, status, error, to_email, created_at, students(full_name)')
+      .order('created_at', { ascending: false }).limit(20),
+  ]);
+  absCache.requests = req.data || [];
+  absCache.outbox = out.data || [];
+  renderAbsQueue();
+  renderAbsOutbox();
+}
+
+function renderAbsQueue() {
+  const pending = absCache.requests.filter(r => r.status === 'pending');
+  const decided = absCache.requests.filter(r => r.status !== 'pending');
+  const el = document.getElementById('absQueue'); if (!el) return;
+  el.innerHTML = `
+    ${pending.length ? `<div class="grid gap-2">${pending.map(r => `
+      <div class="px-4 py-3.5 rounded-[14px] border border-amber-200 bg-amber-50/50">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
+          <div class="w-9 h-9 rounded-full bg-white border border-amber-200 flex items-center justify-center text-[12px] font-bold text-amber-700 shrink-0">${initial(r.students?.full_name)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate">${escapeHtml(r.students?.full_name || '—')} <span class="text-[11px] text-neutral-500 font-medium">${escapeHtml(r.students?.registration_ref || '')}</span></div>
+            <div class="text-[11px] text-neutral-500">misses <b>${fmtDate(r.class_date)}</b> • submitted ${fmtDate(String(r.created_at).slice(0, 10))}</div>
+            <div class="mt-1 text-[12px] text-neutral-700 leading-[1.5]">"${escapeHtml(r.reason)}"</div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <input id="rn-${r.id}" class="input !h-9 !w-[150px] text-[11px]" placeholder="Note (optional)">
+            <button onclick="reviewRequest('${r.id}', true)" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition">✓ Excuse</button>
+            <button onclick="reviewRequest('${r.id}', false)" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition">✕ Decline</button>
+          </div>
+        </div>
+      </div>`).join('')}</div>`
+    : `<div class="text-center py-6 text-[13px] text-neutral-400">No pending absence requests ✓</div>`}
+    ${decided.length ? `
+    <div class="mt-5 text-[11px] font-bold tracking-[0.14em] text-neutral-400 mb-2">RECENT DECISIONS</div>
+    <div class="grid gap-1.5">${decided.slice(0, 10).map(r => `
+      <div class="flex items-center gap-3 px-4 py-2.5 rounded-[12px] border border-neutral-100 bg-neutral-50/60">
+        <span class="text-[12.5px] font-semibold truncate flex-1">${escapeHtml(r.students?.full_name || '—')} <span class="text-neutral-400 font-normal">— ${fmtDate(r.class_date)}</span></span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'}">${r.status === 'approved' ? 'EXCUSED' : 'DECLINED'}</span>
+      </div>`).join('')}</div>` : ''}`;
+}
+
+function renderAbsOutbox() {
+  const rows = absCache.outbox;
+  const el = document.getElementById('absOutbox'); if (!el) return;
+  const kindChip = k => k === 'absence_warning' ? 'bg-red-50 text-red-600 border-red-200'
+    : k === 'excused_ending' ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-sky-50 text-sky-700 border-sky-200';
+  el.innerHTML = !rows.length
+    ? `<div class="p-6 text-center text-[12.5px] text-neutral-400">No notices yet — 3-absence warnings and excused-period emails appear here.</div>`
+    : `<div>${rows.map(n => `
+      <div class="flex items-start gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${kindChip(n.kind)}">${escapeHtml(n.kind)}</span>
+            <span class="text-[12.5px] font-semibold truncate">${escapeHtml(n.students?.full_name || '')} • ${escapeHtml(n.subject)}</span>
+          </div>
+          <div class="text-[10.5px] text-neutral-400 mt-0.5">${fmtDate(String(n.created_at).slice(0, 10))} • to ${escapeHtml(n.to_email)}${n.error ? ' • ' + escapeHtml(n.error) : ''}</div>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${n.status === 'sent' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : n.status === 'queued' ? 'bg-neutral-50 text-neutral-500 border-neutral-200' : 'bg-red-50 text-red-600 border-red-200'}">${String(n.status).toUpperCase()}</span>
+      </div>`).join('')}</div>`;
+}
+
+async function reviewRequest(id, approve) {
+  const note = $('rn-' + id)?.value || null;
+  const { data, error } = await sb.rpc('review_absence_request', { p_request_id: id, p_approve: approve, p_note: note });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Review failed.'), true);
+  toast('✓ ' + d.message);
+  await refreshBalances();
+  await loadAbsenceData();
+}
+
+async function saveExcusedPeriod(id) {
+  const from = $('excFrom')?.value, until = $('excUntil')?.value, note = $('excNote')?.value || null;
+  if (!from || !until) return toast('Pick both the start and end date.', true);
+  const { data, error } = await sb.rpc('set_excused_period', { p_student_id: id, p_from: from, p_until: until, p_note: note, p_clear: false });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not save.'), true);
+  toast('✓ ' + d.message);
+  await loadRoster();
+  openMemberDrawer(id);
+}
+
+async function clearExcusedPeriod(id) {
+  const { data, error } = await sb.rpc('set_excused_period', { p_student_id: id, p_from: null, p_until: null, p_note: null, p_clear: true });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not clear.'), true);
+  toast('✓ ' + d.message);
+  await loadRoster();
+  openMemberDrawer(id);
+}
+
 /* ═══════════ TAB: MEMBERS — full registered clients roster ═══════════ */
 let memberQ = '';
 async function loadRoster() {
@@ -505,6 +623,22 @@ async function openMemberDrawer(id) {
       <div class="rounded-[14px] bg-red-50 border border-red-200 p-3.5 text-[11.5px] leading-[1.55] text-red-700">
         <b>⚕️ Medical / injuries (front desk awareness):</b> ${escapeHtml([s.medical_conditions, s.injuries].filter(Boolean).join(' • '))}
       </div>` : ''}
+      <div class="rounded-[14px] bg-sky-50 border border-sky-200 p-4">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-sky-700 mb-2">🩹 EXCUSED PERIOD (freeze sessions)</div>
+        <p class="text-[10.5px] text-neutral-500 leading-[1.5] mb-2.5">While active, absences inside this window become excused and no sessions are used. Member is alerted near the end that sessions resume counting and will expire if not used.</p>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="block"><div class="text-[9.5px] font-bold tracking-[0.08em] text-neutral-400 mb-1">FROM</div>
+            <input type="date" id="excFrom" class="input" value="${s.excused_from || ''}"></label>
+          <label class="block"><div class="text-[9.5px] font-bold tracking-[0.08em] text-neutral-400 mb-1">TO</div>
+            <input type="date" id="excUntil" class="input" value="${s.excused_until || ''}"></label>
+        </div>
+        <input id="excNote" class="input mt-2" placeholder="Reason (optional) — e.g. injury recovery" value="${escapeHtml(s.excused_note || '')}">
+        <div class="flex flex-wrap gap-2 mt-2.5 items-center">
+          <button onclick="saveExcusedPeriod('${id}')" class="h-9 px-4 rounded-full bg-black text-white text-[11px] font-semibold hover:bg-neutral-800 transition">Save Period</button>
+          ${s.excused_until ? `<button onclick="clearExcusedPeriod('${id}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition">Clear</button>
+          <span class="text-[10.5px] text-sky-700 font-semibold">Active: ${fmtDate(s.excused_from)} → ${fmtDate(s.excused_until)}</span>` : ''}
+        </div>
+      </div>
       <div class="rounded-[14px] bg-neutral-50 border border-neutral-200 p-4 text-[12px]">
         <span class="text-neutral-500">Training days:</span> <b>${escapeHtml(daysTxt)}</b> <span class="text-neutral-400">(member picks these in their portal — 2 flexible days / week)</span>
       </div>
