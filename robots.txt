@@ -1,0 +1,13 @@
+# CIFIKA robots.txt
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /registration.html
+Disallow: /portal.html
+Disallow: /admin.html
+Disallow: /attendance.html
+Disallow: /checkin.html
+Disallow: /frontdesk.html
+Disallow: /cifika-supabase.js
+
+Sitemap: https://cifika.ttosr.com/sitemap.xml

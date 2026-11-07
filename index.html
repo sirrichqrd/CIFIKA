@@ -7,7 +7,7 @@
   <!-- Primary SEO -->
   <title>City Fitness Karate Club — CIFIKA | Traditional Karate in Abuja</title>
   <meta name="title" content="City Fitness Karate Club — CIFIKA | Traditional Karate in Abuja">
-  <meta name="description" content="City Fitness Karate Club (CIFIKA) — Elite karate training in Sun City, Galadimawa, Abuja. Traditional karate, strength & conditioning, and discipline for children and adults. Fridays & Sundays, 4:30 PM - 6:00 PM at City Fitness & Aerobics." />
+  <meta name="description" content="City Fitness Karate Club (CIFIKA) — Elite karate training in Sun City, Galadimawa, Abuja. Traditional karate, strength & conditioning, and discipline for children and adults. Fridays 4:30 PM - 6:00 PM, Saturdays 8:00 AM - 10:00 AM & Sundays 4:30 PM - 6:00 PM at City Fitness & Aerobics." />
   <meta name="keywords" content="karate Abuja, karate club Abuja, CIFIKA, City Fitness Karate, martial arts Abuja, karate for kids Abuja, Galadimawa karate, Sun City karate, traditional karate Nigeria" />
   <meta name="author" content="City Fitness Karate Club — CIFIKA" />
   <meta name="robots" content="index, follow" />
@@ -188,7 +188,7 @@
   <meta property="og:url" content="https://cifika.netlify.app/" />
   <meta property="og:site_name" content="CIFIKA — City Fitness Karate Club" />
   <meta property="og:title" content="City Fitness Karate Club — CIFIKA | Elite Karate in Abuja" />
-  <meta property="og:description" content="Elite training program combining traditional karate, strength & conditioning, and personal discipline. Open to all levels, kids & adults. Fridays & Sundays at City Fitness, Sun City, Abuja." />
+  <meta property="og:description" content="Elite training program combining traditional karate, strength & conditioning, and personal discipline. Open to all levels, kids & adults. Fridays 4:30 PM, Saturdays 8:00 AM & Sundays 4:30 PM at City Fitness, Sun City, Abuja." />
   <meta property="og:locale" content="en_NG" />
   <meta property="og:image" content="https://cifika.netlify.app/assets/social-preview.png" />
   <meta property="og:image:width" content="1200" />
@@ -200,7 +200,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="https://cifika.netlify.app/" />
   <meta name="twitter:title" content="City Fitness Karate Club — CIFIKA | Elite Karate in Abuja" />
-  <meta name="twitter:description" content="Elite training program combining traditional karate, strength & conditioning, and personal discipline. Training every Friday & Sunday, 4:30 PM at City Fitness, Sun City, Abuja." />
+  <meta name="twitter:description" content="Elite training program combining traditional karate, strength & conditioning, and personal discipline. Training Fridays 4:30 PM, Saturdays 8:00 AM & Sundays 4:30 PM at City Fitness, Sun City, Abuja." />
   <meta name="twitter:image" content="https://cifika.netlify.app/assets/social-preview.png" />
   <meta name="twitter:image:alt" content="City Fitness Karate Club — CIFIKA | Abuja" />
 
@@ -222,7 +222,7 @@
       "addressRegion": "FCT",
       "addressCountry": "NG"
     },
-    "openingHours": "Fr,Su 16:30-18:00",
+    "openingHours": "Fr 16:30-18:00, Sa 08:00-10:00, Su 16:30-18:00",
     "sport": "Karate",
     "priceRange": "₦15000 - ₦55000",
     "sameAs": [
@@ -305,6 +305,99 @@
 
 
 </style>
+<!-- ===== Pricing card (A4 PDF export for reception) ===== -->
+<style>
+  /* Off-screen render root — captured by html2pdf / window.print */
+  #pricingCardRoot { position: fixed; top: 0; left: -1600px; width: 794px; z-index: -1; pointer-events: none; }
+  .pc-card {
+    width: 794px; height: 1123px; /* A4 @ 96dpi */
+    background: #ffffff; color: #111;
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  .pc-accent { color: #FF6A00; }
+
+  .pc-head { position: relative; overflow: hidden; background: #111; color: #fff; padding: 22px 40px 18px; flex-shrink: 0; }
+  .pc-head::after { content: ""; position: absolute; right: -70px; top: -80px; width: 200px; height: 200px; border-radius: 999px; background: rgba(255,106,0,.16); }
+  .pc-head::before { content: ""; position: absolute; left: -60px; bottom: -90px; width: 160px; height: 160px; border-radius: 999px; background: rgba(255,106,0,.07); }
+  .pc-head-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .pc-brand-chip { background: #FF6A00; color: #fff; font-size: 11px; font-weight: 900; letter-spacing: .2em; padding: 5px 13px; border-radius: 999px; }
+  .pc-kicker { font-size: 10px; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.45); }
+  .pc-title { margin: 0; font-size: 34px; line-height: .95; font-weight: 900; letter-spacing: -.02em; color: #fff; }
+  .pc-sub { margin: 8px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.55); }
+  .pc-addr { margin: 5px 0 0; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.35); }
+
+  .pc-strip { display: flex; background: #FF6A00; color: #fff; padding: 10px 24px; flex-shrink: 0; }
+  .pc-day { flex: 1; text-align: center; padding: 2px 0; }
+  .pc-day + .pc-day { border-left: 1px solid rgba(255,255,255,.3); }
+  .pc-day-name { display: block; font-size: 9.5px; font-weight: 900; letter-spacing: .24em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+  .pc-day-time { display: block; margin-top: 3px; font-size: 15px; font-weight: 900; letter-spacing: -.01em; }
+
+  .pc-body { flex: 1; padding: 20px 40px 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; }
+  .pc-sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .pc-num { font-size: 10px; font-weight: 900; letter-spacing: .18em; color: #FF6A00; }
+  .pc-sec-title { margin: 0; font-size: 15px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; color: #111; }
+  .pc-rule { flex: 1; height: 1px; background: rgba(17,17,17,.08); }
+  .pc-tag { font-size: 8.5px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: rgba(17,17,17,.5); border: 1px solid rgba(17,17,17,.14); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+  .pc-tag-solid { background: #FF6A00; border-color: #FF6A00; color: #fff; }
+  .pc-cols { display: flex; gap: 14px; }
+  .pc-cols > * { flex: 1; min-width: 0; }
+
+  .pc-box { border: 1px solid rgba(17,17,17,.1); border-radius: 14px; padding: 11px 16px; }
+  .pc-box-top { display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; color: rgba(17,17,17,.45); }
+  .pc-price { margin-top: 4px; font-size: 26px; line-height: 1.15; font-weight: 900; letter-spacing: -.02em; color: #111; }
+  .pc-note { margin: 4px 0 0; font-size: 10px; line-height: 1.45; color: rgba(17,17,17,.55); }
+
+  .pc-pack { position: relative; overflow: hidden; background: #111; color: #fff; border-radius: 14px; padding: 11px 16px; }
+  .pc-pack::after { content: ""; position: absolute; right: -50px; top: -50px; width: 110px; height: 110px; border-radius: 999px; background: rgba(255,106,0,.14); }
+  .pc-pack-top { font-size: 9.5px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.45); }
+  .pc-pack-price { margin-top: 3px; font-size: 22px; line-height: 1.15; font-weight: 900; letter-spacing: -.02em; }
+  .pc-pack-list { list-style: none; margin: 6px 0 0; padding: 0; }
+  .pc-pack-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4.5px 0; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,.6); }
+  .pc-pack-list li:last-child { border-bottom: 0; }
+  .pc-pack-list b { font-weight: 900; color: #fff; }
+  .pc-pack-total { display: flex; align-items: center; justify-content: space-between; margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,.1); font-size: 9px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.45); }
+  .pc-pack-total b { font-size: 14px; letter-spacing: -.01em; color: #FF6A00; }
+
+  .pc-tablewrap { border: 1px solid rgba(17,17,17,.1); border-radius: 14px; overflow: hidden; }
+  .pc-table { width: 100%; border-collapse: collapse; }
+  .pc-table thead th { background: #111; color: #fff; font-size: 8.5px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; text-align: left; padding: 7px 14px; }
+  .pc-table thead th.r, .pc-table td.r { text-align: right; }
+  .pc-table td { padding: 6.5px 14px; border-top: 1px solid rgba(17,17,17,.06); font-size: 11px; font-weight: 700; color: #111; }
+  .pc-table td.r { white-space: nowrap; }
+  .pc-table td.period { font-size: 11.5px; font-weight: 900; }
+  .pc-table tr.pc-best td { background: #FFFBF6; }
+  .pc-muted { font-weight: 700; color: rgba(17,17,17,.35); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; }
+  .pc-save { display: inline-block; background: #FFF0E6; color: #FF6A00; font-size: 8.5px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; border-radius: 999px; padding: 3px 9px; }
+  .pc-bestchip { display: inline-block; background: #FF6A00; color: #fff; font-size: 8px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; border-radius: 999px; padding: 3px 8px; margin-left: 6px; vertical-align: 1px; }
+  .pc-strike { color: rgba(17,17,17,.3); text-decoration: line-through; font-weight: 700; font-size: 9.5px; margin-right: 5px; }
+  .pc-final { font-weight: 900; font-size: 12.5px; letter-spacing: -.01em; }
+  .pc-final.pc-soft { color: rgba(17,17,17,.65); font-size: 12px; }
+
+  .pc-disc { background: #FFF0E6; border: 1px solid rgba(255,106,0,.16); border-radius: 14px; padding: 10px 14px; }
+  .pc-disc-top { display: flex; align-items: center; gap: 10px; }
+  .pc-disc-num { font-size: 24px; line-height: 1; color: #FF6A00; }
+  .pc-disc-name { font-size: 8.5px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: rgba(17,17,17,.55); line-height: 1.35; }
+  .pc-disc-text { margin: 7px 0 0; font-size: 9.5px; line-height: 1.5; color: rgba(17,17,17,.65); font-weight: 600; }
+
+  .pc-other { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px dashed rgba(17,17,17,.2); border-radius: 12px; padding: 7px 14px; }
+  .pc-other-label { font-size: 9px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: #111; white-space: nowrap; }
+  .pc-other-detail { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: rgba(17,17,17,.45); text-align: right; }
+
+  .pc-foot { display: flex; align-items: center; justify-content: space-between; background: #111; padding: 11px 40px; font-size: 8.5px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.6); flex-shrink: 0; }
+  .pc-foot-left { display: flex; align-items: center; gap: 8px; }
+  .pc-foot-dot { width: 6px; height: 6px; border-radius: 999px; background: #FF6A00; }
+  .pc-foot-right { color: rgba(255,255,255,.45); }
+
+  /* Print fallback: browser print dialog prints ONLY the pricing card */
+  @media print {
+    @page { size: A4 portrait; margin: 0; }
+    body > *:not(#pricingCardRoot) { display: none !important; }
+    #pricingCardRoot { position: static !important; pointer-events: auto; }
+    .pc-card { page-break-after: avoid; }
+  }
+</style>
 </head>
 <body class="min-h-screen w-full bg-[#f5f5f5] flex flex-col items-center justify-start py-6 lg:py-10 px-4 selection:bg-[#FF6A00] selection:text-white">
 
@@ -319,6 +412,7 @@
     <symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="3.5"/><path d="M4.5 19.5a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="m7.5 10 4.5 4.5L16.5 10"/><path d="M4.5 20.5h15"/></symbol>
   </defs>
 </svg>
 
@@ -437,11 +531,11 @@
         <span class="text-[#FF6A00]">TRAIN</span> <span class="text-[#111]">SCHEDULE</span>
       </h2>
       <p class="mt-4 text-[13px] sm:text-[14px] font-medium text-[#111]/50 leading-relaxed max-w-[540px]">
-        Two structured sessions every week — Friday 4:30 PM to 6:00 PM and Saturday 8:00 AM to 10:00 AM — at City Fitness, Sun City Estate, Galadimawa, Abuja. Open to children and adults, all levels.
+        Three structured sessions every week — Friday 4:30 PM to 6:00 PM, Saturday 8:00 AM to 10:00 AM and Sunday 4:30 PM to 6:00 PM — at City Fitness, Sun City Estate, Galadimawa, Abuja. Open to children and adults, all levels.
       </p>
 
       <!-- Day cards -->
-      <div class="mt-8 lg:mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="mt-8 lg:mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="rounded-2xl border border-[#111]/10 bg-white p-6 sm:p-7 transition-shadow duration-300 hover:shadow-[0_20px_45px_-18px_rgba(0,0,0,0.18)]">
           <div class="flex items-start justify-between">
             <div>
@@ -474,6 +568,24 @@
           </div>
           <div class="mt-5 pt-5 border-t border-[#111]/[0.07] flex items-center justify-between">
             <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">2-Hours session</p>
+            <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">All levels</p>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-[#111]/10 bg-white p-6 sm:p-7 transition-shadow duration-300 hover:shadow-[0_20px_45px_-18px_rgba(0,0,0,0.18)]">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-[10px] font-black tracking-[0.2em] text-[#FF6A00]">03</p>
+              <h3 class="display text-[30px] sm:text-[36px] font-black tracking-[-0.01em] text-[#111] mt-1 leading-none">SUNDAY</h3>
+            </div>
+            <span class="chip bg-[#FF6A00] text-white">New</span>
+          </div>
+          <div class="mt-6 flex items-center gap-3">
+            <svg class="ic w-[18px] h-[18px] text-[#FF6A00]"><use href="#i-clock"/></svg>
+            <p class="text-[20px] font-black text-[#111] tracking-[-0.01em]">4:30 <span class="text-[14px] font-bold text-[#111]/35">PM – 6:00 PM</span></p>
+          </div>
+          <div class="mt-5 pt-5 border-t border-[#111]/[0.07] flex items-center justify-between">
+            <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">90-minute session</p>
             <p class="text-[11px] font-bold tracking-[0.14em] uppercase text-[#111]/45">All levels</p>
           </div>
         </div>
@@ -552,9 +664,16 @@
       <h2 class="display text-[42px] sm:text-[60px] lg:text-[72px] font-black leading-[0.92] tracking-[-0.02em]">
         <span class="text-[#111]">CLUB</span> <span class="text-[#FF6A00]">PRICING</span>
       </h2>
-      <p class="mt-4 text-[13px] sm:text-[14px] font-medium text-[#111]/50 leading-relaxed max-w-[560px]">
-        Simple, transparent pricing — monthly training, a one-time Start Pack for new members, and discounted advance-payment plans.
-      </p>
+      <div class="mt-6 flex flex-wrap sm:flex-nowrap items-center gap-x-6 gap-y-3">
+        <p class="text-[13px] sm:text-[14px] font-medium text-[#111]/50 leading-relaxed max-w-[560px] flex-1">
+          Simple, transparent pricing — monthly training, a one-time Start Pack for new members, and discounted advance-payment plans.
+        </p>
+        <button id="exportPricingBtn" type="button" class="w-full sm:w-auto shrink-0 justify-center sm:justify-start inline-flex items-center gap-2.5 bg-[#111] hover:bg-[#000] active:scale-[0.98] text-white rounded-xl px-5 py-3.5 text-[11px] font-black tracking-[0.16em] uppercase transition-all duration-200 shadow-[0_14px_30px_-10px_rgba(0,0,0,0.35)]" title="Download a print-ready A4 pricing card (PDF) for reception">
+          <svg class="ic w-4 h-4 text-[#FF6A00]"><use href="#i-download"/></svg>
+          <span>Download Pricing Card</span>
+          <span class="text-[9px] font-black tracking-[0.12em] bg-[#FF6A00] text-white rounded-md px-1.5 py-1">PDF</span>
+        </button>
+      </div>
 
       <!-- 01 Membership & Training -->
       <div class="mt-10 lg:mt-12">
@@ -573,7 +692,7 @@
               <span class="text-[34px] sm:text-[38px] font-black tracking-[-0.02em] text-[#111]">₦25,000</span>
               <span class="text-[12px] font-bold text-[#111]/35 uppercase tracking-wide">/ month</span>
             </div>
-            <p class="mt-2.5 text-[13px] text-[#111]/55 leading-relaxed">Full training membership — access to both weekly sessions.</p>
+            <p class="mt-2.5 text-[13px] text-[#111]/55 leading-relaxed">Full training membership — access to all three weekly sessions.</p>
           </div>
           <div class="rounded-2xl border border-[#111]/10 p-6 sm:p-7 transition-shadow duration-300 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,0.15)]">
             <div class="flex items-center justify-between">
@@ -584,10 +703,10 @@
               <span class="text-[34px] sm:text-[38px] font-black tracking-[-0.02em] text-[#111]">₦15,000</span>
               <span class="text-[12px] font-bold text-[#111]/35 uppercase tracking-wide">/ month</span>
             </div>
-            <p class="mt-2.5 text-[13px] text-[#111]/55 leading-relaxed">Full training membership for children — access to both weekly sessions.</p>
+            <p class="mt-2.5 text-[13px] text-[#111]/55 leading-relaxed">Full training membership for children — access to all three weekly sessions.</p>
           </div>
         </div>
-        <p class="mt-4 text-[12px] font-bold tracking-[0.08em] uppercase text-[#111]/40">Friday + Sunday • 4:30 – 6:00 PM • City Fitness, Sun City, Galadimawa</p>
+        <p class="mt-4 text-[12px] font-bold tracking-[0.08em] uppercase text-[#111]/40">Fri 4:30 – 6:00 PM • Sat 8:00 – 10:00 AM • Sun 4:30 – 6:00 PM • City Fitness, Sun City, Galadimawa</p>
       </div>
 
       <!-- 02 New Member Start Pack -->
@@ -915,6 +1034,125 @@
 </div>
 
 <p class="mt-6 text-[11px] tracking-[0.14em] uppercase font-medium text-[#111]/30 text-center">City Fitness Karate Club • Powered by TTOSR </p>
+
+<!-- ============================================================ -->
+<!-- PRICING CARD — A4 print-ready (exported from the Pricing page) -->
+<!-- ============================================================ -->
+<div id="pricingCardRoot" aria-hidden="true">
+  <div id="pricingCard" class="pc-card">
+
+    <!-- Card header -->
+    <div class="pc-head">
+      <div class="pc-head-row">
+        <span class="pc-brand-chip">CIFIKA</span>
+        <span class="pc-kicker">Membership Pricing • Est. 2026</span>
+      </div>
+      <p class="pc-title display">CITY FITNESS <span class="pc-accent">KARATE CLUB</span></p>
+      <p class="pc-sub">Traditional Karate • Strength &amp; Conditioning • Self-Defence • Discipline</p>
+      <p class="pc-addr">City Fitness &amp; Aerobics — Sun City Estate, Galadimawa, Abuja, FCT</p>
+    </div>
+
+    <!-- Schedule strip -->
+    <div class="pc-strip">
+      <div class="pc-day"><span class="pc-day-name">Friday</span><span class="pc-day-time">4:30 – 6:00 PM</span></div>
+      <div class="pc-day"><span class="pc-day-name">Saturday</span><span class="pc-day-time">8:00 – 10:00 AM</span></div>
+      <div class="pc-day"><span class="pc-day-name">Sunday</span><span class="pc-day-time">4:30 – 6:00 PM</span></div>
+    </div>
+
+    <!-- Card body -->
+    <div class="pc-body">
+
+      <!-- 01 Monthly -->
+      <div class="pc-sec">
+        <div class="pc-sec-head"><span class="pc-num">01</span><span class="pc-sec-title display">Monthly Membership</span><span class="pc-rule"></span></div>
+        <div class="pc-cols">
+          <div class="pc-box">
+            <div class="pc-box-top"><span>Adults</span><span class="pc-tag">per month</span></div>
+            <div class="pc-price">₦25,000</div>
+            <p class="pc-note">Full training membership — access to all three weekly sessions.</p>
+          </div>
+          <div class="pc-box">
+            <div class="pc-box-top"><span>Children</span><span class="pc-tag">per month</span></div>
+            <div class="pc-price">₦15,000</div>
+            <p class="pc-note">Full training membership for children — access to all three weekly sessions.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 Start Pack -->
+      <div class="pc-sec">
+        <div class="pc-sec-head"><span class="pc-num">02</span><span class="pc-sec-title display">New Member Start Pack</span><span class="pc-rule"></span><span class="pc-tag pc-tag-solid">One-time</span></div>
+        <div class="pc-cols">
+          <div class="pc-pack">
+            <div class="pc-pack-top">Adult Start Pack</div>
+            <div class="pc-pack-price">₦60,000</div>
+            <ul class="pc-pack-list">
+              <li><span>Karate Gi (uniform)</span><b>₦30,000</b></li>
+              <li><span>Club registration</span><b>₦5,000</b></li>
+              <li><span>First month training</span><b>₦25,000</b></li>
+            </ul>
+            <div class="pc-pack-total"><span>Total</span><b>₦60,000</b></div>
+          </div>
+          <div class="pc-pack">
+            <div class="pc-pack-top">Child Start Pack</div>
+            <div class="pc-pack-price">₦45,000</div>
+            <ul class="pc-pack-list">
+              <li><span>Karate Gi (uniform)</span><b>₦25,000</b></li>
+              <li><span>Club registration</span><b>₦5,000</b></li>
+              <li><span>First month training</span><b>₦15,000</b></li>
+            </ul>
+            <div class="pc-pack-total"><span>Total</span><b>₦45,000</b></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03 Advance plans -->
+      <div class="pc-sec">
+        <div class="pc-sec-head"><span class="pc-num">03</span><span class="pc-sec-title display">Advance Payment Plans</span><span class="pc-rule"></span><span class="pc-tag">Training fees only</span></div>
+        <div class="pc-tablewrap">
+          <table class="pc-table">
+            <thead>
+              <tr><th>Period</th><th>Discount</th><th class="r">Adult</th><th class="r">Child</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="period">Monthly</td><td><span class="pc-muted">Base rate</span></td><td class="r"><span class="pc-final pc-soft">₦25,000</span></td><td class="r"><span class="pc-final pc-soft">₦15,000</span></td></tr>
+              <tr><td class="period">3 Months</td><td><span class="pc-save">Save 5%</span></td><td class="r"><span class="pc-strike">₦75,000</span><span class="pc-final">₦71,250</span></td><td class="r"><span class="pc-strike">₦45,000</span><span class="pc-final">₦42,750</span></td></tr>
+              <tr><td class="period">6 Months</td><td><span class="pc-save">Save 8%</span></td><td class="r"><span class="pc-strike">₦150,000</span><span class="pc-final">₦138,000</span></td><td class="r"><span class="pc-strike">₦90,000</span><span class="pc-final">₦82,800</span></td></tr>
+              <tr class="pc-best"><td class="period">12 Months <span class="pc-bestchip">Best value</span></td><td><span class="pc-save">Save 10%</span></td><td class="r"><span class="pc-strike">₦300,000</span><span class="pc-final">₦270,000</span></td><td class="r"><span class="pc-strike">₦180,000</span><span class="pc-final">₦162,000</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 04 Discounts -->
+      <div class="pc-sec">
+        <div class="pc-sec-head"><span class="pc-num">04</span><span class="pc-sec-title display">Discounts</span><span class="pc-rule"></span></div>
+        <div class="pc-cols">
+          <div class="pc-disc">
+            <div class="pc-disc-top"><span class="pc-disc-num display">10%</span><span class="pc-disc-name">Family<br>Discount</span></div>
+            <p class="pc-disc-text">10% off registration &amp; training fees when two or more children register under the same parent/guardian. Gi purchases excluded. Not combinable — the greater discount applies.</p>
+          </div>
+          <div class="pc-disc">
+            <div class="pc-disc-top"><span class="pc-disc-num display">10%</span><span class="pc-disc-name">City Fitness<br>Member Rate</span></div>
+            <p class="pc-disc-text">For active City Fitness members — Adults ₦22,500 / Children ₦13,500 per month. Training fees only. Not combinable — the greater discount applies.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other fees -->
+      <div class="pc-other">
+        <span class="pc-other-label">Other fees — Replacement Karate Gi ₦30,000</span>
+        <span class="pc-other-detail">Seminars • Competitions • Protective equipment • Special events — announced separately</span>
+      </div>
+    </div>
+
+    <!-- Card footer -->
+    <div class="pc-foot">
+      <span class="pc-foot-left"><span class="pc-foot-dot"></span>All levels welcome — kids &amp; adults</span>
+      <span class="pc-foot-right">Ask at reception • cifika.ttosr.com • #CIFIKA</span>
+    </div>
+  </div>
+</div>
 
 <!-- ===== Scroll navigation popup + PORTAL - RESPONSIVE ===== -->
 <div id="scrollNav" class="scroll-nav" aria-hidden="true">
@@ -1323,6 +1561,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // for registration.html to call: localStorage.setItem('cifika_just_registered','1')
   window.addEventListener('DOMContentLoaded', initPortal);
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+<script>
+/* PRICING CARD — PDF EXPORT (A4 reception card) */
+(function () {
+  var btn = document.getElementById('exportPricingBtn');
+  if (!btn) return;
+  var originalHTML = btn.innerHTML;
+
+  function setBusy(busy) {
+    btn.disabled = busy;
+    btn.style.opacity = busy ? '0.75' : '';
+    btn.innerHTML = busy
+      ? '<svg class="ic w-4 h-4 text-[#FF6A00]"><use href="#i-download"/></svg><span>Preparing PDF</span><span class="text-[9px] font-black tracking-[0.12em] bg-[#FF6A00] text-white rounded-md px-1.5 py-1 animate-pulse">…</span>'
+      : originalHTML;
+  }
+
+  function printFallback() {
+    // html2pdf unavailable (offline / CDN blocked) — browser print dialog, Save as PDF
+    window.print();
+  }
+
+  btn.addEventListener('click', function () {
+    var el = document.getElementById('pricingCard');
+    if (!el) return;
+    if (typeof html2pdf === 'undefined') { printFallback(); return; }
+    setBusy(true);
+    html2pdf().set({
+      margin: 0,
+      filename: 'CIFIKA-Pricing-Card.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+      jsPDF: { unit: 'px', format: [794, 1124], orientation: 'portrait', hotfixes: ['px_scaling'] }
+    }).from(el).save().then(
+      function () { setTimeout(function () { setBusy(false); }, 500); },
+      function (err) { console.warn('PDF export failed — falling back to print dialog', err); setBusy(false); printFallback(); }
+    );
+  });
 })();
 </script>
 </body>

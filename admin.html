@@ -1,9 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- ===== CIFIKA SEO — PRIVATE APP — NOINDEX ===== -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Admin Console — City Fitness Karate Club | CIFIKA</title>
+<meta name="description" content="CIFIKA Admin Console — Staff only. Manage members, attendance, grading and roles.">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://cifika.ttosr.com/admin.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<meta property="og:title" content="Admin Console — CIFIKA">
+<meta property="og:description" content="CIFIKA Admin Console — Staff only. Manage members, attendance, grading and roles.">
+<meta property="og:url" content="https://cifika.ttosr.com/admin.html">
+<meta property="og:image" content="https://cifika.ttosr.com/assets/social-preview.png">
+<!-- ===== END PRIVATE SEO ===== -->
+
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Console — City Fitness Karate Club</title>
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -37,6 +57,19 @@
   .att-btn { transition:all .12s ease; }
   .modal-enter { animation:modalIn .22s ease-out; }
   @keyframes modalIn { from{opacity:0;transform:scale(.96) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  /* ---- Sidebar (collapsible rail on desktop · off-canvas drawer on mobile) ---- */
+  #sidebar { scrollbar-width:thin; scrollbar-color:#333 transparent; }
+  #sidebar::-webkit-scrollbar { width:5px; }
+  #sidebar::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+  @media (min-width:1024px) {
+    #sidebar.rail { width:68px; }
+    #sidebar.rail .sb-label { display:none; }
+    #sidebar.rail .sb-hide { display:none; }
+    #sidebar.rail .nav-btn { justify-content:center; padding-left:0; padding-right:0; }
+  }
+  @media (max-width:1023.98px) {
+    #sidebar { box-shadow: 12px 0 40px rgba(0,0,0,.35); }
+  }
 </style>
 </head>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
@@ -71,7 +104,9 @@
 <!-- UNAUTHORIZED -->
 <div id="unauthView" class="hidden min-h-screen flex items-center justify-center px-5">
   <div class="card p-8 text-center max-w-[440px]">
-    <div class="text-[28px]">🔒</div>
+    <div class="w-12 h-12 mx-auto rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
+      <svg viewBox="0 0 24 24" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
     <h2 class="mt-3 text-[18px] font-extrabold">No admin access</h2>
     <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
       <span id="unauthEmail" class="font-semibold text-neutral-700"></span> isn't an admin or instructor account.
@@ -85,27 +120,57 @@
 </div>
 
 <!-- APP -->
-<div id="appView" class="hidden">
-  <header class="sticky top-0 z-40 bg-black text-white border-b border-neutral-800">
-    <div class="max-w-[1280px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
-        <span class="text-[12px] font-bold tracking-[0.14em]">CIFIKA <span class="text-brand">ADMIN</span></span>
-        <span class="hidden md:inline text-[9px] font-bold tracking-[0.1em] text-neutral-500 border border-neutral-700 rounded-full px-2 py-0.5">v2.2</span>
+<div id="appView" class="hidden min-h-screen flex">
+  <!-- MOBILE OVERLAY -->
+  <div id="sbOverlay" onclick="toggleSidebar(false)" class="hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"></div>
+
+  <!-- SIDEBAR — off-canvas drawer on mobile, collapsible rail on desktop -->
+  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-[248px] shrink-0 bg-[#0a0a0a] text-white border-r border-neutral-800 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-[56px] flex items-center justify-between pl-4 pr-3 border-b border-neutral-800 shrink-0">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold shrink-0">空</span>
+        <span class="sb-label text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">ADMIN</span></span>
       </div>
-      <div class="flex items-center gap-3">
-        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate"></span>
-        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition">Sign out</button>
+      <button onclick="toggleSidebar(false)" class="lg:hidden w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0" title="Close menu">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <nav id="navWrap" class="flex-1 overflow-y-auto py-3 px-2.5 space-y-1"></nav>
+    <div class="p-3 border-t border-neutral-800 shrink-0 grid gap-2">
+      <button onclick="openRegisterClient()" class="w-full h-10 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition flex items-center justify-center gap-2">
+        <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="sb-label">Register Client</span>
+      </button>
+      <div class="flex items-center gap-2.5 px-1.5 pt-1 min-w-0">
+        <div id="sbAvatar" class="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-bold shrink-0"></div>
+        <div class="sb-label min-w-0 flex-1">
+          <div id="sbEmail" class="text-[11px] text-neutral-300 truncate"></div>
+          <div id="sbRole" class="text-[9px] font-bold tracking-[0.12em] text-neutral-500"></div>
+        </div>
+        <button onclick="signOut()" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0 text-neutral-400 hover:text-white" title="Sign out">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-6 grid lg:grid-cols-[210px_1fr] gap-6">
-    <!-- SIDEBAR -->
-    <aside class="lg:sticky lg:top-[80px] h-fit">
-      <nav id="navWrap" class="flex lg:flex-col gap-1.5 overflow-x-auto pb-1"></nav>
-    </aside>
-    <main id="content" class="min-w-0"></main>
+  <!-- MAIN COLUMN -->
+  <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+    <header class="sticky top-0 z-30 bg-black/95 backdrop-blur text-white border-b border-neutral-800">
+      <div class="max-w-[1280px] mx-auto pl-3 pr-3 sm:pr-5 md:pl-6 md:pr-6 h-[56px] flex items-center gap-2">
+        <button onclick="toggleSidebar()" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0" title="Toggle menu">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="lg:hidden text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">ADMIN</span></span>
+        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
+        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate ml-auto"></span>
+        <button onclick="openRegisterClient()" class="hidden md:inline-flex h-8 px-4 rounded-full bg-brand hover:bg-brand-dark text-[11px] font-semibold transition items-center gap-1.5 shrink-0">
+          <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Register Client
+        </button>
+      </div>
+    </header>
+    <main id="content" class="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-8 py-5 md:py-7"></main>
   </div>
 </div>
 
@@ -142,21 +207,56 @@ let currentMemberId = null;
 
 const $  = id => document.getElementById(id);
 const SECTIONS = [
-  ['dashboard', '📊', 'Dashboard'],
-  ['members',   '👥', 'Members'],
-  ['attendance','📅', 'Attendance'],
-  ['absences',  '🚫', 'Absences'],
-  ['qrlog',     '📋', 'Check-in Log'],
-  ['consistency','🔥', 'Consistency'],
-  ['qrcode',    '🔳', 'QR Check-in'],
-  ['payments',  '💳', 'Payments'],
-  ['gradings',  '🥋', 'Gradings'],
-  ['reviews',   '⏳', 'Belt Reviews'],
-  ['announcements','📢','Announcements'],
-  ['linking',   '🔗', 'Linking'],
-  ['reports',   '📈', 'Reports'],
-  ['staff',     '⚙️', 'Staff & Roles'],
+  ['dashboard', 'dashboard', 'Dashboard'],
+  ['members',   'users',     'Members'],
+  ['attendance','calendar',  'Attendance'],
+  ['absences',  'ban',       'Absences'],
+  ['qrlog',     'clipboard', 'Check-in Log'],
+  ['consistency','flame',    'Consistency'],
+  ['qrcode',    'qr',        'QR Check-in'],
+  ['payments',  'card',      'Payments'],
+  ['gradings',  'medal',     'Gradings'],
+  ['reviews',   'hourglass', 'Belt Reviews'],
+  ['announcements','megaphone','Announcements'],
+  ['linking',   'link',      'Linking'],
+  ['reports',   'chart',     'Reports'],
+  ['staff',     'settings',  'Staff & Roles'],
 ];
+
+/* The INSTRUCTOR console — instructors see only these sections; admins see everything. */
+const INSTRUCTOR_SECTIONS = ['dashboard','members','attendance','absences','qrlog','consistency','qrcode','gradings','reviews','announcements'];
+let STAFF_ROLE = 'admin';
+
+/* ═══════════ CUSTOM INLINE SVG ICON SET — no emoji anywhere in the console ═══════════ */
+const ICONS = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  ban: '<circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M18 18h3v3h-3z"/>',
+  card: '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+  medal: '<circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/>',
+  hourglass: '<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+  megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  chart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><path d="M2 20h20"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  award: '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  alert: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+};
+function ic(name, cls) {
+  return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
 
 /* ═══════════ BOOT ═══════════ */
 window.addEventListener('DOMContentLoaded', boot);
@@ -186,11 +286,18 @@ async function gate(user) {
     return;
   }
   currentProfile = profile;
+  STAFF_ROLE = profile.role;
   await loadCore();
   $('authView').classList.add('hidden');
   $('unauthView').classList.add('hidden');
   $('appView').classList.remove('hidden');
   $('hdrEmail').textContent = user.email;
+  $('sbEmail').textContent = user.email;
+  $('sbAvatar').textContent = initial(user.email);
+  $('sbRole').textContent = (profile.role || '').toUpperCase() + ' CONSOLE';
+  $('hdrRole').textContent = (profile.role || '').toUpperCase() + ' CONSOLE';
+  if (window.matchMedia('(min-width:1024px)').matches && localStorage.getItem('cifika_admin_rail') === '1')
+    $('sidebar').classList.add('rail');
   renderNav();
   show('dashboard');
 }
@@ -220,24 +327,54 @@ async function signOut() { await sb.auth.signOut(); location.reload(); }
 
 /* ═══════════ SHELL ═══════════ */
 function renderNav() {
-  $('navWrap').innerHTML = SECTIONS.map(([id, icon, label]) => `
-    <button onclick="show('${id}')" data-nav="${id}"
-      class="nav-btn ${section === id ? 'active' : 'bg-white text-neutral-700 hover:border-black'}
-             shrink-0 h-10 px-4 lg:px-3 rounded-full lg:rounded-[14px] border border-neutral-200
-             text-[12.5px] font-semibold flex items-center gap-2 whitespace-nowrap">
-      <span>${icon}</span><span class="hidden lg:inline">${label}</span>
+  const allowed = STAFF_ROLE === 'instructor' ? INSTRUCTOR_SECTIONS : null;
+  $('navWrap').innerHTML = SECTIONS
+    .filter(([id]) => !allowed || allowed.includes(id))
+    .map(([id, icon, label]) => `
+    <button onclick="show('${id}')" data-nav="${id}" title="${label}"
+      class="nav-btn ${section === id ? 'bg-brand text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}
+             w-full h-10 px-3 rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
+      ${ic(icon, 'w-[18px] h-[18px] shrink-0')}<span class="sb-label">${label}</span>
     </button>`).join('');
 }
 
 function show(id) {
+  if (STAFF_ROLE === 'instructor' && !INSTRUCTOR_SECTIONS.includes(id)) {
+    toast('That section is admin-only.', true);
+    id = 'dashboard';
+  }
   section = id;
-  document.querySelectorAll('[data-nav]').forEach(b =>
-    b.className = b.className.replace(/ active/g,'') + (b.dataset.nav === id ? ' active' : ''));
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    const on = b.dataset.nav === id;
+    b.classList.toggle('bg-brand', on);
+    b.classList.toggle('text-white', on);
+    b.classList.toggle('text-neutral-300', !on);
+  });
   ({ dashboard: showDashboard, members: showMembers, attendance: showAttendance, absences: showAbsences,
      qrlog: showQrLog, consistency: showConsistency,
      qrcode: showQr, payments: showPayments, gradings: showGradings, reviews: showReviews,
      announcements: showAnnouncements, linking: showLinking, reports: showReports, staff: showStaff })[id]?.();
+  // close the mobile drawer after navigating
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
 }
+
+/* Sidebar: off-canvas drawer on mobile · collapsible icon rail on desktop */
+function toggleSidebar(force) {
+  const sb = $('sidebar'), ov = $('sbOverlay');
+  if (window.matchMedia('(min-width:1024px)').matches) {
+    const rail = force === undefined ? !sb.classList.contains('rail') : !!force;
+    sb.classList.toggle('rail', rail);
+    localStorage.setItem('cifika_admin_rail', rail ? '1' : '0');
+  } else {
+    const open = force === undefined ? sb.classList.contains('-translate-x-full') : !!force;
+    sb.classList.toggle('-translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+  }
+}
+
+/* Staff (admin · instructor · frontdesk) can register clients — opens the form in staff-assisted mode */
+function openRegisterClient() { window.open('registration.html?staff=1', '_blank', 'noopener'); }
 
 /* ═══════════ DASHBOARD ═══════════ */
 function showDashboard() {
@@ -251,6 +388,14 @@ function showDashboard() {
 
   $('content').innerHTML = `
   <div class="fade-in grid gap-6">
+    <!-- QUICK ACTIONS -->
+    <div class="flex flex-wrap gap-2">
+      <button onclick="openRegisterClient()" class="h-10 px-4 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('userplus','w-4 h-4')} Register Client</button>
+      <button onclick="show('attendance')" class="h-10 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-2">${ic('calendar','w-4 h-4')} Take Attendance</button>
+      <button onclick="show('gradings')" class="h-10 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-2">${ic('medal','w-4 h-4')} Record Grading</button>
+      <button onclick="show('qrcode')" class="h-10 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-2">${ic('qr','w-4 h-4')} QR Check-in</button>
+    </div>
+
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       ${statCard('TOTAL MEMBERS', total)}
       ${statCard('ACTIVE', active, `${total ? Math.round(active/total*100) : 0}% of club`)}
@@ -273,7 +418,7 @@ function showDashboard() {
             </div>
           </div>
           <div class="flex gap-2 shrink-0">
-            <button onclick="setMemberStatus('${m.id}','active')" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11.5px] font-semibold hover:bg-emerald-700 transition">✓ Activate</button>
+            <button onclick="setMemberStatus('${m.id}','active')" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11.5px] font-semibold hover:bg-emerald-700 transition inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Activate</button>
             <button onclick="openMember('${m.id}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Details</button>
           </div>
         </div>`).join('')}</div>`
@@ -398,7 +543,7 @@ function openMember(id) {
       </div>
 
       <div class="rounded-[14px] border border-sky-200 bg-sky-50/60 p-4">
-        <div class="text-[11px] font-bold tracking-[0.12em] text-sky-700 mb-2">🩹 EXCUSED PERIOD (freeze sessions)</div>
+        <div class="text-[11px] font-bold tracking-[0.12em] text-sky-700 mb-2 flex items-center gap-1.5">${ic('shield','w-3.5 h-3.5')} EXCUSED PERIOD (freeze sessions)</div>
         <p class="text-[10.5px] text-neutral-500 leading-[1.5] mb-2.5">While active, absences inside this window automatically become excused and no sessions are consumed. The member is alerted near the end that sessions resume counting afterwards and will expire if not used.</p>
         <div class="grid grid-cols-2 gap-2">
           <label class="block"><div class="text-[9.5px] font-bold tracking-[0.08em] text-neutral-400 mb-1">FROM</div>
@@ -415,7 +560,7 @@ function openMember(id) {
       </div>
     </div>
     <div class="px-6 py-4 border-t border-neutral-100 flex flex-wrap gap-2 justify-between">
-      <button onclick="closeModal(); gradingPreselect='${m.id}'; show('gradings')" class="h-10 px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition">🥋 Record Grading</button>
+      <button onclick="closeModal(); gradingPreselect='${m.id}'; show('gradings')" class="h-10 px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5">${ic('medal','w-4 h-4')} Record Grading</button>
       <button onclick="closeModal()" class="h-10 px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">Close</button>
     </div>`;
   $('modalWrap').classList.remove('hidden');
@@ -583,8 +728,8 @@ function renderAbsQueue() {
           </div>
           <div class="flex items-center gap-2 shrink-0 flex-wrap">
             <input id="rn-${r.id}" class="input !h-9 !w-[150px] text-[11px]" placeholder="Note (optional)">
-            <button onclick="reviewRequest('${r.id}', true)" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition">✓ Excuse</button>
-            <button onclick="reviewRequest('${r.id}', false)" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition">✕ Decline</button>
+            <button onclick="reviewRequest('${r.id}', true)" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Excuse</button>
+            <button onclick="reviewRequest('${r.id}', false)" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition inline-flex items-center gap-1.5">${ic('x','w-3.5 h-3.5')} Decline</button>
           </div>
         </div>
       </div>`).join('')}</div>`
@@ -755,9 +900,9 @@ async function loadRecentGradings() {
         </div>
         ${resultPill(g.result)}
         <div class="flex gap-1.5 shrink-0 flex-wrap">
-          <button onclick="openScores('${g.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">🎯 ${sc ? 'Edit Scores' : 'Scores'}</button>
-          <button onclick="toggleCert('${g.id}', ${!g.certificate_issued})" class="h-8 px-3.5 rounded-full border text-[10.5px] font-bold transition ${g.certificate_issued ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'border-neutral-200 bg-white hover:border-black'}">📜 ${g.certificate_issued ? 'Issued ✓' : 'Issue Cert'}</button>
-          <button onclick="delGrading('${g.id}')" class="h-8 px-3 rounded-full text-[10.5px] text-red-400 hover:text-red-600 font-medium">✕</button>
+          <button onclick="openScores('${g.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition inline-flex items-center gap-1.5">${ic('target','w-3.5 h-3.5')} ${sc ? 'Edit Scores' : 'Scores'}</button>
+          <button onclick="toggleCert('${g.id}', ${!g.certificate_issued})" class="h-8 px-3.5 rounded-full border text-[10.5px] font-bold transition inline-flex items-center gap-1.5 ${g.certificate_issued ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'border-neutral-200 bg-white hover:border-black'}">${ic('award','w-3.5 h-3.5')} ${g.certificate_issued ? 'Issued' : 'Issue Cert'}</button>
+          <button onclick="delGrading('${g.id}')" class="h-8 px-3 rounded-full text-[10.5px] text-red-400 hover:text-red-600 font-medium inline-flex items-center">${ic('x','w-3.5 h-3.5')}</button>
         </div>
       </div>`;}).join('')}</div>
       <div class="text-[10.5px] text-neutral-400 mt-3">Deleting a record doesn't revert the member's belt — adjust via Members → Quick Belt Edit. Issued certificates become downloadable in the member's portal instantly.</div>`;
@@ -825,7 +970,17 @@ async function toggleCert(gid, issue) {
   const { error } = await sb.from('gradings')
     .update({ certificate_issued: issue, certificate_no: cert_no }).eq('id', gid);
   if (error) return toast('✗ ' + error.message, true);
-  toast(issue ? '📜 Certificate issued — downloadable in the portal' : 'Certificate revoked');
+  toast(issue ? 'Certificate issued — downloadable in the portal' : 'Certificate revoked');
+  loadRecentGradings();
+}
+
+async function delGrading(gid) {
+  if (!confirm('Delete this grading record? The member\u2019s belt is NOT reverted — adjust it via Members \u2192 Quick Belt Edit.')) return;
+  // remove any score sheet first (ignore if none / blocked), then the record itself
+  await sb.from('grading_scores').delete().eq('grading_id', gid);
+  const { error } = await sb.from('gradings').delete().eq('id', gid);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Grading record deleted');
   loadRecentGradings();
 }
 
@@ -929,13 +1084,13 @@ function showReports() {
       <p class="text-[12px] text-neutral-500 mb-4">Download CSV files for records, affiliation paperwork and backups.</p>
       <div class="grid sm:grid-cols-3 gap-3">
         <button onclick="exportMembers()" class="rounded-[16px] border border-neutral-200 p-5 text-left hover:border-black transition">
-          <div class="text-[20px]">👥</div><div class="mt-2 text-[13px] font-bold">Members CSV</div>
+          <div class="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-600">${ic('users','w-5 h-5')}</div><div class="mt-2 text-[13px] font-bold">Members CSV</div>
           <div class="text-[11px] text-neutral-500 mt-0.5">Full register with belts, status, guardians</div></button>
         <button onclick="exportAttendance()" class="rounded-[16px] border border-neutral-200 p-5 text-left hover:border-black transition">
-          <div class="text-[20px]">📅</div><div class="mt-2 text-[13px] font-bold">Attendance CSV</div>
+          <div class="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-600">${ic('calendar','w-5 h-5')}</div><div class="mt-2 text-[13px] font-bold">Attendance CSV</div>
           <div class="text-[11px] text-neutral-500 mt-0.5">Per-member totals + attendance rate</div></button>
         <button onclick="exportGradings()" class="rounded-[16px] border border-neutral-200 p-5 text-left hover:border-black transition">
-          <div class="text-[20px]">🥋</div><div class="mt-2 text-[13px] font-bold">Gradings CSV</div>
+          <div class="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-600">${ic('medal','w-5 h-5')}</div><div class="mt-2 text-[13px] font-bold">Gradings CSV</div>
           <div class="text-[11px] text-neutral-500 mt-0.5">Full grading history</div></button>
       </div>
     </div>
@@ -1010,9 +1165,14 @@ function showStaff() {
   $('content').innerHTML = `
   <div class="fade-in grid gap-4">
     <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1 flex items-center gap-2">${ic('userplus','w-4 h-4 text-brand')} INSTRUCTOR ACCESS REQUESTS</div>
+      <p class="text-[12px] text-neutral-500 mb-4">Portal users who chose “Enter as Instructor” wait here. <b>Approve</b> sets their role to <b>instructor</b> — they get the instructor console on their next sign-in. Declining returns them to the member portal.</p>
+      <div id="insReqList" class="grid gap-2"><div class="text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+    <div class="card p-6">
       <div class="text-[12px] font-bold tracking-[0.14em] mb-1">STAFF & ROLES</div>
       <p class="text-[12px] text-neutral-500 mb-4">
-        <b>admin</b> = full console access • <b>instructor</b> = can record attendance & gradings •
+        <b>admin</b> = full console access • <b>instructor</b> = instructor console (attendance, gradings, belt reviews, announcements) •
         <b>frontdesk</b> = frontdesk.html (payments, session activations, check-ins) •
         <b>student/parent</b> = member portal only. You can't demote yourself.
       </p>
@@ -1023,14 +1183,55 @@ function showStaff() {
             <div class="text-[13px] font-semibold truncate">${escapeHtml(p.full_name || p.email)}</div>
             <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(p.email)}${p.id === currentUser.id ? ' — you' : ''}</div>
           </div>
-          <select id="role-${p.id}" class="input sm:w-[150px]">
-            ${['student','parent','frontdesk','instructor','admin'].map(r=>`<option ${p.role===r?'selected':''}>${r}</option>`).join('')}
+          <select id="role-${p.id}" class="input sm:w-[170px]">
+            ${[['student','student'],['parent','parent'],['frontdesk','frontdesk'],['instructor','instructor'],['admin','admin'],['pending_instructor','pending_instructor (awaiting)']].map(([v,l])=>`<option value="${v}" ${p.role===v?'selected':''}>${l}</option>`).join('')}
           </select>
           <button onclick="saveRole('${p.id}')" class="h-[42px] px-5 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition shrink-0 sm:w-auto">Save</button>
         </div>`).join('')}
       </div>
     </div>
   </div>`;
+  loadInstructorRequests();
+}
+
+let insReqCache = [];
+async function loadInstructorRequests() {
+  const { data, error } = await sb.rpc('list_instructor_requests');
+  insReqCache = (!error && data && data.status === 'ok') ? (data.rows || []) : [];
+  const el = $('insReqList'); if (!el) return;
+  const pending = insReqCache.filter(r => r.status === 'pending');
+  const decided = insReqCache.filter(r => r.status !== 'pending');
+  el.innerHTML = `
+    ${pending.length ? pending.map(r => `
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-4 py-3 rounded-[14px] border border-brand-border bg-brand-light/50">
+      <div class="w-9 h-9 rounded-full bg-white border border-brand-border flex items-center justify-center text-[12px] font-bold text-brand shrink-0">${initial(r.full_name || r.email)}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-semibold truncate">${escapeHtml(r.full_name || '—')}</div>
+        <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(r.email || '')} • requested ${fmtDate(String(r.created_at).slice(0, 10))}</div>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        <button onclick="decideInstructorRequest('${r.id}', true)" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Approve</button>
+        <button onclick="decideInstructorRequest('${r.id}', false)" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition inline-flex items-center gap-1.5">${ic('x','w-3.5 h-3.5')} Decline</button>
+      </div>
+    </div>`).join('')
+    : `<div class="text-center py-4 text-[13px] text-neutral-400">No pending instructor requests ✓</div>`}
+    ${decided.length ? `
+    <div class="mt-3 text-[11px] font-bold tracking-[0.14em] text-neutral-400">RECENT DECISIONS</div>
+    ${decided.slice(0, 8).map(r => `
+    <div class="flex items-center gap-3 px-4 py-2.5 rounded-[12px] border border-neutral-100 bg-neutral-50/60">
+      <span class="text-[12.5px] font-semibold truncate flex-1">${escapeHtml(r.full_name || r.email || '—')}</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'}">${String(r.status).toUpperCase()}</span>
+      <span class="text-[10.5px] text-neutral-400">${fmtDate(String(r.reviewed_at || r.created_at).slice(0, 10))}</span>
+    </div>`).join('')}` : ''}`;
+}
+
+async function decideInstructorRequest(id, approve) {
+  const { data, error } = await sb.rpc('approve_instructor_request', { p_request_id: id, p_approve: approve });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Action failed.'), true);
+  toast('✓ ' + d.message);
+  await loadCore();
+  loadInstructorRequests();
 }
 
 async function saveRole(pid) {
@@ -1050,7 +1251,7 @@ function showAnnouncements() {
   <div class="fade-in grid gap-4">
     <div class="card p-6">
       <div class="flex items-center justify-between mb-1">
-        <div class="text-[12px] font-bold tracking-[0.14em]">${annEditing ? '✏️ EDIT ITEM' : '📢 NEW ITEM'}</div>
+        <div class="text-[12px] font-bold tracking-[0.14em] flex items-center gap-2">${annEditing ? ic('edit','w-4 h-4 text-brand') : ic('megaphone','w-4 h-4 text-brand')}${annEditing ? 'EDIT ITEM' : 'NEW ITEM'}</div>
         ${annEditing ? `<button onclick="resetAnnForm()" class="text-[11px] text-neutral-400 hover:text-neutral-700 font-semibold">Cancel edit — new item</button>` : ''}
       </div>
       <p class="text-[12px] text-neutral-500 mb-4">Grading announcements, events, seminars, promotions & updates — published items appear in member portals instantly. Tick “Landing” to also show on the public homepage.</p>
@@ -1223,9 +1424,9 @@ function qrDateChanged() {
   const s = TRAINING_SCHEDULE[dow];
   if (s) {
     $('qrStart').value = s.start; $('qrEnd').value = s.end;
-    $('qrDayHint').innerHTML = `📅 <b>${s.name}</b> — scheduled ${s.start}–${s.end} (editable). `;
+    $('qrDayHint').innerHTML = `${ic('calendar','w-3.5 h-3.5 inline -mt-0.5')} <b>${s.name}</b> — scheduled ${s.start}–${s.end} (editable). `;
   } else {
-    $('qrDayHint').innerHTML = `⚠️ <b>${new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' })}</b> is not a regular training day (Fri / Sat / Sun) — set custom hours if needed. `;
+    $('qrDayHint').innerHTML = `${ic('alert','w-3.5 h-3.5 inline -mt-0.5')} <b>${new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' })}</b> is not a regular training day (Fri / Sat / Sun) — set custom hours if needed. `;
   }
   $('qrDayHint').innerHTML += `Times are enforced server-side in Africa/Lagos (WAT).`;
 }
@@ -1437,7 +1638,7 @@ function showReviews() {
               ${beltLevels.map(b => `<option value="${escapeHtml(b.belt_name)}" ${b.belt_name === m.current_belt ? 'selected' : ''}>${escapeHtml(b.belt_name)}</option>`).join('')}
             </select>
             <input id="rbn-${m.id}" class="input lg:w-[190px]" placeholder="Review note (optional)">
-            <button onclick="approveReview('${m.id}')" class="h-[42px] px-5 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition shrink-0">✓ Regularise</button>
+            <button onclick="approveReview('${m.id}')" class="h-[42px] px-5 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition shrink-0 inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Regularise</button>
           </div>
         </div>
       </div>`).join('')}</div>`
@@ -1581,7 +1782,7 @@ function logRemark(r) {
   else if (r.minutes_after_start <= 15) parts.push(`On time ✓ (${r.minutes_after_start} min in)`);
   else parts.push(`Late — ${r.minutes_after_start} min after start`);
   const wc = r.week_count ?? 1;
-  if (wc >= 2) parts.push(`${wc} sessions this week 🎯 target hit`);
+  if (wc >= 2) parts.push(`${wc} sessions this week — target hit`);
   else if (wc === 1) parts.push('1st session this week');
   return parts.join(' • ');
 }
@@ -1621,8 +1822,8 @@ async function renderQrLog() {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-[13px] font-semibold truncate">${escapeHtml(r.full_name || '—')}</span>
-            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.status === 'late' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">${r.status === 'late' ? '⚠️ LATE' : '✓ ON TIME'}</span>
-            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.check_in_source === 'qr' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}">${r.check_in_source === 'qr' ? '📱 QR' : '🖥️ DESK'}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.status === 'late' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'} inline-flex items-center gap-1">${r.status === 'late' ? ic('clock','w-3 h-3') + ' LATE' : ic('check','w-3 h-3') + ' ON TIME'}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.check_in_source === 'qr' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'} inline-flex items-center gap-1">${r.check_in_source === 'qr' ? ic('qr','w-3 h-3') + ' QR' : ic('dashboard','w-3 h-3') + ' DESK'}</span>
           </div>
           <div class="text-[11.5px] text-neutral-500 mt-0.5">${escapeHtml(r.registration_ref || '')} • ${escapeHtml(r.current_belt || '')}</div>
           <div class="text-[11.5px] text-neutral-600 mt-1">${escapeHtml(logRemark(r))}</div>
@@ -1722,7 +1923,7 @@ async function renderConsistency() {
 
   ${silentPrev.length ? `
   <div class="card overflow-hidden">
-    <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">⚠️ WATCHLIST — TRAINED 0× LAST WEEK</div>
+    <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em] flex items-center gap-2">${ic('alert','w-4 h-4 text-amber-500')} WATCHLIST — TRAINED 0× LAST WEEK</div>
     <div class="px-5 py-2 text-[11px] text-neutral-500">Reach out before the habit breaks — a WhatsApp nudge works wonders.</div>
     ${silentPrev.map(r => `
     <div class="flex items-center gap-3 px-5 py-2.5 border-t border-neutral-100">
@@ -1764,14 +1965,14 @@ async function renderConsistency() {
                 const n = Number(r.week_map?.[w] || 0);
                 return `<td class="px-1 py-2.5 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded-lg text-[10.5px] font-bold ${cell(n)}">${n || '·'}</span></td>`;
               }).join('')}
-              <td class="px-3 py-2.5 text-center"><span class="text-[12px] font-extrabold ${streak >= 3 ? 'text-emerald-600' : streak > 0 ? 'text-neutral-700' : 'text-neutral-300'}">${streak > 0 ? '🔥' + streak : '—'}</span></td>
+              <td class="px-3 py-2.5 text-center"><span class="text-[12px] font-extrabold inline-flex items-center gap-1 ${streak >= 3 ? 'text-emerald-600' : streak > 0 ? 'text-neutral-700' : 'text-neutral-300'}">${streak > 0 ? ic('flame','w-3.5 h-3.5') + streak : '—'}</span></td>
               <td class="px-3 py-2.5 text-center"><span class="text-[12px] font-bold ${rate >= 75 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-red-500'}">${total}</span><div class="text-[9px] text-neutral-400">${rate}%</div></td>
             </tr>`;
           }).join('') : `<tr><td colspan="${weeks.length + 3}" class="px-5 py-10 text-center text-[13px] text-neutral-400">No members to track yet.</td></tr>`}
         </tbody>
       </table>
     </div>
-    <div class="px-5 py-3 text-[10.5px] text-neutral-400 border-t border-neutral-100">Weeks run Monday–Sunday (WAT). 🔥 = consecutive weeks with both sessions done. Current week updates live as members check in.</div>
+    <div class="px-5 py-3 text-[10.5px] text-neutral-400 border-t border-neutral-100">Weeks run Monday–Sunday (WAT). The flame icon = consecutive weeks with both sessions done. Current week updates live as members check in.</div>
   </div>`;
 }
 

@@ -1,31 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- ===== CIFIKA SEO — START (portal.html) — PRIVATE APP, NOINDEX ===== -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Member Portal — City Fitness Karate Club</title>
-<link rel="manifest" href="./manifest.json">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<title>Member Portal — City Fitness Karate Club | CIFIKA</title>
+<meta name="description" content="CIFIKA Member Portal — Sign in to track training, attendance, belt progression, grading windows and club updates. For registered members only.">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="canonical" href="https://cifika.ttosr.com/portal.html">
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+
+<!-- OG still needed for when link is pasted in WhatsApp but we keep it noindex -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="City Fitness Karate Club — CIFIKA">
+<meta property="og:title" content="Member Portal — CIFIKA">
+<meta property="og:description" content="Track training, attendance and belt progression. Members only.">
+<meta property="og:url" content="https://cifika.ttosr.com/portal.html">
+<meta property="og:image" content="https://cifika.ttosr.com/assets/social-preview.png">
+<meta name="twitter:card" content="summary">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "CIFIKA Member Portal",
+  "url": "https://cifika.ttosr.com/portal.html",
+  "applicationCategory": "SportsApplication",
+  "operatingSystem": "All",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "NGN" }
+}
+</script>
+<!-- ===== CIFIKA SEO — END ===== -->
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<!-- Favicons & Manifest -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/favicon.svg">
 <script>
   tailwind.config = {
-    theme: {
-      extend: {
-        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-        colors: {
-          brand: { DEFAULT: '#FF6B00', dark: '#E65A00', light: '#FFF5EB', border: '#FFD4A8', text: '#B34700' }
-        }
-      }
-    }
+    theme: { extend: {
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+      colors: { brand: { DEFAULT:'#FF6B00', dark:'#E65A00', light:'#FFF5EB', border:'#FFD4A8', text:'#B34700' } }
+    }}
   }
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<style>
+
+  <style>
   body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: clip; }
   .input { width:100%; height:44px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
            padding:0 16px; font-size:13px; outline:none; transition: border-color .15s, box-shadow .15s; }
@@ -41,6 +70,21 @@
   @keyframes ringPulse { 0% { box-shadow:0 0 0 0 rgba(255,107,0,.4); } 100% { box-shadow:0 0 0 10px rgba(255,107,0,0); } }
   .scroll-x::-webkit-scrollbar { height:0; }
   .scroll-x { -webkit-overflow-scrolling: touch; }
+  .nav-btn { transition: all .15s ease; }
+  .nav-btn.active { background:#FF6B00; color:#fff; }
+  /* ---- Sidebar (collapsible rail on desktop · off-canvas drawer on mobile) ---- */
+  #sidebar { scrollbar-width:thin; scrollbar-color:#333 transparent; }
+  #sidebar::-webkit-scrollbar { width:5px; }
+  #sidebar::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+  @media (min-width:1024px) {
+    #sidebar.rail { width:68px; }
+    #sidebar.rail .sb-label { display:none; }
+    #sidebar.rail .sb-hide { display:none; }
+    #sidebar.rail .nav-btn { justify-content:center; padding-left:0; padding-right:0; }
+  }
+  @media (max-width:1023.98px) {
+    #sidebar { box-shadow: 12px 0 40px rgba(0,0,0,.35); }
+  }
 </style>
 </head>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
@@ -70,10 +114,19 @@
         <input id="siEmail" type="email" class="input" placeholder="Email address" autocomplete="email">
         <input id="siPassword" type="password" class="input" placeholder="Password" autocomplete="current-password">
         <button id="siBtn" type="submit" class="h-[46px] rounded-full bg-black text-white text-[13.5px] font-semibold hover:bg-neutral-800 transition">Sign In →</button>
+        <div class="flex items-center gap-3">
+          <div class="h-px bg-neutral-200 flex-1"></div>
+          <span class="text-[10.5px] text-neutral-400 font-semibold tracking-wide">OR</span>
+          <div class="h-px bg-neutral-200 flex-1"></div>
+        </div>
+        <button type="button" onclick="doGoogle()" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.99 11.99 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+          Continue with Google
+        </button>
         <button type="button" onclick="doReset()" class="text-[11.5px] text-neutral-400 hover:text-neutral-700 transition">Forgot password?</button>
-        <!-- unregistered visitor -->
+        <!-- new visitor -->
         <div class="text-center mt-1">
-          <p class="text-[12px] text-neutral-500">Don't have an account yet? <a href="registration.html" class="font-semibold text-brand hover:text-brand-dark underline underline-offset-4">Register to get an ID</a></p>
+          <p class="text-[12px] text-neutral-500">New here? Switch to <button type="button" onclick="switchAuthTab('up')" class="font-semibold text-brand hover:text-brand-dark underline underline-offset-4">Create Account</button> — with or without a CIFIKA ID.</p>
         </div>
       </form>
 
@@ -81,51 +134,95 @@
       <form id="signUpForm" class="hidden mt-5 grid gap-3" onsubmit="event.preventDefault(); doSignUp();">
         <input id="suName" class="input" placeholder="Full name">
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" id="roleStudent" onclick="setSignupRole('student')" class="role-btn active h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold">🥋 I'm a Student</button>
-          <button type="button" id="roleParent" onclick="setSignupRole('parent')" class="role-btn h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold">👨‍👧 Parent / Guardian</button>
+          <button type="button" id="roleStudent" onclick="setSignupRole('student')" class="role-btn active h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            I'm a Student</button>
+          <button type="button" id="roleParent" onclick="setSignupRole('parent')" class="role-btn h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold flex items-center justify-center gap-2">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Parent / Guardian</button>
         </div>
         <div>
-          <input id="suRef" class="input" placeholder="Registration ID — e.g. CFK-12345" style="text-transform:uppercase" onblur="verifyRef(false)">
-          <p class="text-[11px] text-neutral-400 mt-1 px-1">The CFK-xxxxx ID from your registration confirmation.</p>
+          <input id="suRef" class="input" placeholder="CIFIKA ID (optional) — e.g. CFK-12345" style="text-transform:uppercase" onblur="verifyRef(false)">
+          <p class="text-[11px] text-neutral-400 mt-1 px-1">Got a <b>CFK-xxxxx</b> ID from registration? Enter it to link instantly — or leave it blank and connect it later from Account Settings.</p>
         </div>
         <div id="refStatus" class="hidden text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border"></div>
-        <input id="suEmail" type="email" class="input" placeholder="Email — must match your registration" autocomplete="email" onblur="if(document.getElementById('suRef').value.trim()) verifyRef(false)">
+        <input id="suEmail" type="email" class="input" placeholder="Email address" autocomplete="email" onblur="if(document.getElementById('suRef').value.trim()) verifyRef(false)">
         <input id="suPassword" type="password" class="input" placeholder="Create password (min. 6 characters)" autocomplete="new-password">
         <button id="suBtn" type="submit" class="h-[46px] rounded-full bg-brand text-white text-[13.5px] font-semibold hover:bg-brand-dark transition">Create Account →</button>
-        <!-- Always visible for unregistered -->
-      <div class="mt-6 p-4 rounded-[16px] bg-[#FFF5EB] border border-[#FFD4A8] flex items-start gap-3">
-        <div class="w-9 h-9 rounded-full bg-white border border-[#FFD4A8] flex items-center justify-center shrink-0">🪪</div>
+        <div class="flex items-center gap-3">
+          <div class="h-px bg-neutral-200 flex-1"></div>
+          <span class="text-[10.5px] text-neutral-400 font-semibold tracking-wide">OR</span>
+          <div class="h-px bg-neutral-200 flex-1"></div>
+        </div>
+        <button type="button" onclick="doGoogle()" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.99 11.99 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+          Sign up with Google
+        </button>
+      <div class="mt-5 p-4 rounded-[16px] bg-neutral-50 border border-neutral-200 flex items-start gap-3">
+        <div class="w-9 h-9 rounded-full bg-white border border-neutral-200 flex items-center justify-center shrink-0">
+          <svg viewBox="0 0 24 24" class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h6"/></svg>
+        </div>
         <div class="flex-1">
-          <div class="text-[12.5px] font-bold">No Registration ID?</div>
-          <div class="text-[11.5px] text-neutral-600 mt-1 leading-[1.5]">You need to register first to get your <span class="font-semibold text-black">CFK-xxxxx</span> ID before you can access the portal.</div>
-          <a href="registration.html" id="registerLink" class="inline-flex mt-3 h-[36px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition items-center gap-1">
+          <div class="text-[12.5px] font-bold">No CIFIKA ID yet? No problem.</div>
+          <div class="text-[11.5px] text-neutral-600 mt-1 leading-[1.5]">Create your account now — after sign-up you can connect your <span class="font-semibold text-black">CFK-xxxxx</span> ID to unlock your dojo data, or register to get an ID.</div>
+          <a href="registration.html?from=portal" id="registerLink" onclick="this.href=buildPortalRegUrl()" class="inline-flex mt-3 h-[36px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition items-center gap-1.5">
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
             Register to get an ID →
           </a>
         </div>
       </div>
       </form>
     </div>
-    <p class="text-center text-[11px] text-neutral-400 mt-5">Use the email address you registered with at the dojo.</p>
+    <p class="text-center text-[11px] text-neutral-400 mt-5">Entering a CIFIKA ID? Use the email you registered with at the dojo so it links automatically.</p>
   </div>
 </div>
 
-<!-- ═══════════════ APP VIEW ═══════════════ -->
-<div id="appView" class="hidden">
-  <header class="sticky top-0 z-40 bg-black text-white border-b border-neutral-800">
-    <div class="max-w-[1200px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
-        <span class="text-[12px] font-bold tracking-[0.14em]">CITY FITNESS <span class="text-brand">KARATE</span></span>
-        <span class="hidden md:inline text-[9px] font-bold tracking-[0.1em] text-neutral-500 border border-neutral-700 rounded-full px-2 py-0.5">v2.2</span>
+<!-- ═══════════════ APP VIEW — responsive shell with sidebar (like the Admin Console) ═══════════════ -->
+<div id="appView" class="hidden min-h-screen flex">
+  <!-- MOBILE OVERLAY -->
+  <div id="sbOverlay" onclick="toggleSidebar(false)" class="hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"></div>
+
+  <!-- SIDEBAR — off-canvas drawer on mobile, collapsible rail on desktop -->
+  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-[248px] shrink-0 bg-[#0a0a0a] text-white border-r border-neutral-800 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-[56px] flex items-center justify-between pl-4 pr-3 border-b border-neutral-800 shrink-0">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold shrink-0">空</span>
+        <span class="sb-label text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">PORTAL</span></span>
       </div>
-      <div class="flex items-center gap-3">
-        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
-        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[180px] truncate"></span>
-        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition">Sign out</button>
+      <button onclick="toggleSidebar(false)" class="lg:hidden w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0" title="Close menu">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <nav id="navWrap" class="flex-1 overflow-y-auto py-3 px-2.5 space-y-1"></nav>
+    <div class="p-3 border-t border-neutral-800 shrink-0">
+      <div class="flex items-center gap-2.5 px-1.5 min-w-0">
+        <div id="sbAvatar" class="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-bold shrink-0"></div>
+        <div class="sb-label min-w-0 flex-1">
+          <div id="sbEmail" class="text-[11px] text-neutral-300 truncate"></div>
+          <div id="sbRole" class="text-[9px] font-bold tracking-[0.12em] text-neutral-500"></div>
+        </div>
+        <button onclick="signOut()" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0 text-neutral-400 hover:text-white" title="Sign out">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
       </div>
     </div>
-  </header>
-  <main id="appMain" class="max-w-[1200px] mx-auto px-5 md:px-8 py-6 md:py-8"></main>
+  </aside>
+
+  <!-- MAIN COLUMN -->
+  <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+    <header class="sticky top-0 z-30 bg-black/95 backdrop-blur text-white border-b border-neutral-800">
+      <div class="max-w-[1200px] mx-auto pl-3 pr-3 sm:pr-5 md:pl-6 md:pr-6 h-[56px] flex items-center gap-2">
+        <button onclick="toggleSidebar()" id="navToggle" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0" title="Toggle menu">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="lg:hidden text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">PORTAL</span></span>
+        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
+        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[180px] truncate ml-auto"></span>
+        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition shrink-0">Sign out</button>
+      </div>
+    </header>
+    <main id="appMain" class="flex-1 w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-5 md:py-7"></main>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -166,32 +263,76 @@ const DOJO_KUN = [
 let sb, currentUser, currentProfile, beltLevels = [], parentChildren = [];
 let signupRole = 'student';
 let verifiedRef = null;
+let portalSection = 'home';
 
 const $ = id => document.getElementById(id);
+
+/* ═══════════ CUSTOM INLINE SVG ICON SET — no emoji icons anywhere in the portal ═══════════ */
+const ICONS = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  medal: '<circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/>',
+  ban: '<circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  alert: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  hourglass: '<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+  phone: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+  monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  id: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h4M15 12h4M6 18c.5-1.5 1.5-2 3-2s2.5.5 3 2"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  arrow: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+};
+function ic(name, cls) {
+  return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
+/* Portal sidebar sections — like the Admin Console nav */
+const NAV_ITEMS = [
+  ['home',       'dashboard', 'Home'],
+  ['attendance', 'calendar',  'Attendance'],
+  ['gradings',   'medal',     'Gradings'],
+  ['absences',   'ban',       'Absences'],
+  ['dojo',       'book',      'Dojo Code'],
+  ['account',    'user',      'Account'],
+];
 
 /* ═══════════════ BOOT ═══════════════ */
 window.addEventListener('DOMContentLoaded', boot);
 
 async function boot() {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    // arriving from registration.html → "Open the Portal"
-    const params = new URLSearchParams(location.search);
+  // arriving from registration.html → "Open the Portal"
+  const params = new URLSearchParams(location.search);
   window._pendingRef = params.get('ref') || null;
-  if (params.get('ref')) {
-    if (params.get('convert') === '1') {
-      // existing member account → sign in, then auto-convert + link
-      switchAuthTab('in');
-      $('siEmail').value = params.get('email') || '';
-      showAuthError('Sign in with your existing account — it will be converted to a parent account and ' + params.get('ref') + ' linked to it.', true);
-    } else {
-      switchAuthTab('up');
-      $('suRef').value = params.get('ref').toUpperCase();
-      if (params.get('email')) $('suEmail').value = params.get('email');
-      if (params.get('role')) setSignupRole(params.get('role'));
-    }
-    history.replaceState(null, '', location.pathname);
-  }
   const { data: { session } } = await sb.auth.getSession();
+  if (params.get('ref')) {
+    history.replaceState(null, '', location.pathname);
+    if (!session?.user) {
+      if (params.get('convert') === '1') {
+        // existing member account → sign in, then auto-convert + link
+        switchAuthTab('in');
+        $('siEmail').value = params.get('email') || '';
+        showAuthError('Sign in with your existing account — it will be converted to a parent account and ' + params.get('ref') + ' linked to it.', true);
+      } else {
+        // fresh signup from the registration page → prefill the create-account form
+        switchAuthTab('up');
+        $('suRef').value = params.get('ref').toUpperCase();
+        if (params.get('email')) $('suEmail').value = params.get('email');
+        if (params.get('role')) setSignupRole(params.get('role'));
+      }
+    }
+    // signed in → window._pendingRef is connected automatically inside enterApp()
+  }
   if (session?.user) await enterApp(session.user);
   else $('authView').classList.remove('hidden');
 
@@ -276,25 +417,28 @@ async function doSignUp() {
   const ref = $('suRef').value.trim().toUpperCase();
   if (!fullName || !email || password.length < 6)
     return showAuthError('Fill all fields — password must be at least 6 characters.');
-  if (!ref)
-    return showAuthError('Enter the Registration ID (CFK-xxxxx) you received when you registered.');
 
-  const btn = $('suBtn'); btn.disabled = true; btn.textContent = 'Verifying…';
-  const ok = await verifyRef(true);
-  if (!ok) {
-    btn.disabled = false; btn.textContent = 'Create Account →';
-    return showAuthError('Registration ID could not be verified — use the exact email from the registration form.');
+  const btn = $('suBtn'); btn.disabled = true;
+
+  // ID is OPTIONAL now — only verify when one was entered
+  if (ref) {
+    btn.textContent = 'Verifying…';
+    const ok = await verifyRef(true);
+    if (!ok) {
+      btn.disabled = false; btn.textContent = 'Create Account →';
+      return showAuthError('Registration ID could not be verified — use the exact email from the registration form, or leave the ID blank and connect it later.');
+    }
   }
 
   btn.textContent = 'Creating…';
   const { data, error } = await sb.auth.signUp({
     email, password,
-    options: { data: { full_name: fullName, role: signupRole, reg_ref: ref } }
+    options: { data: { full_name: fullName, role: signupRole, reg_ref: ref || null } }
   });
   btn.disabled = false; btn.textContent = 'Create Account →';
   if (error) return showAuthError(error.message);
   if (!data.session) showAuthError('Account created! Check your inbox to confirm your email, then sign in.', true);
-  // if email confirmation is OFF, a session exists → dashboard loads automatically, already linked
+  // if email confirmation is OFF, a session exists → onboarding loads automatically (connect ID / enter as instructor)
 }
 
 async function doReset() {
@@ -302,6 +446,15 @@ async function doReset() {
   if (!email) return showAuthError('Type your email in the field above first, then tap reset.');
   const { error } = await sb.auth.resetPasswordForEmail(email);
   showAuthError(error ? error.message : 'Reset link sent — check your inbox.', !error);
+}
+
+async function doGoogle() {
+  hideAuthError();
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.origin + location.pathname }
+  });
+  if (error) showAuthError(error.message);
 }
 
 async function signOut() { await sb.auth.signOut(); location.reload(); }
@@ -321,47 +474,123 @@ async function enterApp(user) {
   }
   currentProfile = profile;
 
-    // "Use my member account" flow → link the child + convert role server-side
+  // arriving from registration.html (already signed in) → connect the new ID automatically
   if (window._pendingRef) {
     const ref = window._pendingRef; window._pendingRef = null;
-    const { data: linked } = await sb.rpc('link_by_ref', { p_ref: ref });
-    if (linked?.status === 'ok') {
-      toast(`✓ Linked ${linked.linked || 'member'} — your account is now a parent account`);
+    const { data: res } = await sb.rpc('connect_own_ref', { p_ref: ref });
+    const d = !res ? null : res;
+    if (d && (d.status === 'ok' || d.status === 'already')) {
+      toast('✓ ' + (d.message || 'ID connected — your dojo data is unlocked.'));
       const { data: p2 } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (p2) { profile = p2; currentProfile = p2; }   // role may have changed student → parent
+    } else {
+      // not linked (email mismatch, need parent switch…) → onboarding explains what to do
+      window._pendingConnectMsg = d?.message || 'Could not connect that ID yet.';
+      window._pendingConnectStatus = d?.status || 'error';
     }
   }
 
   const { data: belts } = await sb.from('belt_levels').select('*').eq('is_active', true).order('belt_order');
   beltLevels = belts || [];
 
+  // instructor auth now lives on its own console page
+  if (profile.role === 'pending_instructor') { location.href = 'instructor.html'; return; }
+  if (profile.role === 'instructor')          { location.href = 'instructor.html'; return; }
+  if (profile.role === 'admin')               { location.href = 'admin.html'; return; }
+
   $('authView').classList.add('hidden');
   $('appView').classList.remove('hidden');
   $('hdrEmail').textContent = user.email;
   $('hdrRole').textContent = profile.role.toUpperCase();
+  $('sbEmail').textContent = user.email;
+  $('sbAvatar').textContent = (user.email || '?').trim()[0]?.toUpperCase() || '?';
+  $('sbRole').textContent = profile.role.toUpperCase() + ' PORTAL';
+  if (window.matchMedia('(min-width:1024px)').matches && localStorage.getItem('cifika_portal_rail') === '1')
+    $('sidebar').classList.add('rail');
 
-  if (profile.role === 'parent') await renderParentHome();
-  else if (profile.role === 'admin' || profile.role === 'instructor') await renderAdminHome();
-  else await renderStudentHome();
+  if (profile.role === 'parent') return renderParentHome();
+
+  // student / member — no linked member yet? → onboarding (connect ID / register for an ID)
+  const { data: linked } = await sb.from('students').select('id').eq('user_id', user.id).maybeSingle();
+  if (!linked && !sessionStorage.getItem('cifika_onboard_done')) return renderOnboarding(false);
+  await renderStudentHome();
+}
+
+/* ═══════════════ SIDEBAR SHELL ═══════════════ */
+function renderNav(items) {
+  const list = items || NAV_ITEMS;
+  $('navWrap').innerHTML = list.map(([id, icon, label]) => `
+    <button onclick="showPortalSection('${id}')" data-nav="${id}" title="${label}"
+      class="nav-btn ${portalSection === id ? 'bg-brand text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}
+             w-full h-10 px-3 rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
+      ${ic(icon, 'w-[18px] h-[18px] shrink-0')}<span class="sb-label">${label}</span>
+    </button>`).join('');
+}
+
+/* Sidebar: off-canvas drawer on mobile · collapsible icon rail on desktop */
+function toggleSidebar(force) {
+  const sbs = $('sidebar'), ov = $('sbOverlay');
+  if (window.matchMedia('(min-width:1024px)').matches) {
+    const rail = force === undefined ? !sbs.classList.contains('rail') : !!force;
+    sbs.classList.toggle('rail', rail);
+    localStorage.setItem('cifika_portal_rail', rail ? '1' : '0');
+  } else {
+    const open = force === undefined ? sbs.classList.contains('-translate-x-full') : !!force;
+    sbs.classList.toggle('-translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+  }
+}
+
+/* Sidebar navigation — sections render from the cached dashboard data */
+function showPortalSection(id) {
+  if (id === 'home' && window._view === 'parentHome') {
+    portalSection = 'home'; markNav('home');
+    renderParentHome();
+  } else {
+    portalSection = id; markNav(id);
+    renderPortalSection(id);
+  }
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+}
+
+function markNav(id) {
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    const on = b.dataset.nav === id;
+    b.classList.toggle('bg-brand', on);
+    b.classList.toggle('text-white', on);
+    b.classList.toggle('text-neutral-300', !on);
+  });
+}
+
+function sectionCard(title, sub, bodyHTML) {
+  return `
+  <div class="fade-in grid gap-4">
+    <div class="card overflow-hidden">
+      <div class="px-5 md:px-6 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
+        <div class="text-[12px] font-bold tracking-[0.14em]">${title}</div>
+        ${sub ? `<div class="text-[11px] text-neutral-400">${sub}</div>` : ''}
+      </div>
+      <div class="p-5 md:p-6">${bodyHTML}</div>
+    </div>
+  </div>`;
+}
+
+function renderPortalSection(id) {
+  const d = window._dash;
+  if (!d) { renderStudentHome(); return; }
+  if (id === 'attendance') $('appMain').innerHTML = sectionCard('ATTENDANCE', '80% required for grading', attendanceTabHTML(d.att, d.rate));
+  else if (id === 'gradings') $('appMain').innerHTML = sectionCard('GRADINGS', `${d.grd.length} recorded`, gradingsTabHTML(d.grd, d.scoreById));
+  else if (id === 'absences') $('appMain').innerHTML = sectionCard('ABSENCES', 'request an excusal', absenceTabHTML(d.student));
+  else if (id === 'dojo') $('appMain').innerHTML = sectionCard('DOJO CODE', 'club rules & dojo kun', dojoCodeHTML());
+  else if (id === 'account') $('appMain').innerHTML = sectionCard('ACCOUNT', 'profile & settings', profileTabHTML(d.student));
+  else renderDashboardHome();
 }
 
 /* ═══════════════ STUDENT HOME ═══════════════ */
 async function renderStudentHome() {
   const { data: student } = await sb.from('students').select('*').eq('user_id', currentUser.id).maybeSingle();
-  if (!student) {
-    $('appMain').innerHTML = `
-      <div class="fade-in card p-8 text-center max-w-[520px] mx-auto">
-        <div class="w-12 h-12 mx-auto rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[20px]">🥋</div>
-        <h2 class="mt-4 text-[18px] font-extrabold">Your member profile isn't linked yet</h2>
-        <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
-          Your account is active, but no membership record is attached to
-          <b>${escapeHtml(currentUser.email)}</b> yet. Once the club processes your registration
-          (or your email matches the guardian email on a registration), your dashboard appears here automatically.
-        </p>
-        <button onclick="signOut()" class="mt-5 h-[42px] px-6 rounded-full bg-black text-white text-[12px] font-semibold">Sign out</button>
-      </div>`;
-    return;
-  }
+  if (!student) return renderOnboarding(true);
   await renderDashboard(student, {});
 }
 
@@ -374,9 +603,16 @@ async function renderParentHome() {
   parentChildren = (links || []).map(l => l.students).filter(Boolean);
   window.mineStudent = mine || null;
 
+  window._view = 'parentHome';
+  portalSection = 'home';
+  $('sidebar').classList.remove('hidden');
+  $('navToggle').classList.remove('hidden');
+  renderNav([['home', 'dashboard', 'Home']]);
+  markNav('home');
+
   const cards = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
   const myCard = mine ? `
-      <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="renderDashboard(window.mineStudent, { back:true, backLabel:'← Back to parent home' })">
+      <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="renderDashboard(window.mineStudent, { back:true, backLabel:'Back to parent home' })">
         <div class="w-14 h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0">${(mine.full_name || '?').trim()[0]?.toUpperCase() || '?'}</div>
         <div class="flex-1 min-w-0">
           <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">MY TRAINING</div>
@@ -390,7 +626,7 @@ async function renderParentHome() {
   <div class="fade-in grid gap-6">
     <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome, ${escapeHtml(currentProfile.full_name || 'Parent')} 👨‍👧</h1>
+        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome, ${escapeHtml(currentProfile.full_name || 'Parent')}</h1>
         <p class="text-[13px] text-neutral-500 mt-1">${mine ? 'Parent + member account — manage your children and keep training.' : 'Guardian portal — monitor training, attendance and grading progress.'}</p>
       </div>
       <div class="text-[12px] text-neutral-500 md:text-right">
@@ -404,12 +640,13 @@ async function renderParentHome() {
       ${parentChildren.length
         ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`
         : `<div class="rounded-[22px] border-2 border-dashed border-neutral-300 p-8 text-center">
-             <div class="text-[26px]">👨‍👧</div>
+             <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic('users','w-6 h-6')}</div>
              <div class="mt-2 text-[14px] font-bold">No children linked yet</div>
              <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[46ch] mx-auto leading-[1.6]">
                Register your child via the registration form, then use "Link an existing registration" below.
                Your account email must match the guardian email on the registration.
              </div>
+             <a href="${buildPortalRegUrl()}" class="inline-flex mt-4 h-[38px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition items-center gap-1.5">${ic('plus','w-3.5 h-3.5')} Register a child / ward</a>
            </div>`}
     </div>
 
@@ -463,6 +700,11 @@ async function viewChild(i) {
   if (child) await renderDashboard(child, { back: true });
 }
 
+function backToParentHome() {
+  portalSection = 'home';
+  renderParentHome();
+}
+
 /* ═══════════════ DASHBOARD (shared by student & parent views) ═══════════════ */
 async function renderDashboard(student, opts = {}) {
     const [{ data: attendance }, { data: gradings }, { data: scores }, { data: anns },
@@ -501,6 +743,26 @@ async function renderDashboard(student, opts = {}) {
   const attended = att.filter(a => a.status === 'present' || a.status === 'late').length;
   const rate = att.length ? Math.round(attended / att.length * 100) : null;
 
+  window._absData = { student, requests: myAbsences || [], notices: myNotices || [] };
+
+  /* cache everything — the sidebar sections render from this */
+  window._dash = { student, att, grd, scoreById, rate, bal, anns: anns || [], attended, thisWeek };
+  window._view = opts.back ? 'child' : 'student';
+  $('sidebar').classList.remove('hidden');
+  $('navToggle').classList.remove('hidden');
+  portalSection = 'home';
+  renderNav();
+  markNav('home');
+  renderDashboardHome();
+}
+
+/* Home section — welcome, stats, training plan, updates, belt journey */
+function renderDashboardHome() {
+  const { student, att, grd, rate, bal, anns } = window._dash;
+  const opts = window._lastOpts || {};
+  const attended = window._dash.attended;
+  const thisWeek = window._dash.thisWeek;
+
   const curIdx = Math.max(0, beltLevels.findIndex(b => b.belt_name === student.current_belt));
   const nextBelt = beltLevels[curIdx + 1] || null;
   const displayName = student.preferred_name || (student.full_name || '').split(' ')[0] || 'Member';
@@ -533,25 +795,24 @@ async function renderDashboard(student, opts = {}) {
   const daysToStart = Math.round((new Date(CLUB.startDate + 'T00:00:00') - new Date(todayLagos + 'T00:00:00')) / 86400000);
   const startBanner = daysToStart >= 0 ? `
     <div class="rounded-[18px] border border-brand-border bg-brand-light p-4 md:p-5 flex items-start gap-3">
-      <span class="text-[18px] leading-none mt-0.5">🥋</span>
+      <span class="text-brand shrink-0 mt-0.5">${ic('medal','w-[18px] h-[18px]')}</span>
       <div>
         <div class="text-[11px] font-bold tracking-[0.1em] uppercase text-brand-text">OFFICIAL CLASSES BEGIN ${fmtDate(CLUB.startDate).toUpperCase()}</div>
-        <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${daysToStart === 0 ? 'Classes kick off <b>today</b>! 🎉 ' : daysToStart === 1 ? 'Classes kick off <b>tomorrow</b> — ' : `<b>${daysToStart} days to go</b> — `}regular classes run <b>Friday 4:30–6:00 PM • Saturday 8:00–10:00 AM • Sunday 4:30–6:00 PM</b>. Pick your 2 training days below and come ready.</p>
+        <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${daysToStart === 0 ? 'Classes kick off <b>today</b>! ' : daysToStart === 1 ? 'Classes kick off <b>tomorrow</b> — ' : `<b>${daysToStart} days to go</b> — `}regular classes run <b>Friday 4:30–6:00 PM • Saturday 8:00–10:00 AM • Sunday 4:30–6:00 PM</b>. Pick your 2 training days below and come ready.</p>
       </div>
     </div>` : '';
   const excBanner = (student.excused_from && student.excused_until) ? excusedBannerHTML(student, todayLagos) : '';
-  window._absData = { student, requests: myAbsences || [], notices: myNotices || [] };
 
   $('appMain').innerHTML = `
   <div class="fade-in grid gap-6">
-     ${opts.back ? `<button onclick="renderParentHome()" class="w-fit h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">← ${escapeHtml(opts.backLabel || 'All my children')}</button>` : ''}
+     ${opts.back ? `<button onclick="backToParentHome()" class="w-fit h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">← ${escapeHtml(opts.backLabel || 'All my children')}</button>` : ''}
 
     ${startBanner}
     ${excBanner}
 
     ${bal.remaining !== null && bal.alert_level && bal.alert_level !== 'green' && !(bal.alert_level === 'red' && (bal.used ?? 0) === 0) ? `
     <div class="rounded-[18px] border p-4 md:p-5 flex items-start gap-3 ${bal.alert_level === 'orange' ? 'bg-[#FFF5EB] border-[#FFD4A8]' : bal.alert_level === 'yellow' ? 'bg-amber-50 border-amber-300' : 'bg-red-50 border-red-300'}">
-      <span class="text-[18px] leading-none mt-0.5">${bal.remaining <= 1 ? '🔴' : '🟠'}</span>
+      <span class="shrink-0 mt-0.5 ${bal.remaining <= 1 ? 'text-red-500' : 'text-[#FF6B00]'}">${ic('alert','w-[18px] h-[18px]')}</span>
       <div>
         <div class="text-[11px] font-bold tracking-[0.1em] uppercase ${bal.alert_level === 'orange' ? 'text-[#B34700]' : bal.alert_level === 'yellow' ? 'text-amber-700' : 'text-red-700'}">${bal.remaining === 0 ? 'Payment complete — renew to keep training' : bal.remaining === 1 ? 'Last session — renew now' : 'Renewal reminder'}</div>
         <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${bal.remaining === 0 ? 'You have used all your paid sessions. Please renew your payment at the front desk — your next check-in will remind you too.' : bal.remaining === 1 ? 'Only <b>1 session</b> remains on your current payment. Renew at the front desk so you never miss a class.' : `You have <b>${bal.remaining} sessions</b> left. Consider renewing your payment at the front desk soon.`}</p>
@@ -561,11 +822,11 @@ async function renderDashboard(student, opts = {}) {
     <!-- WELCOME -->
     <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome back, ${escapeHtml(displayName)} 🥋</h1>
+        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome back, ${escapeHtml(displayName)}</h1>
         <div class="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-neutral-500">
           ${beltChipHTML(student.current_belt)}
           <span class="px-2.5 py-0.5 rounded-full border font-semibold ${student.membership_status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">${escapeHtml(student.membership_status || 'pending')}</span>
-          ${student.belt_review_status === 'pending' ? '<span class="px-2.5 py-0.5 rounded-full border font-semibold bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]">⏳ Belt review pending</span>' : ''}
+          ${student.belt_review_status === 'pending' ? `<span class="px-2.5 py-0.5 rounded-full border font-semibold bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700] inline-flex items-center gap-1">${ic('hourglass','w-3 h-3')} Belt review pending</span>` : ''}
           <span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>
         </div>
       </div>
@@ -635,37 +896,15 @@ async function renderDashboard(student, opts = {}) {
           <div class="mt-2">${beltChipHTML(student.current_belt)}</div>
           <div class="mt-2.5 text-[12px] text-neutral-500">Achieved: <b class="text-neutral-700">${fmtDate(student.last_grading_date)}</b></div>
           <div class="text-[12px] text-neutral-500">Member since: <b class="text-neutral-700">${fmtDate(student.registration_date)}</b></div>
-          ${student.belt_review_status === 'pending' ? `<div class="mt-2.5 rounded-[12px] bg-[#FFF5EB] border border-[#FFD4A8] p-3 text-[11.5px] leading-[1.55] text-neutral-700"><b>⏳ Belt review pending.</b> You'll keep training at your registered belt until Sensei reviews your previous experience and regularises it to the CIFIKA standard.</div>` : ''}
+          ${student.belt_review_status === 'pending' ? `<div class="mt-2.5 rounded-[12px] bg-[#FFF5EB] border border-[#FFD4A8] p-3 text-[11.5px] leading-[1.55] text-neutral-700"><b>${ic('hourglass','w-3.5 h-3.5 inline -mt-0.5')} Belt review pending.</b> You'll keep training at your registered belt until Sensei reviews your previous experience and regularises it to the CIFIKA standard.</div>` : ''}
         </div>
         ${nextCard}
       </div>
-    </div>
-
-    <!-- TABS -->
-    <div class="card overflow-hidden">
-      <div class="px-4 md:px-6 pt-4 pb-4 flex gap-2 border-b border-neutral-100 flex-wrap">
-        <button class="tab-btn active h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('attendance')">📅 Attendance</button>
-        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('gradings')">🥋 Gradings</button>
-        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('absences')">🚫 Absences</button>
-        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('dojo')">📖 Dojo Code</button>
-        <button class="tab-btn h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold" onclick="switchTab('profile')">👤 Profile</button>
-      </div>
-      <div id="tab-attendance" class="p-5 md:p-6">${attendanceTabHTML(att, rate)}</div>
-      <div id="tab-gradings" class="hidden p-5 md:p-6">${gradingsTabHTML(grd, scoreById)}</div>
-      <div id="tab-absences" class="hidden p-5 md:p-6">${absenceTabHTML(student)}</div>
-      <div id="tab-dojo" class="hidden p-5 md:p-6">${dojoCodeHTML()}</div>
-      <div id="tab-profile" class="hidden p-5 md:p-6">${profileTabHTML(student)}</div>
     </div>
   </div>`;
 }
 
 /* ═══════════════ DASHBOARD COMPONENTS ═══════════════ */
-function switchTab(name) {
-  ['attendance', 'gradings', 'absences', 'dojo', 'profile'].forEach(t =>
-    $('tab-' + t).classList.toggle('hidden', t !== name));
-  document.querySelectorAll('.tab-btn').forEach(b =>
-    b.classList.toggle('active', b.textContent.toLowerCase().includes(name)));
-}
 
 function beltJourneyHTML(currentBelt) {
   if (!beltLevels.length) return `<p class="mt-4 text-[12px] text-neutral-500">Belt system not configured.</p>`;
@@ -734,7 +973,7 @@ function statCard(label, value, sub) {
 }
 
 function attendanceTabHTML(att, rate) {
-  if (!att.length) return emptyState('📅', 'No attendance recorded yet', 'Your classes will appear here once the club starts recording attendance.');
+  if (!att.length) return emptyState('calendar', 'No attendance recorded yet', 'Your classes will appear here once the club starts recording attendance.');
   return `
     ${rate !== null ? `
     <div class="flex items-center gap-4 mb-5">
@@ -763,7 +1002,7 @@ function attendanceTabHTML(att, rate) {
 }
 
 function gradingsTabHTML(grd) {
-  if (!grd.length) return emptyState('🥋', 'No gradings yet', 'Your first grading will appear here with examiner, result and remarks. Train consistently — you\'ve got this!');
+  if (!grd.length) return emptyState('medal', 'No gradings yet', 'Your first grading will appear here with examiner, result and remarks. Train consistently — you\'ve got this!');
   return `<div class="grid gap-3">
     ${grd.map(g => `
       <div class="rounded-[16px] border border-neutral-200 p-4">
@@ -809,7 +1048,8 @@ function profileTabHTML(s) {
           <span class="text-[12.5px] font-medium text-right break-words">${escapeHtml(String(v))}</span>
         </div>`).join('')}
     </div>
-    <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>`;
+    <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>
+    ${accountSettingsHTML(s)}`;
 }
 
 function announcementsHTML(list) {
@@ -830,12 +1070,12 @@ function announcementsHTML(list) {
       <div class="rounded-[16px] border ${a.is_pinned ? 'border-brand/40 bg-brand-light/40' : 'border-neutral-200 bg-neutral-50/60'} p-4">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold tracking-[0.1em] uppercase ${typeCls[a.type] || typeCls.update}">${escapeHtml(a.type)}</span>
-          ${a.is_pinned ? '<span class="text-[9.5px] font-bold tracking-[0.1em] text-brand uppercase">📌 Pinned</span>' : ''}
+          ${a.is_pinned ? `<span class="text-[9.5px] font-bold tracking-[0.1em] text-brand uppercase inline-flex items-center gap-1">${ic('pin','w-3 h-3')} Pinned</span>` : ''}
           ${a.price ? `<span class="ml-auto text-[12.5px] font-extrabold text-brand">₦${Number(a.price).toLocaleString()}</span>` : ''}
         </div>
         <div class="mt-2 text-[13.5px] font-bold leading-snug">${escapeHtml(a.title)}</div>
         ${a.body ? `<div class="mt-1 text-[12px] text-neutral-600 leading-[1.6]">${escapeHtml(a.body)}</div>` : ''}
-        ${meta(a) ? `<div class="mt-2 text-[11px] font-semibold text-neutral-500">📅 ${escapeHtml(meta(a))}</div>` : ''}
+        ${meta(a) ? `<div class="mt-2 text-[11px] font-semibold text-neutral-500 inline-flex items-center gap-1.5">${ic('calendar','w-3.5 h-3.5')} ${escapeHtml(meta(a))}</div>` : ''}
         ${a.price_note ? `<div class="text-[10.5px] text-neutral-400 mt-0.5">${escapeHtml(a.price_note)}</div>` : ''}
       </div>`).join('')}
     </div>
@@ -843,7 +1083,7 @@ function announcementsHTML(list) {
 }
 
 function gradingsTabHTML(grd, scoresById = {}) {
-  if (!grd.length) return emptyState('🥋', 'No gradings yet', 'Your first grading will appear here with examiner, result, score report and certificate.');
+  if (!grd.length) return emptyState('medal', 'No gradings yet', 'Your first grading will appear here with examiner, result, score report and certificate.');
   const ROWS = [['Attendance','attendance',10],['Character','character',20],['Kihon','kihon',20],
                 ['Kata','kata',20],['Kumite','kumite',20],['Fitness','fitness',10]];
   return `<div class="grid gap-3">
@@ -859,7 +1099,7 @@ function gradingsTabHTML(grd, scoresById = {}) {
           </div>
           <div class="flex items-center gap-2">
             ${resultPill(g.result)}
-            ${g.certificate_issued ? `<button onclick="downloadCertificate('${g.id}')" class="h-8 px-4 rounded-full bg-black text-white text-[10.5px] font-bold hover:bg-neutral-800 transition">📜 Certificate PDF</button>` : ''}
+            ${g.certificate_issued ? `<button onclick="downloadCertificate('${g.id}')" class="h-8 px-4 rounded-full bg-black text-white text-[10.5px] font-bold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('file','w-3 h-3')} Certificate PDF</button>` : ''}
           </div>
         </div>
         ${g.remarks ? `<div class="mt-2 text-[12px] text-neutral-500 italic">"${escapeHtml(g.remarks)}"</div>` : ''}
@@ -947,14 +1187,14 @@ function excusedBannerHTML(s, today) {
     body = `Your sessions are frozen from ${fmtDate(s.excused_from)} to ${fmtDate(s.excused_until)} — nothing counts down while you are away. They resume counting after ${fmtDate(s.excused_until)} and will expire if not used.`;
   } else if (today <= s.excused_until) {
     head = 'Excused period active — ' + range;
-    body = `The club has excused you until <b>${fmtDate(s.excused_until)}</b>. Your paid sessions are frozen during this time; they resume counting afterwards and will expire if not used, so plan your return. Get well / see you soon! 🩹`;
+    body = `The club has excused you until <b>${fmtDate(s.excused_until)}</b>. Your paid sessions are frozen during this time; they resume counting afterwards and will expire if not used, so plan your return. Get well / see you soon!`;
   } else if (new Date(today + 'T00:00:00') - new Date(s.excused_until + 'T00:00:00') <= 21 * 86400000) {
     head = 'Excused period ended ' + fmtDate(s.excused_until);
     body = 'Your paid sessions have resumed counting. Remember: unused sessions expire — see you on the mat!';
   } else return '';
   return `
   <div class="rounded-[18px] border border-sky-200 bg-sky-50 p-4 md:p-5 flex items-start gap-3">
-    <span class="text-[18px] leading-none mt-0.5">🩹</span>
+    <span class="text-sky-600 shrink-0 mt-0.5">${ic('alert','w-[18px] h-[18px]')}</span>
     <div>
       <div class="text-[11px] font-bold tracking-[0.1em] uppercase text-sky-700">${head}</div>
       <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${body}</p>
@@ -964,7 +1204,7 @@ function excusedBannerHTML(s, today) {
 
 function absStatusPill(s) {
   const map = {
-    pending:  ['bg-amber-50 text-amber-700 border-amber-200', '⏳ Pending review'],
+    pending:  ['bg-amber-50 text-amber-700 border-amber-200', 'Pending review'],
     approved: ['bg-emerald-50 text-emerald-700 border-emerald-200', '✓ Approved — excused'],
     declined: ['bg-red-50 text-red-600 border-red-200', '✕ Declined'],
   };
@@ -999,7 +1239,7 @@ function absenceTabHTML(student) {
           ${r.review_note ? `<div class="mt-1.5 text-[11.5px] text-neutral-500 italic">Club: "${escapeHtml(r.review_note)}"</div>` : ''}
           <div class="mt-1 text-[10.5px] text-neutral-400">submitted ${fmtDate(String(r.created_at).slice(0, 10))}</div>
         </div>`).join('')}</div>`
-      : `<div class="text-[12px] text-neutral-400 py-2">No absence requests yet — hope every class goes well! 🥋</div>`}
+      : `<div class="text-[12px] text-neutral-400 py-2">No absence requests yet — hope every class goes well!</div>`}
     </div>
 
     <div class="mt-6">
@@ -1008,7 +1248,7 @@ function absenceTabHTML(student) {
         <div class="px-4 py-3 rounded-[14px] border ${n.kind === 'absence_warning' ? 'border-red-200 bg-red-50/50' : n.kind === 'excused_ending' ? 'border-amber-200 bg-amber-50/50' : 'border-sky-200 bg-sky-50/50'}">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div class="text-[12.5px] font-bold">${escapeHtml(n.subject)}</div>
-            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-neutral-200 bg-white text-neutral-500">${n.status === 'sent' ? '📧 emailed' : n.status === 'queued' ? '📬 queued' : 'in-app copy'}</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-neutral-200 bg-white text-neutral-500 inline-flex items-center gap-1">${n.status === 'sent' ? ic('mail','w-3 h-3') + ' emailed' : n.status === 'queued' ? ic('mail','w-3 h-3') + ' queued' : 'in-app copy'}</span>
           </div>
           <div class="mt-1.5 text-[12px] text-neutral-600 leading-[1.6] whitespace-pre-line">${escapeHtml(n.body)}</div>
           <div class="mt-1 text-[10.5px] text-neutral-400">${fmtDate(String(n.created_at).slice(0, 10))}</div>
@@ -1029,7 +1269,7 @@ async function submitAbsence() {
   if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not submit.'), true);
   toast('✓ ' + (d.message || 'Absence request submitted'));
   renderDashboard(s, window._lastOpts || {});
-  setTimeout(() => switchTab('absences'), 80);
+  setTimeout(() => showPortalSection('absences'), 80);
 }
 
 /* ═══════════════ DOJO CODE (rules, etiquette & consent texts) ═══════════════ */
@@ -1068,8 +1308,254 @@ function dojoCodeHTML() {
     <div class="mt-4 text-[11px] text-neutral-400">You accepted these at registration — questions? Speak to Sensei.</div>`;
 }
 
-/* ═══════════════ ADMIN (preview  ═══════════════ */
-async function renderAdminHome() { location.href = 'admin.html'; }
+/* ═══════════════ ONBOARDING · CONNECT ID · REGISTER FOR AN ID · ACCOUNT SETTINGS ═══════════════ */
+async function renderOnboarding(skipped) {
+  const first = !skipped;
+  // sidebar stays hidden during onboarding — it's a focused full-screen flow
+  $('sidebar').classList.add('hidden');
+  $('navToggle').classList.add('hidden');
+  const pendingMsg = window._pendingConnectMsg;
+  if (window._pendingConnectMsg) window._pendingConnectMsg = null;
+  $('appMain').innerHTML = `
+  <div class="fade-in max-w-[560px] mx-auto grid gap-5">
+    <div class="text-center pt-2">
+      <div class="w-14 h-14 mx-auto rounded-full bg-brand-light border border-brand-border flex items-center justify-center">
+        <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5 17.5 17.5M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <h1 class="mt-4 text-[22px] md:text-[26px] font-extrabold tracking-tight">${first ? 'Welcome to CIFIKA' : 'Connect your account'}</h1>
+      <p class="mt-1.5 text-[13px] text-neutral-500 leading-[1.6]">${first
+        ? 'One last step — connect your CIFIKA ID to see your training data. No ID yet? Register to get one.'
+        : 'Your account is active but not linked to a member record yet. Connect your ID whenever you\u2019re ready.'}</p>
+    </div>
+
+    ${pendingMsg ? `<div class="rounded-[16px] border border-[#FFD4A8] bg-[#FFF5EB] px-4 py-3 text-[12.5px] leading-[1.6] text-[#B34700]">${escapeHtml(pendingMsg)}</div>` : ''}
+
+    <div class="card p-6 md:p-7">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
+          ${ic('card','w-4 h-4')}
+        </div>
+        <div>
+          <div class="text-[14px] font-extrabold">I have my CIFIKA ID</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">The CFK-xxxxx from your registration confirmation.</div>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-col sm:flex-row gap-2">
+        <input id="obRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')connectOnboardRef()">
+        <button onclick="connectOnboardRef()" class="h-[44px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Connect ID</button>
+      </div>
+      <p class="text-[11px] text-neutral-400 mt-2 px-1 leading-[1.5]">The email on this account must match the email (or guardian email) on the registration.</p>
+      <div id="obMsg" class="hidden"></div>
+    </div>
+
+    <div class="card p-6 md:p-7">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+          ${ic('file','w-4 h-4')}
+        </div>
+        <div>
+          <div class="text-[14px] font-extrabold">Register to get an ID</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">No CFK-xxxxx yet? Complete the club registration form.</div>
+        </div>
+      </div>
+      <p class="text-[12px] text-neutral-500 mt-3 leading-[1.6]">Your details (${escapeHtml(currentProfile.full_name || 'name')} • ${escapeHtml(currentProfile.email || 'email')}) are carried over to the registration form automatically. Once you submit, you land right back here — and your new ID connects to this account.</p>
+      <a href="${buildPortalRegUrl()}" class="mt-4 h-[44px] px-6 rounded-full bg-black text-white text-[13px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register to get an ID →</a>
+    </div>
+
+    <a href="instructor.html" class="card p-5 flex items-center gap-3 hover:border-black transition group">
+      <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0 text-neutral-600">
+        ${ic('users','w-4 h-4')}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-bold">Teach at the dojo?</div>
+        <div class="text-[11.5px] text-neutral-500 mt-0.5">Instructors sign in and request access on the Instructor Console.</div>
+      </div>
+      <span class="text-neutral-400 group-hover:text-black transition">→</span>
+    </a>
+
+    ${first ? `<button onclick="sessionStorage.setItem('cifika_onboard_done','1'); renderOnboarding(true)" class="w-fit mx-auto text-[11.5px] text-neutral-400 hover:text-neutral-700 transition">I\u2019ll connect my ID later \u2192</button>` : ''}
+  </div>`;
+}
+
+/* Registration URL with the portal account's details pre-filled */
+function buildPortalRegUrl() {
+  const isParent = currentProfile?.role === 'parent' || signupRole === 'parent';
+  const name = currentProfile?.full_name || $('suName')?.value.trim() || '';
+  const email = currentProfile?.email || currentUser?.email || $('suEmail')?.value.trim() || '';
+  const p = new URLSearchParams({
+    from: 'portal',
+    role: isParent ? 'parent' : 'self',
+    name, email,
+  });
+  return 'registration.html?' + p.toString();
+}
+
+async function connectOnboardRef() {
+  const ref = $('obRef')?.value.trim().toUpperCase();
+  const msg = $('obMsg');
+  if (!ref) {
+    msg.className = 'mt-2 text-[12px] text-red-600';
+    msg.textContent = 'Enter your CIFIKA ID (CFK-xxxxx) first.';
+    return;
+  }
+  msg.classList.remove('hidden');
+  await runConnectRef(ref, msg);
+}
+
+/* Shared connect-ID engine — used by onboarding AND account settings */
+async function runConnectRef(ref, msgEl) {
+  if (msgEl) { msgEl.className = 'mt-2 text-[12px] text-neutral-500'; msgEl.textContent = 'Checking…'; }
+  const { data, error } = await sb.rpc('connect_own_ref', { p_ref: ref });
+  const d = !error && data;
+  if (error || !d) {
+    if (msgEl) { msgEl.className = 'mt-2 text-[12px] text-red-600'; msgEl.textContent = error?.message || 'Could not connect that ID.'; }
+    return;
+  }
+  if (d.status === 'ok' || d.status === 'already') {
+    toast('✓ ' + (d.message || 'ID connected — loading your dojo data…'));
+    setTimeout(() => location.reload(), 900);
+    return;
+  }
+  if (d.status === 'need_parent_switch') {
+    if (msgEl) {
+      msgEl.className = 'mt-2 text-[12px] leading-[1.6] px-4 py-3 rounded-[14px] border bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]';
+      msgEl.innerHTML = `<b>Personal accounts hold one ID.</b> To link this additional member, switch to a Parent / Guardian account. <button onclick="switchAndLink('${escapeHtml(ref)}')" class="ml-1 underline font-semibold">Switch to Parent &amp; link →</button>`;
+    }
+    return;
+  }
+  if (msgEl) { msgEl.className = 'mt-2 text-[12px] text-red-600'; msgEl.textContent = d.message || 'Could not connect that ID.'; }
+}
+
+async function switchAndLink(ref) {
+  const { data: sw, error: swErr } = await sb.rpc('switch_to_parent_account');
+  if (swErr || !sw || sw.status !== 'ok')
+    return toast('✗ ' + (sw?.message || swErr?.message || 'Could not switch account type.'), true);
+  toast('Account switched to Parent — linking member…');
+  const { data: c, error: cErr } = await sb.rpc('connect_own_ref', { p_ref: ref });
+  const d = !cErr && c;
+  if (d && (d.status === 'ok' || d.status === 'already')) {
+    toast('✓ ' + (d.message || 'Member linked'));
+    setTimeout(() => location.reload(), 900);
+  } else {
+    toast('✗ ' + (d?.message || cErr?.message || 'Could not link.'), true);
+  }
+}
+
+/* Instructor auth (request / withdraw / awaiting activation) now lives on instructor.html */
+
+/* ═══════════ ACCOUNT SETTINGS (Profile tab extension) ═══════════ */
+function accountSettingsHTML(s) {
+  const isParent = currentProfile.role === 'parent';
+  const mine = isParent ? (window.mineStudent || null) : s;
+  const st = mine ? (mine.membership_status || 'pending') : null;
+
+  const statusBlock = !st ? `
+      <div class="text-[11.5px] text-neutral-500 leading-[1.6]">Your own membership isn't linked to this account yet — connect your CIFIKA ID below to manage your status.</div>`
+    : (st === 'active' || st === 'inactive') ? `
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${st === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500 border-neutral-200'}">${capitalize(st)}</span>
+        ${st === 'active'
+          ? `<button onclick="setMyStatus('inactive')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Pause membership</button>`
+          : `<button onclick="setMyStatus('active')" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11.5px] font-semibold hover:bg-emerald-700 transition">Reactivate membership</button>`}
+      </div>`
+    : `
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${st === 'suspended' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">${capitalize(st)}</span>
+        <span class="text-[11px] text-neutral-400">A ${escapeHtml(st)} membership can only be changed by the club admin.</span>
+      </div>`;
+
+  const linkBlock = isParent ? `
+      <div>
+        <div class="text-[12.5px] font-bold">Link another member</div>
+        <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. The account email must match the guardian email on their registration.</p>
+        <div class="mt-3 flex flex-col sm:flex-row gap-2">
+          <input id="setRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
+          <button onclick="connectFromSettings()" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Link member</button>
+        </div>
+      </div>` : `
+      <div>
+        <div class="text-[12.5px] font-bold">Your CIFIKA ID</div>
+        <div class="mt-1.5 flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-1 rounded-full bg-black text-white text-[11px] font-bold tracking-wide">${escapeHtml(s.registration_ref || '—')}</span>
+          <span class="text-[11px] text-neutral-400">Personal accounts hold exactly one ID.</span>
+        </div>
+        <div class="mt-3 rounded-[12px] bg-neutral-50 border border-neutral-200 p-3.5">
+          <div class="text-[12px] font-semibold">Linking your children too?</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Switch to a Parent / Guardian account to link multiple members and manage them from one home screen.</div>
+          <button onclick="switchToParentAccount()" class="mt-2.5 h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Switch to Parent account</button>
+        </div>
+      </div>`;
+
+  return `
+    <div class="mt-7 pt-5 border-t border-neutral-200 grid gap-4">
+      <div class="text-[12px] font-bold tracking-[0.14em]">ACCOUNT SETTINGS</div>
+
+      <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+        <div class="text-[12.5px] font-bold">Membership status</div>
+        <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Pause or resume your own membership. Pending &amp; suspended statuses are managed by the club admin.</div>
+        <div class="mt-2.5">${statusBlock}</div>
+      </div>
+
+      <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">${linkBlock}</div>
+      <div id="setRefMsg" class="hidden"></div>
+
+      <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+        <div class="text-[12.5px] font-bold">Change password</div>
+        <div class="mt-2.5 flex flex-col sm:flex-row gap-2">
+          <input id="newPass" type="password" class="input flex-1" placeholder="New password (min. 6 characters)" autocomplete="new-password">
+          <button onclick="changeMyPassword()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition shrink-0">Update password</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function setMyStatus(next) {
+  const { data, error } = await sb.rpc('update_my_membership_status', { p_status: next });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok')
+    return toast('✗ ' + (d?.message || error?.message || 'Could not update status.'), true);
+  toast(next === 'inactive' ? 'Membership paused — you can reactivate anytime.' : 'Membership reactivated — see you on the mat!');
+  const s = window._gw?.student;
+  if (s) s.membership_status = next;
+  if (window.mineStudent) window.mineStudent.membership_status = next;
+  if (window._dash?.student) window._dash.student.membership_status = next;
+  renderPortalSection(portalSection === 'account' ? 'account' : 'home');
+}
+
+async function switchToParentAccount() {
+  if (!confirm('Switch this account to a Parent / Guardian account? You\u2019ll be able to link multiple members (e.g. your children) from your home screen.')) return;
+  const { data, error } = await sb.rpc('switch_to_parent_account');
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok')
+    return toast('✗ ' + (d?.message || error?.message || 'Could not switch account type.'), true);
+  toast('✓ Account switched to Parent');
+  setTimeout(() => location.reload(), 800);
+}
+
+async function connectFromSettings() {
+  const ref = $('setRef')?.value.trim().toUpperCase();
+  const msg = $('setRefMsg');
+  if (!ref) {
+    msg.classList.remove('hidden');
+    msg.className = 'mt-2 text-[12px] text-red-600';
+    msg.textContent = 'Enter a CIFIKA ID (CFK-xxxxx) first.';
+    return;
+  }
+  msg.classList.remove('hidden');
+  await runConnectRef(ref, msg);
+}
+
+async function changeMyPassword() {
+  const p = $('newPass')?.value || '';
+  if (p.length < 6) return toast('Password must be at least 6 characters.', true);
+  const { error } = await sb.auth.updateUser({ password: p });
+  if (error) return toast('✗ ' + error.message, true);
+  $('newPass').value = '';
+  toast('✓ Password updated');
+}
+
+/* ═══════════ ROLE REDIRECTS ═══════════ */
+async function renderAdminHome() { location.href = 'admin.html'; }   // kept for compatibility
 
 /* ═══════════════ UTILITIES ═══════════════ */
 function escapeHtml(str) {
@@ -1094,9 +1580,9 @@ function calcAge(dob) {
   if (m < 0 || (m === 0 && t.getDate() < d.getDate())) a--;
   return a;
 }
-function emptyState(icon, title, text) {
+function emptyState(iconName, title, text) {
   return `<div class="text-center py-10">
-    <div class="text-[30px]">${icon}</div>
+    <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic(iconName, 'w-6 h-6')}</div>
     <div class="mt-2 text-[14px] font-bold">${title}</div>
     <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[40ch] mx-auto leading-[1.6]">${text}</div>
   </div>`;
@@ -1118,7 +1604,7 @@ function gradingEntryHTML(nextBelt) {
   if (gw.entered.has(w.id)) {
     return `<div class="rounded-[12px] bg-emerald-500/15 border border-emerald-500/40 p-3 text-[11.5px] text-emerald-300 leading-[1.55]"><b>✓ You're entered:</b> ${escapeHtml(w.title)}${w.grading_date ? ' — ' + fmtDate(w.grading_date) : ''}. Speak to Sensei about your preparation.</div>`;
   }
-  return `<button onclick="enterGradingWindow('${w.id}','${escapeHtml(nextBelt.belt_name)}')" class="h-10 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition">🥋 Enter Grading — ${escapeHtml(w.title)} →</button>`;
+  return `<button onclick="enterGradingWindow('${w.id}','${escapeHtml(nextBelt.belt_name)}')" class="h-10 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('medal','w-4 h-4')} Enter Grading — ${escapeHtml(w.title)} →</button>`;
 }
 
 async function enterGradingWindow(windowId, targetBelt) {

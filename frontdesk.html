@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- ===== CIFIKA SEO — PRIVATE APP — NOINDEX ===== -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Front Desk — City Fitness Karate Club | CIFIKA</title>
+<meta name="description" content="CIFIKA Front Desk — Payments, session activations & check-ins. Staff only.">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai">
+<meta name="googlebot" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
-<title>Front Desk — City Fitness Karate Club</title>
-<link rel="manifest" href="./manifest.json">
-<link rel="icon" type="image/svg+xml" href="./favicon.svg">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="canonical" href="https://cifika.ttosr.com/frontdesk.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<meta property="og:title" content="Front Desk — CIFIKA">
+<meta property="og:description" content="CIFIKA Front Desk — Payments, session activations & check-ins. Staff only.">
+<meta property="og:url" content="https://cifika.ttosr.com/frontdesk.html">
+<meta property="og:image" content="https://cifika.ttosr.com/assets/social-preview.png">
+<!-- ===== END PRIVATE SEO ===== -->
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -33,11 +49,22 @@
   .fade-in { animation:fadeIn .3s ease-out; }
   @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   .nav-btn { transition:all .15s ease; }
-  .nav-btn.active { background:#111; color:#fff; }
+  .nav-btn.active { background:#FF6B00; color:#fff; }
   .modal-enter { animation:modalIn .22s ease-out; }
   @keyframes modalIn { from{opacity:0;transform:scale(.96) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
-  .spin { animation:spin .8s linear infinite; }
-  @keyframes spin { to { transform:rotate(360deg); } }
+  /* ---- Sidebar (collapsible rail on desktop · off-canvas drawer on mobile) ---- */
+  #sidebar { scrollbar-width:thin; scrollbar-color:#333 transparent; }
+  #sidebar::-webkit-scrollbar { width:5px; }
+  #sidebar::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+  @media (min-width:1024px) {
+    #sidebar.rail { width:68px; }
+    #sidebar.rail .sb-label { display:none; }
+    #sidebar.rail .sb-hide { display:none; }
+    #sidebar.rail .nav-btn { justify-content:center; padding-left:0; padding-right:0; }
+  }
+  @media (max-width:1023.98px) {
+    #sidebar { box-shadow: 12px 0 40px rgba(0,0,0,.35); }
+  }
 </style>
 </head>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
@@ -67,7 +94,9 @@
 <!-- UNAUTHORIZED -->
 <div id="unauthView" class="hidden min-h-screen flex items-center justify-center px-5">
   <div class="card p-8 text-center max-w-[440px]">
-    <div class="text-[28px]">🔒</div>
+    <div class="w-12 h-12 mx-auto rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
+      <svg viewBox="0 0 24 24" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
     <h2 class="mt-3 text-[18px] font-extrabold">No front desk access</h2>
     <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
       <span id="unauthEmail" class="font-semibold text-neutral-700"></span> doesn't have the <b>frontdesk</b>, admin or instructor role.
@@ -80,25 +109,58 @@
   </div>
 </div>
 
-<!-- APP -->
-<div id="appView" class="hidden">
-  <header class="sticky top-0 z-40 bg-black text-white border-b border-neutral-800">
-    <div class="max-w-[1280px] mx-auto px-5 md:px-8 h-[56px] flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold">空</span>
-        <span class="text-[12px] font-bold tracking-[0.14em]">CIFIKA <span class="text-brand">FRONT DESK</span></span>
-        <span class="hidden md:inline text-[9px] font-bold tracking-[0.1em] text-neutral-500 border border-neutral-700 rounded-full px-2 py-0.5">v2.2</span>
+<!-- APP — responsive shell with sidebar (like the Admin Console) -->
+<div id="appView" class="hidden min-h-screen flex">
+  <!-- MOBILE OVERLAY -->
+  <div id="sbOverlay" onclick="toggleSidebar(false)" class="hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"></div>
+
+  <!-- SIDEBAR — off-canvas drawer on mobile, collapsible rail on desktop -->
+  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-[248px] shrink-0 bg-[#0a0a0a] text-white border-r border-neutral-800 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-[56px] flex items-center justify-between pl-4 pr-3 border-b border-neutral-800 shrink-0">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold shrink-0">空</span>
+        <span class="sb-label text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">FRONT DESK</span></span>
       </div>
-      <div class="flex items-center gap-3">
-        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate"></span>
-        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition">Sign out</button>
+      <button onclick="toggleSidebar(false)" class="lg:hidden w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0" title="Close menu">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <nav id="navWrap" class="flex-1 overflow-y-auto py-3 px-2.5 space-y-1"></nav>
+    <div class="p-3 border-t border-neutral-800 shrink-0 grid gap-2">
+      <button onclick="openRegisterClient()" class="w-full h-10 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition flex items-center justify-center gap-2">
+        <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="sb-label">Register Client</span>
+      </button>
+      <div class="flex items-center gap-2.5 px-1.5 pt-1 min-w-0">
+        <div id="sbAvatar" class="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-bold shrink-0"></div>
+        <div class="sb-label min-w-0 flex-1">
+          <div id="sbEmail" class="text-[11px] text-neutral-300 truncate"></div>
+          <div id="sbRole" class="text-[9px] font-bold tracking-[0.12em] text-neutral-500"></div>
+        </div>
+        <button onclick="signOut()" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0 text-neutral-400 hover:text-white" title="Sign out">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-6">
-    <nav id="navWrap" class="flex gap-1.5 overflow-x-auto pb-1"></nav>
-    <main id="content" class="mt-6 min-w-0"></main>
+  <!-- MAIN COLUMN -->
+  <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+    <header class="sticky top-0 z-30 bg-black/95 backdrop-blur text-white border-b border-neutral-800">
+      <div class="max-w-[1280px] mx-auto pl-3 pr-3 sm:pr-5 md:pl-6 md:pr-6 h-[56px] flex items-center gap-2">
+        <button onclick="toggleSidebar()" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0" title="Toggle menu">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="lg:hidden text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">FRONT DESK</span></span>
+        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
+        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate ml-auto"></span>
+        <button onclick="openRegisterClient()" class="hidden md:inline-flex h-8 px-4 rounded-full bg-brand hover:bg-brand-dark text-[11px] font-semibold transition items-center gap-1.5 shrink-0">
+          <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Register Client
+        </button>
+      </div>
+    </header>
+    <main id="content" class="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-8 py-5 md:py-7"></main>
   </div>
 </div>
 
@@ -118,6 +180,30 @@ const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
 const $ = id => document.getElementById(id);
 const DAY_NAMES = { 0:'Sunday', 5:'Friday', 6:'Saturday' };
 
+/* ═══════════ CUSTOM INLINE SVG ICON SET — no emoji icons anywhere at the desk ═══════════ */
+const ICONS = {
+  door:      '<path d="M13 3h6v18H5V3h6"/><path d="M3 21h18"/><circle cx="15" cy="12" r="0.5"/><path d="M11 3v18"/>',
+  bell:      '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  ban:       '<circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>',
+  users:     '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  card:      '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+  tag:       '<path d="M20.59 13.41 12 22l-9-9V4a1 1 0 0 1 1-1h9l7.59 7.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="0.5"/>',
+  check:     '<polyline points="20 6 9 17 4 12"/>',
+  x:         '<path d="M18 6 6 18M6 6l12 12"/>',
+  alert:     '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  phone:     '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+  monitor:   '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+  plus:      '<path d="M12 5v14M5 12h14"/>',
+  edit:      '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  clock:     '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  zap:       '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  userplus:  '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>',
+  mail:      '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+};
+function ic(name, cls) {
+  return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
 let sb, currentUser, currentProfile, section = 'today';
 let balances = [];        // from get_all_balances()
 let packages = [];        // session_packages
@@ -130,12 +216,12 @@ let payModalStudent = null;
 let pkgEditing = null;
 
 const TABS = [
-  ['today',    '🚪', 'Today'],
-  ['alerts',   '🔔', 'Renewal Alerts'],
-  ['absences', '🚫', 'Absences'],
-  ['members',  '👥', 'Members'],
-  ['payments', '💳', 'Payment Log'],
-  ['packages', '🏷️', 'Packages'],
+  ['today',    'door',   'Today'],
+  ['alerts',   'bell',   'Renewal Alerts'],
+  ['absences', 'ban',    'Absences'],
+  ['members',  'users',  'Members'],
+  ['payments', 'card',   'Payment Log'],
+  ['packages', 'tag',    'Packages'],
 ];
 
 /* ═══════════ ALERT LEVELS ═══════════ */
@@ -174,6 +260,12 @@ async function gate(user) {
   $('unauthView').classList.add('hidden');
   $('appView').classList.remove('hidden');
   $('hdrEmail').textContent = user.email;
+  $('sbEmail').textContent = user.email;
+  $('sbAvatar').textContent = initial(user.email);
+  $('sbRole').textContent = (profile.role || '').toUpperCase() + ' DESK';
+  $('hdrRole').textContent = (profile.role || '').toUpperCase() + ' DESK';
+  if (window.matchMedia('(min-width:1024px)').matches && localStorage.getItem('cifika_fd_rail') === '1')
+    $('sidebar').classList.add('rail');
   renderNav();
   await loadPackages();
   await show('today');
@@ -188,22 +280,46 @@ async function doSignIn() {
 function authErr(m) { const e = $('authError'); e.textContent = m; e.classList.remove('hidden'); }
 async function signOut() { await sb.auth.signOut(); location.reload(); }
 
+/* Staff can register clients — opens the registration form in staff-assisted mode */
+function openRegisterClient() { window.open('registration.html?staff=1', '_blank', 'noopener'); }
+
 /* ═══════════ SHELL ═══════════ */
 function renderNav() {
   $('navWrap').innerHTML = TABS.map(([id, icon, label]) => `
-    <button onclick="show('${id}')" data-nav="${id}"
-      class="nav-btn ${section === id ? 'active' : 'bg-white text-neutral-700 hover:border-black'}
-             shrink-0 h-10 px-4 rounded-full border border-neutral-200 text-[12.5px] font-semibold flex items-center gap-2 whitespace-nowrap">
-      <span>${icon}</span><span>${label}</span>
+    <button onclick="show('${id}')" data-nav="${id}" title="${label}"
+      class="nav-btn ${section === id ? 'bg-brand text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}
+             w-full h-10 px-3 rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
+      ${ic(icon, 'w-[18px] h-[18px] shrink-0')}<span class="sb-label">${label}</span>
     </button>`).join('');
 }
 
 async function show(id) {
   section = id;
-  document.querySelectorAll('[data-nav]').forEach(b =>
-    b.classList.toggle('active', b.dataset.nav === id));
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    const on = b.dataset.nav === id;
+    b.classList.toggle('bg-brand', on);
+    b.classList.toggle('text-white', on);
+    b.classList.toggle('text-neutral-300', !on);
+  });
   await refreshBalances();
   ({ today: showToday, alerts: showAlerts, absences: showAbsences, members: showMembers, payments: showPayments, packages: showPackages })[id]();
+  // close the mobile drawer after navigating
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+}
+
+/* Sidebar: off-canvas drawer on mobile · collapsible icon rail on desktop */
+function toggleSidebar(force) {
+  const sbs = $('sidebar'), ov = $('sbOverlay');
+  if (window.matchMedia('(min-width:1024px)').matches) {
+    const rail = force === undefined ? !sbs.classList.contains('rail') : !!force;
+    sbs.classList.toggle('rail', rail);
+    localStorage.setItem('cifika_fd_rail', rail ? '1' : '0');
+  } else {
+    const open = force === undefined ? sbs.classList.contains('-translate-x-full') : !!force;
+    sbs.classList.toggle('-translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+  }
 }
 
 /* ═══════════ DATA ═══════════ */
@@ -251,7 +367,7 @@ function checkinRemark(c) {
     return m != null ? `Arrived ${m} min after start — gentle punctuality nudge` : 'Late arrival — gentle punctuality nudge';
   }
   const m = minsAfterStart(c.created_at);
-  if (m != null && m <= 0) return 'Early on the mat ⚡ — great discipline';
+  if (m != null && m <= 0) return 'Early on the mat — great discipline';
   return 'On time ✓';
 }
 
@@ -299,12 +415,12 @@ async function showToday() {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="text-[13px] font-semibold truncate">${escapeHtml(c.students?.full_name || '—')}</span>
-              <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${late ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">${late ? '⚠️ LATE' : '✓ ON TIME'} ${checkinTime(c.created_at)}</span>
+              <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${late ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">${late ? ic('alert','w-3 h-3') + ' LATE' : ic('check','w-3 h-3') + ' ON TIME'} ${checkinTime(c.created_at)}</span>
             </div>
             <div class="text-[11px] text-neutral-500">${escapeHtml(c.students?.registration_ref || '')} • ${escapeHtml(c.students?.current_belt || '')} • ${escapeHtml(checkinRemark(c))}</div>
           </div>
           <div class="flex flex-col items-end gap-1 shrink-0">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${c.check_in_source === 'qr' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}">${c.check_in_source === 'qr' ? '📱 QR' : '🖥️ DESK'}</span>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1 ${c.check_in_source === 'qr' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}">${c.check_in_source === 'qr' ? ic('phone','w-3 h-3') + ' QR' : ic('monitor','w-3 h-3') + ' DESK'}</span>
             ${c.session_consumed ? '<span class="text-[10px] text-neutral-400 font-semibold">session counted</span>' : '<span class="text-[10px] text-neutral-300 font-semibold">no session left</span>'}
           </div>
         </div>`; }).join('')}</div>`
@@ -366,7 +482,7 @@ function showAlerts() {
               <div class="text-[11px] text-neutral-500">${escapeHtml(b.registration_ref || '')} • ${escapeHtml(b.current_belt || '')}</div>
             </div>
             <span class="text-[13px] font-extrabold shrink-0 ${lvl === 'red' ? 'text-red-600' : lvl === 'yellow' ? 'text-amber-600' : 'text-[#B34700]'}">${b.remaining}</span>
-            <button onclick="openPayModal('${b.student_id}')" class="h-9 px-4 rounded-full bg-brand text-white text-[11px] font-semibold hover:bg-brand-dark transition shrink-0">＋ Renew</button>
+            <button onclick="openPayModal('${b.student_id}')" class="h-9 px-4 rounded-full bg-brand text-white text-[11px] font-semibold hover:bg-brand-dark transition shrink-0 inline-flex items-center gap-1">${ic('plus','w-3.5 h-3.5')} Renew</button>
           </div>`).join('') : `<div class="px-5 py-6 text-center text-[12.5px] text-neutral-400">None ✓</div>`}
       </div>`;
     }).join('')}
@@ -621,10 +737,10 @@ async function openMemberDrawer(id) {
       </div>
       ${(s.medical_conditions || s.injuries) ? `
       <div class="rounded-[14px] bg-red-50 border border-red-200 p-3.5 text-[11.5px] leading-[1.55] text-red-700">
-        <b>⚕️ Medical / injuries (front desk awareness):</b> ${escapeHtml([s.medical_conditions, s.injuries].filter(Boolean).join(' • '))}
+        <b>Medical / injuries (front desk awareness):</b> ${escapeHtml([s.medical_conditions, s.injuries].filter(Boolean).join(' • '))}
       </div>` : ''}
       <div class="rounded-[14px] bg-sky-50 border border-sky-200 p-4">
-        <div class="text-[10.5px] font-bold tracking-[0.12em] text-sky-700 mb-2">🩹 EXCUSED PERIOD (freeze sessions)</div>
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-sky-700 mb-2 flex items-center gap-1.5">${ic('clock','w-3.5 h-3.5')} EXCUSED PERIOD (freeze sessions)</div>
         <p class="text-[10.5px] text-neutral-500 leading-[1.5] mb-2.5">While active, absences inside this window become excused and no sessions are used. Member is alerted near the end that sessions resume counting and will expire if not used.</p>
         <div class="grid grid-cols-2 gap-2">
           <label class="block"><div class="text-[9.5px] font-bold tracking-[0.08em] text-neutral-400 mb-1">FROM</div>
@@ -645,7 +761,7 @@ async function openMemberDrawer(id) {
       <div>
         <div class="flex items-center justify-between mb-2">
           <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-500">PAYMENT HISTORY</div>
-          ${pending ? '' : `<button onclick="openPayModal('${id}')" class="h-8 px-4 rounded-full bg-brand text-white text-[11px] font-semibold hover:bg-brand-dark transition">＋ Activate Payment</button>`}
+          ${pending ? '' : `<button onclick="openPayModal('${id}')" class="h-8 px-4 rounded-full bg-brand text-white text-[11px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1">${ic('plus','w-3.5 h-3.5')} Activate Payment</button>`}
         </div>
         ${pays && pays.length ? `<div class="grid gap-1.5">${pays.map(p => `
           <div class="flex items-center justify-between gap-3 px-4 py-2.5 rounded-[12px] border ${p.status === 'void' ? 'border-neutral-100 bg-neutral-50 opacity-60' : 'border-neutral-100 bg-neutral-50/60'}">
@@ -818,7 +934,7 @@ function showPackages() {
   $('content').innerHTML = `
   <div class="fade-in grid gap-4">
     <div class="card p-6">
-      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">${pkgEditing ? '✏️ EDIT PACKAGE' : '➕ NEW PACKAGE'}</div>
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1 flex items-center gap-1.5">${pkgEditing ? ic('edit','w-4 h-4') + ' EDIT PACKAGE' : ic('plus','w-4 h-4') + ' NEW PACKAGE'}</div>
       <p class="text-[12px] text-neutral-500 mb-3">Define the club's session-based payment structure. Only <b>active</b> packages appear when activating a member payment.</p>
       <div class="grid sm:grid-cols-2 gap-3">
         <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">NAME *</div>

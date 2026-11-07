@@ -1,35 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- ===== CIFIKA SEO — START (registration.html) ===== -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>City Fitness Karate Club — Registration</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<title>Register — City Fitness Karate Club | CIFIKA | Join in 5 Minutes</title>
+<meta name="title" content="Register — City Fitness Karate Club | CIFIKA">
+<meta name="description" content="Join City Fitness Karate Club (CIFIKA) — Complete your membership registration in under 5 minutes. Kids & adults welcome. Get your CFK-xxxxx ID instantly. Powered by TTOSR. Sun City, Galadimawa, Abuja.">
+<meta name="keywords" content="karate registration Abuja, join karate club Abuja, CIFIKA registration, City Fitness Karate registration, martial arts enrollment Abuja">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#000000">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="canonical" href="https://cifika.ttosr.com/registration.html">
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="City Fitness Karate Club — CIFIKA">
+<meta property="og:title" content="Join CIFIKA — Register in 5 Minutes">
+<meta property="og:description" content="Start your karate journey today. Fast online registration, instant CFK ID, PDF application, WhatsApp submission. Kids & adults. Sun City, Galadimawa.">
+<meta property="og:url" content="https://cifika.ttosr.com/registration.html">
+<meta property="og:image" content="https://cifika.ttosr.com/assets/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Join CIFIKA — Register in 5 Minutes">
+<meta name="twitter:description" content="Fast registration for City Fitness Karate Club. Get your CFK ID instantly.">
+<meta name="twitter:image" content="https://cifika.ttosr.com/assets/social-preview.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "CIFIKA Registration",
+  "url": "https://cifika.ttosr.com/registration.html",
+  "description": "Membership registration for City Fitness Karate Club",
+  "isPartOf": { "@type": "WebSite", "name": "CIFIKA", "url": "https://cifika.ttosr.com/" },
+  "potentialAction": {
+    "@type": "RegisterAction",
+    "target": "https://cifika.ttosr.com/registration.html",
+    "name": "Register for Karate Training"
+  }
+}
+</script>
+<!-- ===== CIFIKA SEO — END ===== -->
+
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<link rel="icon" type="image/svg" href="favicon.svg">
-<link rel="apple-touch-icon" href="favicon.svg">
-<link rel="shortcut icon" type="image/svg" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script>
   tailwind.config = {
-    theme: {
-      extend: {
-        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-        colors: {
-          brand: {
-            DEFAULT: '#FF6B00',
-            dark: '#E65A00',
-            light: '#FFF5EB',
-            border: '#FFD4A8',
-            text: '#B34700'
-          },
-          wa: '#25D366'
-        }
+    theme: { extend: {
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+      colors: {
+        brand: { DEFAULT:'#FF6B00', dark:'#E65A00', light:'#FFF5EB', border:'#FFD4A8', text:'#B34700' },
+        wa: '#25D366'
       }
-    }
+    }}
   }
 </script>
-<style>
+
+  <style>
   html { scroll-behavior: smooth; }
   body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   ::selection { background-color: rgba(255, 107, 0, 0.2); }
@@ -88,6 +125,25 @@
     <div id="progressBar" class="h-full bg-brand transition-all duration-500" style="width: 0%"></div>
   </div>
 </header>
+
+<!-- STAFF-ASSISTED REGISTRATION BANNER (shown when opened from Admin / Front Desk / Instructor console) -->
+<div id="staffBanner" class="hidden max-w-[1200px] mx-auto px-5 md:px-8 pt-6">
+  <div class="rounded-[20px] bg-black text-white p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4 justify-between border border-neutral-800">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 text-brand" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+      </div>
+      <div>
+        <div class="text-[15px] font-bold">Staff-assisted registration</div>
+        <div class="text-[12px] text-neutral-300 mt-0.5 leading-[1.5]">You are registering <b>on behalf of a client</b>. Enter the client's own details (their phone/email), pick “Myself” for an adult or Parent → “My Child / Ward” for a minor, and have them give consent where possible.</div>
+      </div>
+    </div>
+    <div class="md:text-right shrink-0">
+      <div class="text-[10px] font-bold tracking-[0.12em] text-neutral-400">REGISTERED BY (STAFF)</div>
+      <input id="staffIdent" class="mt-1.5 h-[40px] rounded-full bg-white/10 border border-white/20 px-4 text-[12.5px] text-white placeholder-neutral-400 outline-none focus:border-brand w-full md:w-[280px]" placeholder="Your staff name / email">
+    </div>
+  </div>
+</div>
 
 <!-- RETURNING USER BANNER -->
 <div id="returningBanner" class="hidden max-w-[1200px] mx-auto px-5 md:px-8 pt-6">
@@ -732,7 +788,10 @@
       </div>
 
       <!-- was: onclick="leaveConfirmation()" -->
-    <button type="button" onclick="openPortalPrompt()" class="h-[44px] rounded-full border border-neutral-200 bg-white text-neutral-600 text-[13px] font-medium hover:border-black transition">Done</button>
+    <button type="button" onclick="openPortalPrompt()" class="h-[48px] rounded-full bg-brand text-white font-semibold text-[14px] hover:bg-brand-dark transition flex items-center justify-center gap-2">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+      Continue to the Member Portal →
+    </button>
     </div>
 
     <div class="mt-6 pt-5 border-t border-neutral-200 flex justify-between text-[11px] text-neutral-400">
@@ -744,8 +803,13 @@
 
 <!-- PORTAL PROMPT -->
 <div id="portalPrompt" class="hidden fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="modal-enter bg-white rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.15)] border border-neutral-200 max-w-[460px] w-full p-7 text-center">
-    <div class="w-14 h-14 mx-auto rounded-full bg-brand/10 flex items-center justify-center text-[24px]">🥋</div>
+  <div class="modal-enter bg-white rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.15)] border border-neutral-200 max-w-[460px] w-full p-7 text-center relative">
+    <button type="button" onclick="closePortalPrompt()" title="Close" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-500">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="w-14 h-14 mx-auto rounded-full bg-brand/10 flex items-center justify-center">
+      <svg viewBox="0 0 24 24" class="w-7 h-7 text-brand" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
     <h2 class="mt-4 text-[22px] font-extrabold tracking-tight leading-tight">Set up your Member Portal</h2>
     <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
       Registration ID <b class="text-neutral-900" id="ppRef">CFK-?????</b> is ready to link.
@@ -1489,6 +1553,15 @@
       showStep(getSteps().find(s => s.section === 5).id); return;
     }
 
+    // Staff-assisted mode: the registering staff member must be identified
+    if (typeof STAFF_MODE !== 'undefined' && STAFF_MODE && !getStaffIdentity()) {
+      const el = $('staffIdent');
+      if (el) { el.focus(); el.classList.add('!border-red-400'); }
+      toast('Enter your staff name / email in the black staff banner first.');
+      showStep(1);
+      return;
+    }
+
     const btn = $('submitBtn');
     btn.disabled = true;
     btn.textContent = 'Submitting…';
@@ -1503,6 +1576,10 @@
     if (registration.for === 'child') saveGuardianProfile();
 
     const payload = { Created: app.submittedAt, Ref: ref, Status: 'Received', ...d };
+    if (typeof STAFF_MODE !== 'undefined' && STAFF_MODE) {
+      payload.Channel = 'Staff-assisted';
+      payload.StaffMember = getStaffIdentity();
+    }
     let result = 'skipped';
     try { result = await sendToSheetDB(payload, ref); }
     catch (e) { console.error('SheetDB sync failed:', e); }
@@ -1524,6 +1601,9 @@
     refreshPassportUI();
     $('successModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // Arrived from the portal ("Register to get an ID") → send them straight back
+    if (typeof PORTAL_MODE !== 'undefined' && PORTAL_MODE) setTimeout(openPortalPrompt, 700);
 
     btn.disabled = false;
     btn.textContent = 'Submit Registration →';
@@ -1846,6 +1926,62 @@
   populateGrids();
   renderReturningBanner();
 
+/* ---- STAFF-ASSISTED REGISTRATION (?staff=1 — opened from Admin / Front Desk / Instructor console) ---- */
+const STAFF_MODE = new URLSearchParams(location.search).get('staff') === '1';
+function detectStaffEmail() {
+  try {
+    // Same origin as admin.html / frontdesk.html — pick up the signed-in staff identity
+    for (const k of Object.keys(localStorage)) {
+      if (!k.includes('-auth-token')) continue;
+      const v = JSON.parse(localStorage.getItem(k) || 'null');
+      const em = v?.user?.email || v?.currentSession?.user?.email;
+      if (em) return em;
+    }
+  } catch (e) {}
+  return '';
+}
+function getStaffIdentity() {
+  const el = $('staffIdent');
+  return (el && el.value.trim()) || detectStaffEmail();
+}
+if (STAFF_MODE) {
+  $('staffBanner').classList.remove('hidden');
+  const detected = detectStaffEmail();
+  if (detected) $('staffIdent').value = detected;
+  const hero = document.querySelector('#heroSection .grid > div:first-child');
+  if (hero) hero.classList.add('hidden');   // hide marketing copy for a cleaner staff flow
+}
+
+/* ---- PORTAL ORIGIN (?from=portal — details auto-filled from the signed-in portal account) ----
+   The portal links here from "Register to get an ID" (sign-up form + onboarding).
+   role=self  → prefill the member's own name/email.
+   role=parent → the account is a parent/guardian registering a CHILD — guardian contact
+                 is prefilled with the account details so the new ID connects on return. */
+const PORTAL_PARAMS = new URLSearchParams(location.search);
+const PORTAL_MODE = PORTAL_PARAMS.get('from') === 'portal';
+if (PORTAL_MODE) {
+  const pName  = PORTAL_PARAMS.get('name')  || '';
+  const pEmail = PORTAL_PARAMS.get('email') || '';
+  const pRole  = PORTAL_PARAMS.get('role') === 'parent' ? 'parent' : 'self';
+  let app;
+  if (pRole === 'parent') {
+    app = newApp('child');
+    if (pName)  app.fields.pFullName = pName;
+    if (pEmail) app.fields.pEmail = pEmail;
+    app.fields.pRelationship = app.fields.pRelationship || 'Parent';
+    app.fields.pResponsible = 'on';
+  } else {
+    app = newApp('self');
+    if (pName)  app.fields.fullName = pName;
+    if (pEmail) app.fields.email = pEmail;
+  }
+  saveStore();
+  applyApp(app, 1);
+  toast(pRole === 'parent'
+    ? 'Guardian details pre-filled from your portal account — now fill in your child\u2019s information.'
+    : 'Your details are pre-filled from your portal account — complete the rest and submit.');
+}
+
 /* ---- PORTAL PROMPT ---- */
 function getRegContext() {
   const m = document.getElementById('refNum')?.textContent.match(/CFK-\d{3,}/i);
@@ -1875,7 +2011,8 @@ function openPortalPrompt() {
 function closePortalPrompt() { document.getElementById('portalPrompt').classList.add('hidden'); }
 function goPortal() {
   const { ref, role, email } = getRegContext();
-  location.href = 'portal.html?ref=' + encodeURIComponent(ref) + '&role=' + encodeURIComponent(role) + '&email=' + encodeURIComponent(email);
+  const p = new URLSearchParams({ ref, role, email, connect: '1' });
+  location.href = 'portal.html?' + p.toString();
 }
 function goPortalConvert() {
   const { ref } = getRegContext();
