@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- ===== CIFIKA SEO — PRIVATE APP — NOINDEX ===== -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Instructor Console — City Fitness Karate Club | CIFIKA</title>
+<meta name="description" content="CIFIKA Instructor Console — Staff sign in. Attendance, gradings, belt reviews and member tracking for dojo instructors.">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://cifika.ttosr.com/instructor.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="manifest" href="/manifest.json">
+<meta property="og:title" content="Instructor Console — CIFIKA">
+<meta property="og:description" content="CIFIKA Instructor Console — Staff sign in. Attendance, gradings, belt reviews and member tracking.">
+<meta property="og:url" content="https://cifika.ttosr.com/instructor.html">
+<meta property="og:image" content="https://cifika.ttosr.com/assets/social-preview.png">
+<!-- ===== END PRIVATE SEO ===== -->
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Favicons & Manifest -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+      colors: { brand: { DEFAULT:'#FF6B00', dark:'#E65A00', light:'#FFF5EB', border:'#FFD4A8', text:'#B34700' } }
+    }}
+  }
+</script>
+<style>
+  body { font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  .input { width:100%; height:42px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
+           padding:0 14px; font-size:13px; outline:none; transition:border-color .15s, box-shadow .15s; }
+  .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.06); }
+  textarea.input { height:auto; border-radius:14px; padding:10px 14px; }
+  select.input { appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,#888 50%),linear-gradient(135deg,#888 50%,transparent 50%);
+    background-position:calc(100% - 16px) calc(50% - 2px),calc(100% - 11px) calc(50% - 2px);
+    background-size:5px 5px,5px 5px; background-repeat:no-repeat; }
+  .card { background:#fff; border:1px solid #e5e5e5; border-radius:18px; }
+  .fade-in { animation:fadeIn .3s ease-out; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .nav-btn { transition:all .15s ease; }
+  .nav-btn.active { background:#111; color:#fff; }
+  .att-btn { transition:all .12s ease; }
+  .modal-enter { animation:modalIn .22s ease-out; }
+  @keyframes modalIn { from{opacity:0;transform:scale(.96) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .ring-pulse { animation: ringPulse 1.6s ease-out infinite; }
+  @keyframes ringPulse { 0% { box-shadow:0 0 0 0 rgba(255,107,0,.4); } 100% { box-shadow:0 0 0 10px rgba(255,107,0,0); } }
+  /* ---- Sidebar (collapsible rail on desktop · off-canvas drawer on mobile) ---- */
+  #sidebar { scrollbar-width:thin; scrollbar-color:#333 transparent; }
+  #sidebar::-webkit-scrollbar { width:5px; }
+  #sidebar::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+  @media (min-width:1024px) {
+    #sidebar.rail { width:68px; }
+    #sidebar.rail .sb-label { display:none; }
+    #sidebar.rail .sb-hide { display:none; }
+    #sidebar.rail .nav-btn { justify-content:center; padding-left:0; padding-right:0; }
+  }
+  @media (max-width:1023.98px) {
+    #sidebar { box-shadow: 12px 0 40px rgba(0,0,0,.35); }
+  }
+</style>
+</head>
+<body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
+
+<!-- BOOT GUARD — visible only if JavaScript fails to start (bad/partial upload) -->
+<div id="bootGuard" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] bg-red-600 text-white text-[12px] font-semibold px-5 py-3 rounded-full shadow-lg text-center max-w-[92vw]">
+  ⚠ JavaScript didn't start — re-upload this file fresh (unopened, unedited) to your hosting folder.
+</div>
+<noscript><div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] bg-red-600 text-white text-[12px] font-semibold px-5 py-3 rounded-full">JavaScript is disabled — enable it to use the Instructor Console.</div></noscript>
+
+<!-- AUTH — STAFF SIGN IN / SIGN UP (instructor auth lives HERE, not in the member portal) -->
+<div id="authView" class="hidden min-h-screen flex items-center justify-center px-5 py-10 relative">
+  <a href="portal.html" class="absolute top-5 left-5 h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold inline-flex items-center gap-1.5 hover:border-black transition" title="Back to the members portal">
+    <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    <span class="hidden sm:inline">Back to Members Portal</span><span class="sm:hidden">Portal</span>
+  </a>
+  <div class="w-full max-w-[420px]">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-[14px] font-bold">空</span>
+        <span class="text-[12px] font-bold tracking-[0.16em]">CIFIKA <span class="text-brand">INSTRUCTOR</span></span>
+      </div>
+      <h1 class="mt-4 text-[26px] font-extrabold tracking-tight">Instructor Console</h1>
+      <p class="text-[12.5px] text-neutral-500 mt-1.5">Staff sign in — attendance, gradings &amp; belt reviews.</p>
+    </div>
+    <div class="card shadow-[0_16px_48px_rgba(0,0,0,0.07)] p-6">
+      <div class="grid grid-cols-2 gap-2 p-1 bg-neutral-100 rounded-full">
+        <button id="tabIn" onclick="switchAuthTab('in')" class="h-9 rounded-full text-[12px] font-semibold bg-white shadow-sm">Staff Sign In</button>
+        <button id="tabUp" onclick="switchAuthTab('up')" class="h-9 rounded-full text-[12px] font-semibold text-neutral-500">Staff Sign Up</button>
+      </div>
+
+      <div id="authError" class="hidden mt-4 text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border"></div>
+
+      <!-- SIGN IN -->
+      <form id="signInForm" class="mt-5 grid gap-3" onsubmit="event.preventDefault(); doSignIn();">
+        <input id="siEmail" type="email" class="input" placeholder="Staff email" autocomplete="email">
+        <input id="siPassword" type="password" class="input" placeholder="Password" autocomplete="current-password">
+        <button id="siBtn" type="submit" class="h-[46px] rounded-full bg-black text-white text-[13.5px] font-semibold hover:bg-neutral-800 transition">Sign In →</button>
+        <div class="flex items-center gap-3">
+          <div class="h-px bg-neutral-200 flex-1"></div>
+          <span class="text-[10.5px] text-neutral-400 font-semibold tracking-wide">OR</span>
+          <div class="h-px bg-neutral-200 flex-1"></div>
+        </div>
+        <button type="button" onclick="doGoogle()" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.99 11.99 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+          Continue with Google
+        </button>
+        <button type="button" onclick="doReset()" class="text-[11.5px] text-neutral-400 hover:text-neutral-700 transition">Forgot password?</button>
+        <p class="text-[11px] text-neutral-400 text-center leading-[1.55]">New instructor? Create a staff account — then request instructor access once signed in.</p>
+      </form>
+
+      <!-- SIGN UP -->
+      <form id="signUpForm" class="hidden mt-5 grid gap-3" onsubmit="event.preventDefault(); doSignUp();">
+        <input id="suName" class="input" placeholder="Full name">
+        <input id="suEmail" type="email" class="input" placeholder="Staff email" autocomplete="email">
+        <input id="suPassword" type="password" class="input" placeholder="Create password (min. 6 characters)" autocomplete="new-password">
+        <button id="suBtn" type="submit" class="h-[46px] rounded-full bg-brand text-white text-[13.5px] font-semibold hover:bg-brand-dark transition">Create Staff Account →</button>
+        <div class="flex items-center gap-3">
+          <div class="h-px bg-neutral-200 flex-1"></div>
+          <span class="text-[10.5px] text-neutral-400 font-semibold tracking-wide">OR</span>
+          <div class="h-px bg-neutral-200 flex-1"></div>
+        </div>
+        <button type="button" onclick="doGoogle()" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.99 11.99 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
+          Sign up with Google
+        </button>
+        <p class="text-[11px] text-neutral-400 text-center leading-[1.55]">After sign-up, tap <b>Request Instructor Access</b> — an admin activates your instructor role from Staff &amp; Roles.</p>
+      </form>
+    </div>
+    <p class="text-center text-[11px] text-neutral-400 mt-5">Members sign in at the <a href="portal.html" class="underline underline-offset-4 hover:text-neutral-600">Member Portal</a> instead.</p>
+  </div>
+</div>
+
+<!-- REQUEST ACCESS / UNAUTHORIZED -->
+<div id="unauthView" class="hidden min-h-screen flex items-center justify-center px-5">
+  <div class="card p-8 text-center max-w-[440px]">
+    <div class="w-12 h-12 mx-auto rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
+      <svg viewBox="0 0 24 24" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+    <h2 class="mt-3 text-[18px] font-extrabold">No instructor access yet</h2>
+    <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
+      <span id="unauthEmail" class="font-semibold text-neutral-700"></span> is signed in but doesn't hold the <b>instructor</b> role.
+      Request instructor access below — an admin reviews it in Admin Console → Staff &amp; Roles.
+    </p>
+    <div class="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
+      <button onclick="requestInstructorRole()" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition">Request Instructor Access</button>
+      <a href="portal.html" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold flex items-center justify-center hover:border-black transition">Member Portal</a>
+      <button onclick="signOut()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- AWAITING ADMIN ACTIVATION -->
+<div id="awaitView" class="hidden min-h-screen flex items-center justify-center px-5">
+  <div class="card p-8 text-center max-w-[460px]">
+    <div class="w-16 h-16 mx-auto rounded-full bg-brand-light border border-brand-border ring-pulse flex items-center justify-center">
+      <svg viewBox="0 0 24 24" class="w-7 h-7 text-brand" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    </div>
+    <h2 class="mt-5 text-[20px] font-extrabold tracking-tight">Awaiting admin activation</h2>
+    <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
+      Your instructor access request is in. An admin needs to assign your <b>instructor</b> role —
+      once approved, this console opens with attendance, gradings and belt reviews.
+    </p>
+    <div class="mt-5 rounded-[14px] bg-neutral-50 border border-neutral-200 p-4 text-left">
+      <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">WHAT HAPPENS NEXT</div>
+      <ol class="mt-2 text-[12px] text-neutral-600 leading-[1.7] list-decimal list-inside space-y-0.5">
+        <li>An admin reviews your request in the Admin Console → Staff &amp; Roles.</li>
+        <li>They set your role to <b>instructor</b>.</li>
+        <li>Sign in again — your instructor console appears automatically.</li>
+      </ol>
+    </div>
+    <div class="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
+      <button onclick="cancelInstructorRequest()" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition">Withdraw request</button>
+      <button onclick="signOut()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="hidden min-h-screen flex">
+  <!-- MOBILE OVERLAY -->
+  <div id="sbOverlay" onclick="toggleSidebar(false)" class="hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"></div>
+
+  <!-- SIDEBAR — off-canvas drawer on mobile, collapsible rail on desktop -->
+  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-[248px] shrink-0 bg-[#0a0a0a] text-white border-r border-neutral-800 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
+    <div class="h-[56px] flex items-center justify-between pl-4 pr-3 border-b border-neutral-800 shrink-0">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <span class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-[13px] font-bold shrink-0">空</span>
+        <span class="sb-label text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">INSTRUCTOR</span></span>
+      </div>
+      <button onclick="toggleSidebar(false)" class="lg:hidden w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center shrink-0" title="Close menu">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <nav id="navWrap" class="flex-1 overflow-y-auto py-3 px-2.5 space-y-1"></nav>
+    <div class="p-3 border-t border-neutral-800 shrink-0 grid gap-2">
+      <button onclick="openRegisterClient()" class="w-full h-10 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition flex items-center justify-center gap-2">
+        <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="sb-label">Register Client</span>
+      </button>
+      <div class="flex items-center gap-2.5 px-1.5 pt-1 min-w-0">
+        <div id="sbAvatar" class="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-bold shrink-0"></div>
+        <div class="sb-label min-w-0 flex-1">
+          <div id="sbEmail" class="text-[11px] text-neutral-300 truncate"></div>
+          <div id="sbRole" class="text-[9px] font-bold tracking-[0.12em] text-neutral-500"></div>
+        </div>
+        <button onclick="signOut()" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0 text-neutral-400 hover:text-white" title="Sign out">
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN COLUMN -->
+  <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+    <header class="sticky top-0 z-30 bg-black/95 backdrop-blur text-white border-b border-neutral-800">
+      <div class="max-w-[1280px] mx-auto pl-3 pr-3 sm:pr-5 md:pl-6 md:pr-6 h-[56px] flex items-center gap-2">
+        <button onclick="toggleSidebar()" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0" title="Toggle menu">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="lg:hidden text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">INSTRUCTOR</span></span>
+        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
+        <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[200px] truncate ml-auto"></span>
+        <button onclick="openRegisterClient()" class="hidden md:inline-flex h-8 px-4 rounded-full bg-brand hover:bg-brand-dark text-[11px] font-semibold transition items-center gap-1.5 shrink-0">
+          <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Register Client
+        </button>
+      </div>
+    </header>
+    <main id="content" class="flex-1 w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-8 py-5 md:py-7"></main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalWrap" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start md:items-center justify-center p-4 overflow-y-auto">
+  <div id="modalBox" class="modal-enter bg-white rounded-[22px] shadow-[0_12px_40px_rgba(0,0,0,0.18)] border border-neutral-200 max-w-[620px] w-full my-6"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-black text-white text-[12px] font-medium px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] max-w-[90vw] text-center"></div>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
+
+/* Training schedule (Africa/Lagos) — used to prefill QR windows.
+   JS getDay(): Friday=5, Saturday=6, Sunday=0.
+   NOTE: brief said "Sunday 4:30am" — change the Sunday row if it really is AM. */
+const TRAINING_SCHEDULE = {
+  5: { name: 'Friday',   start: '16:30', end: '18:00' },
+  6: { name: 'Saturday', start: '08:00', end: '10:00' },
+  0: { name: 'Sunday',   start: '16:30', end: '18:00' },
+};
+
+/* ═══════════ STATE ═══════════ */
+let sb, currentUser, currentProfile;
+let membersList = [], beltLevels = [], profilesList = [];
+let section = 'dashboard';
+let memState = { q:'', status:'', cat:'', belt:'' };
+let attState = { date:null, type:'regular', rows:{} };
+let gradingPreselect = null;
+let currentMemberId = null;
+
+const $  = id => document.getElementById(id);
+const SECTIONS = [
+  ['dashboard', 'dashboard', 'Dashboard'],
+  ['members',   'users',     'Members'],
+  ['attendance','calendar',  'Attendance'],
+  ['absences',  'ban',       'Absences'],
+  ['qrlog',     'clipboard', 'Check-in Log'],
+  ['consistency','flame',    'Consistency'],
+  ['qrcode',    'qr',        'QR Check-in'],
+  ['gradings',  'medal',     'Gradings'],
+  ['reviews',   'hourglass', 'Belt Reviews'],
+  ['announcements','megaphone','Announcements'],
+];
+let STAFF_ROLE = 'instructor';
+
+/* ═══════════ CUSTOM INLINE SVG ICON SET — no emoji anywhere in the console ═══════════ */
+const ICONS = {
+  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  ban: '<circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>',
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/>',
+  flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14h1M14 20h1M18 18h3v3h-3z"/>',
+  card: '<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
+  medal: '<circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/>',
+  hourglass: '<path d="M5 22h14M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+  megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  chart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><path d="M2 20h20"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  award: '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  alert: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  pin: '<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  printer: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+};
+function ic(name, cls) {
+  return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
+/* ═══════════ BOOT ═══════════ */
+window.addEventListener('DOMContentLoaded', boot);
+
+async function boot() {
+  try {
+    $('bootGuard').classList.add('hidden');
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) await gate(session.user); else $('authView').classList.remove('hidden');
+    sb.auth.onAuthStateChange((_e, s) => { if (s?.user && !currentUser) gate(s.user).catch(showBootError); });
+  } catch (e) { showBootError(e); }
+}
+function showBootError(e) {
+  const g = $('bootGuard');
+  g.classList.remove('hidden');
+  g.textContent = '⚠ Start-up problem: ' + (e?.message || e) + ' — check your connection, then re-upload instructor.html fresh if this repeats.';
+}
+
+async function gate(user) {
+  currentUser = user;
+  let { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (!profile) {
+    // Brand-new staff sign-up (email or Google) — create the profile, then the
+    // instructor-request flow starts from the "request access" screen.
+    const role = user.user_metadata?.role || 'student';
+    await sb.from('profiles').insert({
+      id: user.id, email: user.email,
+      full_name: user.user_metadata?.full_name || '', role
+    });
+    profile = { id: user.id, email: user.email, role, full_name: user.user_metadata?.full_name || '' };
+  }
+  currentProfile = profile;
+  $('authView').classList.add('hidden');
+  $('unauthView').classList.add('hidden');
+  $('awaitView').classList.add('hidden');
+  $('appView').classList.add('hidden');
+
+  if (profile.role === 'pending_instructor') {
+    // waiting for an admin to assign the instructor role
+    $('awaitView').classList.remove('hidden');
+    return;
+  }
+  if (!['admin','instructor'].includes(profile.role)) {
+    // signed-in member without instructor access → request-access screen
+    $('unauthEmail').textContent = user.email;
+    $('unauthView').classList.remove('hidden');
+    return;
+  }
+
+  STAFF_ROLE = profile.role;
+  await loadCore();
+  $('appView').classList.remove('hidden');
+  $('hdrEmail').textContent = user.email;
+  $('sbEmail').textContent = user.email;
+  $('sbAvatar').textContent = initial(user.email);
+  $('sbRole').textContent = (profile.role || '').toUpperCase() + ' CONSOLE';
+  $('hdrRole').textContent = (profile.role || '').toUpperCase() + ' CONSOLE';
+  if (window.matchMedia('(min-width:1024px)').matches && localStorage.getItem('cifika_instructor_rail') === '1')
+    $('sidebar').classList.add('rail');
+  renderNav();
+  show('dashboard');
+}
+
+async function loadCore() {
+  const [s, b, p] = await Promise.all([
+    sb.from('students').select('*').order('created_at', { ascending: false }),
+    sb.from('belt_levels').select('*').eq('is_active', true).order('belt_order'),
+    sb.from('profiles').select('id,email,full_name,role,created_at').order('created_at'),
+  ]);
+  membersList = s.data || []; beltLevels = b.data || []; profilesList = p.data || [];
+}
+
+async function refreshMembers() {
+  const { data } = await sb.from('students').select('*').order('created_at', { ascending: false });
+  membersList = data || [];
+}
+
+function doSignIn() {
+  const email = $('siEmail').value.trim(), password = $('siPassword').value;
+  if (!email || !password) return authErr('Enter email and password.');
+  const btn = $('siBtn'); btn.disabled = true; btn.textContent = 'Signing in…';
+  sb.auth.signInWithPassword({ email, password })
+    .then(({ error }) => { btn.disabled = false; btn.textContent = 'Sign In →'; if (error) authErr(error.message, false); });
+}
+
+function switchAuthTab(which) {
+  const inForm = $('signInForm'), upForm = $('signUpForm');
+  const inBtn = $('tabIn'), upBtn = $('tabUp');
+  inForm.classList.toggle('hidden', which !== 'in');
+  upForm.classList.toggle('hidden', which !== 'up');
+  inBtn.className = 'h-9 rounded-full text-[12px] font-semibold ' + (which === 'in' ? 'bg-white shadow-sm' : 'text-neutral-500');
+  upBtn.className = 'h-9 rounded-full text-[12px] font-semibold ' + (which === 'up' ? 'bg-white shadow-sm' : 'text-neutral-500');
+  hideAuthErr();
+}
+
+async function doSignUp() {
+  hideAuthErr();
+  const fullName = $('suName').value.trim();
+  const email = $('suEmail').value.trim();
+  const password = $('suPassword').value;
+  if (!fullName || !email || password.length < 6)
+    return authErr('Fill all fields — password must be at least 6 characters.');
+  const btn = $('suBtn'); btn.disabled = true; btn.textContent = 'Creating…';
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: fullName, role: 'student' } }
+  });
+  btn.disabled = false; btn.textContent = 'Create Staff Account →';
+  if (error) return authErr(error.message, false);
+  if (!data.session) authErr('Account created! Check your inbox to confirm your email, then sign in.', true);
+  // with a session, gate() opens the request-access screen automatically
+}
+
+async function doGoogle() {
+  hideAuthErr();
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.origin + location.pathname }
+  });
+  if (error) authErr(error.message, false);
+}
+
+async function doReset() {
+  const email = $('siEmail').value.trim();
+  if (!email) return authErr('Type your email in the field above first, then tap reset.');
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  authErr(error ? error.message : 'Reset link sent — check your inbox.', !error);
+}
+
+/* Request instructor access (the instructor sign-up flow — was in the member portal) */
+async function requestInstructorRole() {
+  const { data, error } = await sb.rpc('request_instructor_role');
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok')
+    return toast('✗ ' + (d?.message || error?.message || 'Could not send the request.'), true);
+  toast('✓ Request sent — an admin will activate your instructor access.');
+  await gate(currentUser);   // re-route → awaiting-activation screen
+}
+
+async function cancelInstructorRequest() {
+  if (!confirm('Withdraw your instructor access request?')) return;
+  const { error } = await sb.rpc('cancel_instructor_request');
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Request withdrawn');
+  await gate(currentUser);   // back to the request-access screen
+}
+
+function authErr(m, isInfo) {
+  const e = $('authError');
+  e.textContent = m;
+  e.className = 'mt-4 text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border ' +
+    (isInfo ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-700');
+}
+function hideAuthErr() { $('authError').classList.add('hidden'); }
+async function signOut() { await sb.auth.signOut(); location.reload(); }
+
+/* ═══════════ SHELL ═══════════ */
+function renderNav() {
+  $('navWrap').innerHTML = SECTIONS.map(([id, icon, label]) => `
+    <button onclick="show('${id}')" data-nav="${id}" title="${label}"
+      class="nav-btn ${section === id ? 'bg-brand text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}
+             w-full h-10 px-3 rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
+      ${ic(icon, 'w-[18px] h-[18px] shrink-0')}<span class="sb-label">${label}</span>
+    </button>`).join('');
+}
+
+function show(id) {
+  section = id;
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    const on = b.dataset.nav === id;
+    b.classList.toggle('bg-brand', on);
+    b.classList.toggle('text-white', on);
+    b.classList.toggle('text-neutral-300', !on);
+  });
+  ({ dashboard: showDashboard, members: showMembers, attendance: showAttendance, absences: showAbsences,
+     qrlog: showQrLog, consistency: showConsistency,
+     qrcode: showQr, gradings: showGradings, reviews: showReviews,
+     announcements: showAnnouncements })[id]?.();
+  // close the mobile drawer after navigating
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+}
+
+/* Sidebar: off-canvas drawer on mobile · collapsible icon rail on desktop */
+function toggleSidebar(force) {
+  const sb = $('sidebar'), ov = $('sbOverlay');
+  if (window.matchMedia('(min-width:1024px)').matches) {
+    const rail = force === undefined ? !sb.classList.contains('rail') : !!force;
+    sb.classList.toggle('rail', rail);
+    localStorage.setItem('cifika_instructor_rail', rail ? '1' : '0');
+  } else {
+    const open = force === undefined ? sb.classList.contains('-translate-x-full') : !!force;
+    sb.classList.toggle('-translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+  }
+}
+
+/* Staff (admin · instructor · frontdesk) can register clients — opens the form in staff-assisted mode */
+function openRegisterClient() { window.open('registration.html?staff=1', '_blank', 'noopener'); }
+
+/* ═══════════ DASHBOARD ═══════════ */
+function showDashboard() {
+  const total = membersList.length;
+  const active = membersList.filter(m => m.membership_status === 'active').length;
+  const pending = membersList.filter(m => m.membership_status === 'pending');
+  const children = membersList.filter(m => m.training_category === 'child').length;
+
+  const dist = beltLevels.map(b => ({ b, n: membersList.filter(m => m.current_belt === b.belt_name).length }));
+  const maxN = Math.max(1, ...dist.map(d => d.n));
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-6">
+    <!-- QUICK ACTIONS -->
+    <div class="flex flex-wrap gap-2">
+      <button onclick="openRegisterClient()" class="h-10 px-4 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('userplus','w-4 h-4')} Register Client</button>
+      <button onclick="show('attendance')" class="h-10 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-2">${ic('calendar','w-4 h-4')} Take Attendance</button>
+      <button onclick="show('gradings')" class="h-10 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-2">${ic('medal','w-4 h-4')} Record Grading</button>
+      <button onclick="show('qrcode')" class="h-10 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-2">${ic('qr','w-4 h-4')} QR Check-in</button>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${statCard('TOTAL MEMBERS', total)}
+      ${statCard('ACTIVE', active, `${total ? Math.round(active/total*100) : 0}% of club`)}
+      ${statCard('PENDING', pending.length, 'awaiting activation')}
+      ${statCard('CHILDREN', children, `${total - children} adults`)}
+    </div>
+
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-[12px] font-bold tracking-[0.14em]">PENDING ACTIVATION</div>
+        <div class="text-[11px] text-neutral-400">new registrations awaiting Sensei approval</div>
+      </div>
+      ${pending.length ? `<div class="grid gap-2">${pending.map(m => `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-[14px] border border-amber-200 bg-amber-50/60">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-full bg-white border border-amber-200 flex items-center justify-center text-[12px] font-bold text-amber-700 shrink-0">${initial(m.full_name)}</div>
+            <div class="min-w-0">
+              <div class="text-[13px] font-semibold truncate">${escapeHtml(m.full_name || '—')}</div>
+              <div class="text-[11px] text-neutral-500">${escapeHtml(m.registration_ref || '')} • ${m.training_category === 'child' ? 'Child' : 'Adult'} • ${fmtDate(m.registration_date)}</div>
+            </div>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <button onclick="setMemberStatus('${m.id}','active')" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11.5px] font-semibold hover:bg-emerald-700 transition inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Activate</button>
+            <button onclick="openMember('${m.id}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Details</button>
+          </div>
+        </div>`).join('')}</div>`
+      : `<div class="text-center py-6 text-[13px] text-neutral-400">No pending registrations — all caught up ✓</div>`}
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">BELT DISTRIBUTION</div>
+      <div class="grid gap-2.5">
+        ${dist.map(({ b, n }) => `
+        <div class="flex items-center gap-3">
+          <span class="w-3.5 h-3.5 rounded-full border border-neutral-300 shrink-0" style="background:${b.belt_color_hex}"></span>
+          <span class="text-[12px] font-medium w-[70px] shrink-0">${escapeHtml(b.belt_name)}</span>
+          <div class="flex-1 h-[18px] rounded-full bg-neutral-100 overflow-hidden">
+            <div class="h-full rounded-full transition-all" style="width:${Math.round(n/maxN*100)}%; background:${b.belt_color_hex}"></div>
+          </div>
+          <span class="text-[12px] font-bold w-7 text-right">${n}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════ MEMBERS ═══════════ */
+function filteredMembers() {
+  const q = memState.q.toLowerCase();
+  return membersList.filter(m => {
+    if (memState.status && m.membership_status !== memState.status) return false;
+    if (memState.cat && m.training_category !== memState.cat) return false;
+    if (memState.belt && m.current_belt !== memState.belt) return false;
+    if (q) {
+      const hay = [m.full_name, m.preferred_name, m.registration_ref, m.email, m.guardian_email, m.phone]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function showMembers() {
+  const rows = filteredMembers();
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-4 grid md:grid-cols-[1fr_150px_150px_150px] gap-2">
+      <input class="input" placeholder="Search name, ref, email, phone…" value="${escapeHtml(memState.q)}"
+             oninput="memState.q=this.value; renderMemberRows()">
+      ${selectFilter('memState.status','renderMemberRows()', [
+        ['','All statuses'],['pending','Pending'],['active','Active'],['inactive','Inactive'],['suspended','Suspended']], memState.status)}
+      ${selectFilter('memState.cat','renderMemberRows()', [['','All ages'],['child','Children'],['adult','Adults']], memState.cat)}
+      ${selectFilter('memState.belt','renderMemberRows()', [['','All belts'], ...beltLevels.map(b=>[b.belt_name,b.belt_name])], memState.belt)}
+    </div>
+    <div class="card overflow-hidden">
+      <div id="memberTable">${memberRowsHTML(rows)}</div>
+    </div>
+    <div class="text-[11px] text-neutral-400">${rows.length} of ${membersList.length} members</div>
+  </div>`;
+}
+
+function memberRowsHTML(rows) {
+  if (!rows.length) return `<div class="p-10 text-center text-[13px] text-neutral-400">No members match these filters.</div>`;
+  return rows.map(m => `
+    <div class="flex items-center gap-3 px-4 md:px-5 py-3.5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 cursor-pointer transition" onclick="openMember('${m.id}')">
+      <div class="w-10 h-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[13px] font-bold shrink-0">${initial(m.full_name)}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13.5px] font-semibold truncate">${escapeHtml(m.full_name || '—')}</div>
+        <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(m.registration_ref || '')} • ${m.training_category === 'child' ? 'Child' : m.training_category === 'adult' ? 'Adult' : '—'}${m.guardian_id || m.user_id ? ' • Portal ✓' : ''}</div>
+      </div>
+      <div class="hidden md:block">${beltChipHTML(m.current_belt)}</div>
+      ${statusChip(m.membership_status)}
+      <div class="text-neutral-300">›</div>
+    </div>`).join('');
+}
+function renderMemberRows() { $('memberTable').innerHTML = memberRowsHTML(filteredMembers()); }
+
+function openMember(id) {
+  const m = membersList.find(x => x.id === id);
+  if (!m) return;
+  currentMemberId = id;
+  const guardian = profilesList.find(p => p.id === m.guardian_id);
+  const ec = m.emergency_contact || {};
+  $('modalBox').innerHTML = `
+    <div class="px-6 py-5 border-b border-neutral-100 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">${beltChipHTML(m.current_belt)} ${statusChip(m.membership_status)}</div>
+        <h3 class="mt-2 text-[19px] font-extrabold tracking-tight truncate">${escapeHtml(m.full_name || '—')}</h3>
+        <div class="text-[11.5px] text-neutral-500">${escapeHtml(m.registration_ref || '')} • ${m.training_category === 'child' ? 'Child' : 'Adult'} • joined ${fmtDate(m.registration_date)}</div>
+      </div>
+      <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center shrink-0">✕</button>
+    </div>
+    <div class="px-6 py-4 grid gap-4 max-h-[55vh] overflow-y-auto">
+      <div class="grid md:grid-cols-2 gap-x-6">
+        ${infoRow('DOB', fmtDate(m.date_of_birth) + (calcAge(m.date_of_birth) !== null ? ` (${calcAge(m.date_of_birth)})` : ''))}
+        ${infoRow('Gender', m.gender)}
+        ${infoRow('Phone', m.phone)}
+        ${infoRow('Email', m.email)}
+        ${infoRow('Guardian', m.guardian_name ? `${m.guardian_name}${guardian ? ' (portal: ' + guardian.email + ')' : ''}` : null)}
+        ${infoRow('Emergency', ec.name ? `${ec.name} — ${ec.primaryPhone || ''}` : null)}
+        ${infoRow('Medical', m.medical_conditions)}
+        ${infoRow('Injuries', m.injuries)}
+        ${infoRow('Prior training', m.previous_rank || m.years_trained ? `${m.previous_rank || ''} ${m.years_trained ? '• ' + m.years_trained : ''}` : null)}
+        ${infoRow('Media consent', m.media_consent === null || m.media_consent === undefined ? null : (m.media_consent ? 'Yes' : 'No'))}
+      </div>
+
+      <div class="rounded-[14px] border border-neutral-200 p-4">
+        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-500 mb-2.5">MEMBERSHIP STATUS</div>
+        <div class="flex flex-wrap gap-2">
+          ${['pending','active','inactive','suspended'].map(s =>
+            `<button onclick="setMemberStatus('${m.id}','${s}')" class="h-9 px-4 rounded-full border text-[11.5px] font-semibold transition
+              ${m.membership_status === s ? 'bg-black text-white border-black' : 'bg-white hover:border-black'}">${cap(s)}</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="rounded-[14px] border border-neutral-200 p-4">
+        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-500 mb-2.5">QUICK BELT EDIT</div>
+        <div class="flex gap-2">
+          <select id="mBeltSel" class="input flex-1">
+            ${beltLevels.map(b => `<option value="${escapeHtml(b.belt_name)}" ${m.current_belt === b.belt_name ? 'selected' : ''}>${escapeHtml(b.belt_name)}</option>`).join('')}
+          </select>
+          <button onclick="saveBelt('${m.id}')" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition shrink-0">Save Belt</button>
+        </div>
+        <div class="text-[10.5px] text-neutral-400 mt-2">For permanent history (certificates, remarks), use Gradings → Record instead — it promotes automatically.</div>
+      </div>
+
+      <div class="rounded-[14px] border border-sky-200 bg-sky-50/60 p-4">
+        <div class="text-[11px] font-bold tracking-[0.12em] text-sky-700 mb-2 flex items-center gap-1.5">${ic('shield','w-3.5 h-3.5')} EXCUSED PERIOD (freeze sessions)</div>
+        <p class="text-[10.5px] text-neutral-500 leading-[1.5] mb-2.5">While active, absences inside this window automatically become excused and no sessions are consumed. The member is alerted near the end that sessions resume counting afterwards and will expire if not used.</p>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="block"><div class="text-[9.5px] font-bold tracking-[0.08em] text-neutral-400 mb-1">FROM</div>
+            <input type="date" id="excFrom" class="input" value="${m.excused_from || ''}"></label>
+          <label class="block"><div class="text-[9.5px] font-bold tracking-[0.08em] text-neutral-400 mb-1">TO</div>
+            <input type="date" id="excUntil" class="input" value="${m.excused_until || ''}"></label>
+        </div>
+        <input id="excNote" class="input mt-2" placeholder="Reason (optional) — e.g. injury recovery, school exams" value="${escapeHtml(m.excused_note || '')}">
+        <div class="flex flex-wrap gap-2 mt-2.5 items-center">
+          <button onclick="saveExcusedPeriod('${m.id}')" class="h-9 px-4 rounded-full bg-black text-white text-[11px] font-semibold hover:bg-neutral-800 transition">Save Period</button>
+          ${m.excused_until ? `<button onclick="clearExcusedPeriod('${m.id}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition">Clear</button>
+          <span class="text-[10.5px] text-sky-700 font-semibold">Active: ${fmtDate(m.excused_from)} → ${fmtDate(m.excused_until)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="px-6 py-4 border-t border-neutral-100 flex flex-wrap gap-2 justify-between">
+      <button onclick="closeModal(); gradingPreselect='${m.id}'; show('gradings')" class="h-10 px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5">${ic('medal','w-4 h-4')} Record Grading</button>
+      <button onclick="closeModal()" class="h-10 px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">Close</button>
+    </div>`;
+  $('modalWrap').classList.remove('hidden');
+}
+function closeModal() { $('modalWrap').classList.add('hidden'); currentMemberId = null; }
+
+async function setMemberStatus(id, status) {
+  const { error } = await sb.from('students').update({ membership_status: status }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast(status === 'active' ? '✓ Member activated' : 'Status: ' + status);
+  await refreshMembers();
+  if (currentMemberId) openMember(id); // refresh modal
+  show(section);
+}
+
+async function saveBelt(id) {
+  const beltName = $('mBeltSel').value;
+  const order = beltLevels.find(b => b.belt_name === beltName)?.belt_order;
+  const { error } = await sb.from('students')
+    .update({ current_belt: beltName, current_rank: order ?? 0 }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('✓ Belt updated to ' + beltName);
+  await refreshMembers();
+  openMember(id);
+  show(section);
+}
+
+/* ═══════════ ATTENDANCE ═══════════ */
+function showAttendance() {
+  if (!attState.date) attState.date = new Date().toISOString().slice(0, 10);
+  attState.rows = {};
+  const roster = [...membersList].sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-4 flex flex-col md:flex-row md:items-end gap-3">
+      <label class="block md:w-[190px]"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">DATE</div>
+        <input type="date" class="input" value="${attState.date}" onchange="attState.date=this.value; loadAttendanceRoster()"></label>
+      <label class="block md:w-[200px]"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">CLASS TYPE</div>
+        <select class="input" onchange="attState.type=this.value; loadAttendanceRoster()">
+          ${['regular','grading','competition','special'].map(t=>`<option ${attState.type===t?'selected':''}>${t}</option>`).join('')}
+        </select></label>
+      <div class="flex gap-2 md:ml-auto">
+        <button onclick="markAllPresent()" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition">Mark all present</button>
+        <button id="saveAttBtn" onclick="saveAttendance()" class="h-[42px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">Save Attendance</button>
+      </div>
+    </div>
+    <div id="attSummary" class="text-[11.5px] text-neutral-500 px-1"></div>
+    <div class="card overflow-hidden"><div id="attRoster"><div class="p-10 text-center text-[13px] text-neutral-400">Loading roster…</div></div></div>
+  </div>`;
+
+  renderAttendanceRoster(roster);
+  loadAttendanceRoster();
+}
+
+function renderAttendanceRoster(roster) {
+  roster = roster || [...membersList].sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
+  const counts = { present:0, late:0, absent:0, excused:0, none:0 };
+  roster.forEach(m => { const s = attState.rows[m.id] || 'none'; counts[s]++; });
+
+  $('attRoster').innerHTML = !roster.length
+    ? `<div class="p-10 text-center text-[13px] text-neutral-400">No members registered yet.</div>`
+    : roster.map(m => {
+      const cur = attState.rows[m.id] || '';
+      const btn = (val, label, on) => `
+        <button onclick="setAtt('${m.id}','${val}')" class="att-btn h-8 w-9 rounded-full border text-[11px] font-bold
+          ${cur === val ? on : 'bg-white border-neutral-200 text-neutral-500 hover:border-black'}">${label}</button>`;
+      return `
+      <div class="flex items-center gap-3 px-4 md:px-5 py-3 border-b border-neutral-100 last:border-0">
+        <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[12px] font-bold shrink-0">${initial(m.full_name)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(m.full_name || '—')}</div>
+          <div class="text-[10.5px] text-neutral-400">${escapeHtml(m.registration_ref || '')} • ${escapeHtml(m.current_belt)}</div>
+        </div>
+        <div class="flex gap-1.5 shrink-0">
+          ${btn('present','P','bg-emerald-500 border-emerald-500 text-white')}
+          ${btn('late','L','bg-orange-400 border-orange-400 text-white')}
+          ${btn('absent','A','bg-red-500 border-red-500 text-white')}
+          ${btn('excused','E','bg-amber-400 border-amber-400 text-white')}
+        </div>
+      </div>`;
+    }).join('');
+
+  $('attSummary').textContent =
+    `Present ${counts.present} • Late ${counts.late} • Absent ${counts.absent} • Excused ${counts.excused} • Unmarked ${counts.none}`;
+}
+
+async function loadAttendanceRoster() {
+  const { data } = await sb.from('attendance')
+    .select('student_id,status').eq('class_date', attState.date).eq('class_type', attState.type);
+  attState.rows = {};
+  (data || []).forEach(r => attState.rows[r.student_id] = r.status);
+  renderAttendanceRoster();
+}
+
+function setAtt(id, status) { attState.rows[id] = status; renderAttendanceRoster(); }
+function markAllPresent() {
+  membersList.forEach(m => attState.rows[m.id] = 'present');
+  renderAttendanceRoster();
+}
+
+async function saveAttendance() {
+  const btn = $('saveAttBtn');
+  const entries = Object.entries(attState.rows).filter(([,v]) => v && v !== 'none');
+  if (!entries.length) return toast('Nothing to save — mark some members first.', true);
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const payload = entries.map(([student_id, status]) => ({
+    student_id, class_date: attState.date, class_type: attState.type,
+    status, recorded_by: currentUser.id,
+  }));
+  const { error } = await sb.from('attendance')
+    .upsert(payload, { onConflict: 'student_id,class_date,class_type' });
+  btn.disabled = false; btn.textContent = 'Save Attendance';
+  if (error) return toast('✗ ' + error.message, true);
+  toast(`✓ Saved ${payload.length} attendance records for ${fmtDate(attState.date)}`);
+}
+
+/* ═══════════ ABSENCES (excusal requests + email outbox) ═══════════ */
+let absCache = { requests: [], outbox: [] };
+
+function showAbsences() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">ABSENCE REQUESTS</div>
+      <p class="text-[12px] text-neutral-500 mb-4">Members submit a reason for missing a class. <b>Excuse</b> marks that class EXCUSED and refunds the session — declined absences consume a session as normal. Admin, front desk and instructors can all review.</p>
+      <div id="absQueue"><div class="text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
+        <div class="text-[12px] font-bold tracking-[0.14em]">EMAIL NOTICES SENT TO MEMBERS</div>
+        <div class="text-[11px] text-neutral-400">outbox • add SMTP to deliver (see README)</div>
+      </div>
+      <div id="absOutbox"><div class="p-6 text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+  loadAbsenceData();
+}
+
+async function loadAbsenceData() {
+  const [req, out] = await Promise.all([
+    sb.from('absence_requests').select('id, student_id, class_date, reason, status, review_note, created_at, reviewed_at, students(full_name, registration_ref, current_belt)')
+      .order('created_at', { ascending: false }).limit(60),
+    sb.from('email_outbox').select('id, kind, subject, body, status, error, to_email, created_at, students(full_name)')
+      .order('created_at', { ascending: false }).limit(30),
+  ]);
+  absCache.requests = req.data || [];
+  absCache.outbox = out.data || [];
+  renderAbsQueue();
+  renderAbsOutbox();
+}
+
+function renderAbsQueue() {
+  const pending = absCache.requests.filter(r => r.status === 'pending');
+  const decided = absCache.requests.filter(r => r.status !== 'pending');
+  $('absQueue').innerHTML = `
+    ${pending.length ? `<div class="grid gap-2">${pending.map(r => `
+      <div class="px-4 py-3.5 rounded-[14px] border border-amber-200 bg-amber-50/50">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
+          <div class="w-9 h-9 rounded-full bg-white border border-amber-200 flex items-center justify-center text-[12px] font-bold text-amber-700 shrink-0">${initial(r.students?.full_name)}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate">${escapeHtml(r.students?.full_name || '—')} <span class="text-[11px] text-neutral-500 font-medium">${escapeHtml(r.students?.registration_ref || '')}</span></div>
+            <div class="text-[11px] text-neutral-500">misses <b>${fmtDate(r.class_date)}</b> • submitted ${fmtDate(String(r.created_at).slice(0, 10))}</div>
+            <div class="mt-1 text-[12px] text-neutral-700 leading-[1.5]">"${escapeHtml(r.reason)}"</div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 flex-wrap">
+            <input id="rn-${r.id}" class="input !h-9 !w-[150px] text-[11px]" placeholder="Note (optional)">
+            <button onclick="reviewRequest('${r.id}', true)" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Excuse</button>
+            <button onclick="reviewRequest('${r.id}', false)" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11px] font-semibold hover:border-black transition inline-flex items-center gap-1.5">${ic('x','w-3.5 h-3.5')} Decline</button>
+          </div>
+        </div>
+      </div>`).join('')}</div>`
+    : `<div class="text-center py-6 text-[13px] text-neutral-400">No pending absence requests ✓</div>`}
+    ${decided.length ? `
+    <div class="mt-5 text-[11px] font-bold tracking-[0.14em] text-neutral-400 mb-2">RECENT DECISIONS</div>
+    <div class="grid gap-1.5">${decided.slice(0, 12).map(r => `
+      <div class="flex items-center gap-3 px-4 py-2.5 rounded-[12px] border border-neutral-100 bg-neutral-50/60">
+        <span class="text-[12.5px] font-semibold truncate flex-1">${escapeHtml(r.students?.full_name || '—')} <span class="text-neutral-400 font-normal">— ${fmtDate(r.class_date)}</span></span>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'}">${r.status === 'approved' ? 'EXCUSED' : 'DECLINED'}</span>
+        <span class="text-[10.5px] text-neutral-400">${fmtDate(String(r.reviewed_at || r.created_at).slice(0, 10))}</span>
+      </div>`).join('')}</div>` : ''}`;
+}
+
+function renderAbsOutbox() {
+  const rows = absCache.outbox;
+  const kindChip = k => k === 'absence_warning' ? 'bg-red-50 text-red-600 border-red-200'
+    : k === 'excused_ending' ? 'bg-amber-50 text-amber-700 border-amber-200'
+    : 'bg-sky-50 text-sky-700 border-sky-200';
+  $('absOutbox').innerHTML = !rows.length
+    ? `<div class="p-6 text-center text-[12.5px] text-neutral-400">No notices yet — 3-absence warnings and excused-period emails appear here.</div>`
+    : `<div>${rows.map(n => `
+      <div class="flex items-start gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${kindChip(n.kind)}">${escapeHtml(n.kind)}</span>
+            <span class="text-[12.5px] font-semibold truncate">${escapeHtml(n.students?.full_name || '')} • ${escapeHtml(n.subject)}</span>
+          </div>
+          ${n.error ? `<div class="text-[10.5px] text-red-400 mt-0.5">${escapeHtml(n.error)}</div>` : ''}
+          <div class="text-[10.5px] text-neutral-400 mt-0.5">${fmtDate(String(n.created_at).slice(0, 10))} • to ${escapeHtml(n.to_email)}</div>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${n.status === 'sent' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : n.status === 'queued' ? 'bg-neutral-50 text-neutral-500 border-neutral-200' : 'bg-red-50 text-red-600 border-red-200'}">${String(n.status).toUpperCase()}</span>
+      </div>`).join('')}</div>`;
+}
+
+async function reviewRequest(id, approve) {
+  const note = $('rn-' + id)?.value || null;
+  const { data, error } = await sb.rpc('review_absence_request', { p_request_id: id, p_approve: approve, p_note: note });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Review failed.'), true);
+  toast('✓ ' + d.message);
+  await refreshMembers();
+  await loadAbsenceData();
+}
+
+async function saveExcusedPeriod(id) {
+  const from = $('excFrom')?.value, until = $('excUntil')?.value, note = $('excNote')?.value || null;
+  if (!from || !until) return toast('Pick both the start and end date for the excused period.', true);
+  const { data, error } = await sb.rpc('set_excused_period', { p_student_id: id, p_from: from, p_until: until, p_note: note, p_clear: false });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not save.'), true);
+  toast('✓ ' + d.message);
+  await refreshMembers();
+  if (section === 'members' && currentMemberId) openMember(id);
+}
+
+async function clearExcusedPeriod(id) {
+  const { data, error } = await sb.rpc('set_excused_period', { p_student_id: id, p_from: null, p_until: null, p_note: null, p_clear: true });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not clear.'), true);
+  toast('✓ ' + d.message);
+  await refreshMembers();
+  if (section === 'members' && currentMemberId) openMember(id);
+}
+
+/* ═══════════ GRADINGS ═══════════ */
+function showGradings() {
+  const sorted = [...membersList].sort((a,b)=>(a.full_name||'').localeCompare(b.full_name||''));
+  const pre = gradingPreselect; gradingPreselect = null;
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6" id="gwCard">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">GRADING WINDOWS</div>
+      <div class="text-[13px] text-neutral-400">Loading…</div>
+    </div>
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">RECORD A GRADING</div>
+      <div class="grid md:grid-cols-2 gap-3">
+        <label class="block md:col-span-2"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">MEMBER</div>
+          <select id="gStudent" class="input" onchange="suggestNextBelt()">
+            <option value="">Select member…</option>
+            ${sorted.map(m=>`<option value="${m.id}" ${pre===m.id?'selected':''}>${escapeHtml((m.full_name||'—')+' — '+(m.registration_ref||'')+' ('+m.current_belt+')')}</option>`).join('')}
+          </select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">GRADING DATE</div>
+          <input type="date" id="gDate" class="input" value="${new Date().toISOString().slice(0,10)}"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">RESULT</div>
+          <select id="gResult" class="input" onchange="suggestNextBelt()">
+            <option value="pass">Pass — promote belt</option>
+            <option value="conditional pass">Conditional pass</option>
+            <option value="fail">Fail</option>
+            <option value="deferred">Deferred</option>
+          </select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">GRADING TOWARDS</div>
+          <select id="gBelt" class="input">
+            ${beltLevels.map(b=>`<option value="${escapeHtml(b.belt_name)}">${escapeHtml(b.belt_name)}</option>`).join('')}
+          </select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">EXAMINER</div>
+          <input id="gExaminer" class="input" value="${escapeHtml(currentProfile.full_name || '')}"></label>
+        <label class="block md:col-span-2"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">REMARKS</div>
+          <textarea id="gRemarks" class="input min-h-[70px]" placeholder="Technique notes, areas to improve…"></textarea></label>
+      </div>
+      <button onclick="submitGrading()" class="mt-4 h-[46px] px-7 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition">Record Grading →</button>
+      <div class="text-[10.5px] text-neutral-400 mt-2">A "Pass" automatically promotes the member's belt in the portal and sets their grading date.</div>
+    </div>
+
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-4">RECENT GRADINGS</div>
+      <div id="recentGradings"><div class="text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+
+  suggestNextBelt();
+  loadRecentGradings();
+  loadGradingWindows();
+}
+
+function suggestNextBelt() {
+  const sel = $('gStudent'), belt = $('gBelt'), res = $('gResult');
+  if (!sel?.value) return;
+  const m = membersList.find(x => x.id === sel.value);
+  if (!m) return;
+  const idx = beltLevels.findIndex(b => b.belt_name === m.current_belt);
+  const next = beltLevels[idx + 1];
+  if (next && res.value === 'pass') belt.value = next.belt_name;
+}
+
+async function submitGrading() {
+  const studentId = $('gStudent').value;
+  if (!studentId) return toast('Select a member first.', true);
+  const args = {
+    p_student_id: studentId,
+    p_grading_date: $('gDate').value || null,
+    p_new_belt: $('gBelt').value,
+    p_result: $('gResult').value,
+    p_examiner_name: $('gExaminer').value.trim() || null,
+    p_remarks: $('gRemarks').value.trim() || null,
+  };
+  const { data, error } = await sb.rpc('record_grading', args);
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message), true);
+  toast(args.p_result === 'pass' ? `✓ Recorded — promoted to ${args.p_new_belt} Belt` : '✓ Grading recorded');
+  $('gRemarks').value = '';
+  await refreshMembers();
+  loadRecentGradings();
+}
+
+let _recentGradingRows = [];
+
+async function loadRecentGradings() {
+  const { data } = await sb.from('gradings')
+    .select('id, student_id, grading_date, previous_belt, new_belt, result, examiner_name, remarks, certificate_issued, certificate_no, students(full_name, registration_ref), grading_scores(attendance, character, kihon, kata, kumite, fitness, notes)')
+    .order('grading_date', { ascending: false }).order('created_at', { ascending: false }).limit(25);
+  const rows = data || [];
+  _recentGradingRows = rows;
+  $('recentGradings').innerHTML = !rows.length
+    ? `<div class="text-[13px] text-neutral-400 py-4">No gradings recorded yet.</div>`
+    : `<div class="grid gap-2">${rows.map(g => {
+        const sc = g.grading_scores?.[0];
+        const total = sc ? sc.attendance + sc.character + sc.kihon + sc.kata + sc.kumite + sc.fitness : null;
+        return `
+      <div class="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(g.students?.full_name || '—')}
+            ${total !== null ? `<span class="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${total >= 50 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">${total}%</span>` : ''}
+          </div>
+          <div class="text-[11px] text-neutral-500 mt-0.5">${escapeHtml(g.previous_belt || '?')} → ${escapeHtml(g.new_belt || '?')} • ${fmtDate(g.grading_date)} • ${escapeHtml(g.examiner_name || '—')}</div>
+        </div>
+        ${resultPill(g.result)}
+        <div class="flex gap-1.5 shrink-0 flex-wrap">
+          <button onclick="openScores('${g.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition inline-flex items-center gap-1.5">${ic('target','w-3.5 h-3.5')} ${sc ? 'Edit Scores' : 'Scores'}</button>
+          <button onclick="toggleCert('${g.id}', ${!g.certificate_issued})" class="h-8 px-3.5 rounded-full border text-[10.5px] font-bold transition inline-flex items-center gap-1.5 ${g.certificate_issued ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'border-neutral-200 bg-white hover:border-black'}">${ic('award','w-3.5 h-3.5')} ${g.certificate_issued ? 'Issued' : 'Issue Cert'}</button>
+          <button onclick="delGrading('${g.id}')" class="h-8 px-3 rounded-full text-[10.5px] text-red-400 hover:text-red-600 font-medium inline-flex items-center">${ic('x','w-3.5 h-3.5')}</button>
+        </div>
+      </div>`;}).join('')}</div>
+      <div class="text-[10.5px] text-neutral-400 mt-3">Deleting a record doesn't revert the member's belt — adjust via Members → Quick Belt Edit. Issued certificates become downloadable in the member's portal instantly.</div>`;
+}
+
+const SCORE_FIELDS = [
+  ['sc_att','Attendance','attendance',10], ['sc_char','Character','character',20],
+  ['sc_kihon','Kihon','kihon',20], ['sc_kata','Kata','kata',20],
+  ['sc_kumite','Kumite','kumite',20], ['sc_fit','Fitness','fitness',10],
+];
+
+function openScores(gid) {
+  const g = _recentGradingRows.find(x => x.id === gid); if (!g) return;
+  const sc = g.grading_scores?.[0] || {};
+  $('modalBox').innerHTML = `
+    <div class="px-6 py-5 border-b border-neutral-100 flex items-start justify-between gap-4">
+      <div>
+        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-500">GRADING SCORE SHEET</div>
+        <h3 class="mt-1 text-[18px] font-extrabold tracking-tight">${escapeHtml(g.students?.full_name || '—')}</h3>
+        <div class="text-[11.5px] text-neutral-500">${escapeHtml(g.previous_belt || '?')} → ${escapeHtml(g.new_belt || '?')} • ${fmtDate(g.grading_date)} • ${escapeHtml(g.result || '')}</div>
+      </div>
+      <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center shrink-0">✕</button>
+    </div>
+    <div class="px-6 py-5 grid gap-4">
+      <div class="grid sm:grid-cols-2 gap-3">
+        ${SCORE_FIELDS.map(([id, label, , max]) => `
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">${label.toUpperCase()} <span class="text-neutral-300">/ ${max}</span></div>
+          <input type="number" min="0" max="${max}" id="${id}" class="input" value="${sc[id.replace('sc_','')] ?? ''}" oninput="updScoreTotal()"></label>`).join('')}
+      </div>
+      <div class="flex items-center justify-between rounded-[14px] bg-black text-white px-5 py-3.5">
+        <span class="text-[11px] font-bold tracking-[0.14em]">TOTAL SCORE</span>
+        <span id="scTotal" class="text-[20px] font-extrabold text-brand">— / 100</span>
+      </div>
+      <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">EXAMINER NOTES (shown on the member's report)</div>
+        <textarea id="sc_notes" class="input min-h-[70px]" placeholder="Strengths, areas to work on…">${escapeHtml(sc.notes || '')}</textarea></label>
+      <button onclick="saveScores('${gid}')" class="h-[46px] rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition">Save Score Sheet →</button>
+    </div>`;
+  $('modalWrap').classList.remove('hidden');
+  updScoreTotal();
+}
+
+function updScoreTotal() {
+  const t = SCORE_FIELDS.reduce((s, [id]) => s + (parseInt($(id)?.value, 10) || 0), 0);
+  const el = $('scTotal'); if (el) el.textContent = t + ' / 100';
+}
+
+async function saveScores(gid) {
+  const g = _recentGradingRows.find(x => x.id === gid);
+  const val = id => Math.max(0, parseInt($(id).value, 10) || 0);
+  const payload = {
+    grading_id: gid, student_id: g.student_id,
+    attendance: val('sc_att'), character: val('sc_char'), kihon: val('sc_kihon'),
+    kata: val('sc_kata'), kumite: val('sc_kumite'), fitness: val('sc_fit'),
+    notes: $('sc_notes').value.trim() || null, recorded_by: currentUser.id,
+  };
+  const { error } = await sb.from('grading_scores').upsert(payload, { onConflict: 'grading_id' });
+  if (error) return toast('✗ ' + error.message, true);
+  toast('✓ Score sheet saved — visible on the member\'s portal');
+  closeModal(); loadRecentGradings();
+}
+
+async function toggleCert(gid, issue) {
+  const g = _recentGradingRows.find(x => x.id === gid);
+  const cert_no = issue ? (g.certificate_no || ('CFC-' + Date.now().toString(36).toUpperCase().slice(-6))) : null;
+  const { error } = await sb.from('gradings')
+    .update({ certificate_issued: issue, certificate_no: cert_no }).eq('id', gid);
+  if (error) return toast('✗ ' + error.message, true);
+  toast(issue ? 'Certificate issued — downloadable in the portal' : 'Certificate revoked');
+  loadRecentGradings();
+}
+
+async function delGrading(gid) {
+  if (!confirm('Delete this grading record? The member\u2019s belt is NOT reverted — adjust it via Members \u2192 Quick Belt Edit.')) return;
+  // remove any score sheet first (ignore if none / blocked), then the record itself
+  await sb.from('grading_scores').delete().eq('grading_id', gid);
+  const { error } = await sb.from('gradings').delete().eq('id', gid);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Grading record deleted');
+  loadRecentGradings();
+}
+
+/* ═══════════ CSV HELPERS (used by the Check-in Log export) ═══════════ */
+function csv(rows) {
+  return rows.map(r => r.map(v => {
+    v = v == null ? '' : String(v);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }).join(',')).join('\n');
+}
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ═══════════ ANNOUNCEMENTS & EVENTS ═══════════ */
+let annList = [], annEditing = null;
+
+function showAnnouncements() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-1">
+        <div class="text-[12px] font-bold tracking-[0.14em] flex items-center gap-2">${annEditing ? ic('edit','w-4 h-4 text-brand') : ic('megaphone','w-4 h-4 text-brand')}${annEditing ? 'EDIT ITEM' : 'NEW ITEM'}</div>
+        ${annEditing ? `<button onclick="resetAnnForm()" class="text-[11px] text-neutral-400 hover:text-neutral-700 font-semibold">Cancel edit — new item</button>` : ''}
+      </div>
+      <p class="text-[12px] text-neutral-500 mb-4">Grading announcements, events, seminars, promotions & updates — published items appear in member portals instantly. Tick “Landing” to also show on the public homepage.</p>
+      <div class="grid md:grid-cols-2 gap-3">
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">TYPE</div>
+          <select id="aType" class="input">${['announcement','grading','event','seminar','promotion','update'].map(t=>`<option>${t}</option>`).join('')}</select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">TITLE *</div>
+          <input id="aTitle" class="input" placeholder="e.g. Autumn Kyu Grading"></label>
+        <label class="block md:col-span-2"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">DETAILS</div>
+          <textarea id="aBody" class="input min-h-[80px]" placeholder="Requirements, fees, what to bring…"></textarea></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">DATE</div>
+          <input type="date" id="aDate" class="input"></label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">STARTS</div><input type="time" id="aStart" class="input"></label>
+          <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">ENDS</div><input type="time" id="aEnd" class="input"></label>
+        </div>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">LOCATION</div>
+          <input id="aLoc" class="input" placeholder="City Fitness, Sun City"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">PRICE (₦ — grading fee, entry fee…)</div>
+          <input type="number" id="aPrice" class="input" placeholder="e.g. 5000"></label>
+        <label class="block md:col-span-2"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">PRICE NOTE</div>
+          <input id="aPriceNote" class="input" placeholder="e.g. Payable at the front desk before grading day"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">AUDIENCE</div>
+          <select id="aAudience" class="input"><option value="all">Everyone</option><option value="child">Children</option><option value="adult">Adults</option></select></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">STATUS</div>
+          <select id="aStatus" class="input"><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></label>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-5">
+        <label class="flex items-center gap-2 text-[12px] font-semibold cursor-pointer"><input type="checkbox" id="aLanding"> Show on landing page</label>
+        <label class="flex items-center gap-2 text-[12px] font-semibold cursor-pointer"><input type="checkbox" id="aPinned"> Pin to top</label>
+        <button onclick="saveAnnouncement()" class="ml-auto h-[44px] px-7 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">${annEditing ? 'Save Changes' : 'Publish'} →</button>
+      </div>
+    </div>
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">ALL ITEMS <span class="text-neutral-400 font-medium" id="annCount"></span></div>
+      <div id="annListWrap"><div class="text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+  loadAnnouncements();
+}
+
+async function loadAnnouncements() {
+  const { data } = await sb.from('announcements').select('*').order('created_at', { ascending: false });
+  annList = data || [];
+  $('annCount').textContent = `(${annList.length})`;
+  $('annListWrap').innerHTML = !annList.length
+    ? `<div class="text-[13px] text-neutral-400 py-2">Nothing yet — create your first announcement above.</div>`
+    : `<div class="grid gap-2">${annList.map(a => `
+      <div class="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 px-4 py-3 rounded-[14px] border ${a.status === 'published' ? 'border-neutral-100 bg-neutral-50/60' : 'border-dashed border-neutral-300 bg-white'}">
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(a.title)}
+            ${a.show_on_landing ? `<span class="ml-1.5 text-[9.5px] font-bold tracking-[0.1em] text-brand uppercase inline-flex items-center gap-1">${ic('globe','w-3 h-3')} Landing</span>` : ''}
+            ${a.is_pinned ? `<span class="ml-1 text-[9.5px] font-bold tracking-[0.1em] text-neutral-400 uppercase">${ic('pin','w-3 h-3')}</span>` : ''}
+          </div>
+          <div class="text-[11px] text-neutral-500 mt-0.5">${escapeHtml(a.type)} • ${escapeHtml(a.status)} • ${escapeHtml(a.audience)}${a.event_date ? ' • ' + fmtDate(a.event_date) : ''}${a.price ? ' • ₦' + Number(a.price).toLocaleString() : ''}</div>
+        </div>
+        <div class="flex gap-1.5 shrink-0 flex-wrap">
+          <button onclick="toggleAnn('${a.id}','show_on_landing',${!a.show_on_landing})" class="h-8 px-3.5 rounded-full border text-[10.5px] font-bold transition ${a.show_on_landing ? 'bg-brand text-white border-brand' : 'border-neutral-200 bg-white hover:border-black'}">Landing ${a.show_on_landing ? 'ON' : 'OFF'}</button>
+          <button onclick="toggleAnn('${a.id}','status','${a.status === 'published' ? 'archived' : 'published'}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">${a.status === 'published' ? 'Archive' : 'Publish'}</button>
+          <button onclick="editAnnouncement('${a.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Edit</button>
+          <button onclick="delAnn('${a.id}')" class="h-8 px-3 rounded-full text-[10.5px] text-red-400 hover:text-red-600 font-medium">✕</button>
+        </div>
+      </div>`).join('')}</div>`;
+}
+
+function resetAnnForm() {
+  annEditing = null;
+  ['aTitle','aBody','aDate','aStart','aEnd','aLoc','aPrice','aPriceNote'].forEach(id => { if ($(id)) $(id).value = ''; });
+  if ($('aLanding')) $('aLanding').checked = false;
+  if ($('aPinned')) $('aPinned').checked = false;
+  showAnnouncements();
+}
+
+async function saveAnnouncement() {
+  const title = $('aTitle').value.trim();
+  if (!title) return toast('Give the item a title.', true);
+  const payload = {
+    type: $('aType').value, title,
+    body: $('aBody').value.trim() || null,
+    event_date: $('aDate').value || null,
+    start_time: $('aStart').value || null, end_time: $('aEnd').value || null,
+    location: $('aLoc').value.trim() || null,
+    price: $('aPrice').value ? parseFloat($('aPrice').value) : null,
+    price_note: $('aPriceNote').value.trim() || null,
+    audience: $('aAudience').value, status: $('aStatus').value,
+    show_on_landing: $('aLanding').checked, is_pinned: $('aPinned').checked,
+  };
+  const { error } = annEditing
+    ? await sb.from('announcements').update(payload).eq('id', annEditing)
+    : await sb.from('announcements').insert({ ...payload, created_by: currentUser.id });
+  if (error) return toast('✗ ' + error.message, true);
+  toast(annEditing ? '✓ Item updated' : '✓ Published — live in member portals');
+  resetAnnForm();
+}
+
+async function toggleAnn(id, field, value) {
+  const { error } = await sb.from('announcements').update({ [field]: value }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  loadAnnouncements();
+}
+
+function editAnnouncement(id) {
+  const a = annList.find(x => x.id === id); if (!a) return;
+  annEditing = id;
+  showAnnouncements();
+  $('aType').value = a.type; $('aTitle').value = a.title || '';
+  $('aBody').value = a.body || ''; $('aDate').value = a.event_date || '';
+  $('aStart').value = a.start_time || ''; $('aEnd').value = a.end_time || '';
+  $('aLoc').value = a.location || ''; $('aPrice').value = a.price ?? '';
+  $('aPriceNote').value = a.price_note || ''; $('aAudience').value = a.audience;
+  $('aStatus').value = a.status; $('aLanding').checked = a.show_on_landing;
+  $('aPinned').checked = a.is_pinned;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function delAnn(id) {
+  if (!confirm('Delete this item permanently?')) return;
+  const { error } = await sb.from('announcements').delete().eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Item deleted'); loadAnnouncements();
+}
+
+/* ═══════════ QR CHECK-IN CODES ═══════════ */
+let qrList = [];
+
+function nextTrainingDayISO() {
+  const now = new Date();
+  for (let i = 0; i < 8; i++) {
+    const probe = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    if (TRAINING_SCHEDULE[probe.getDay()]) {
+      return probe.getFullYear() + '-' + String(probe.getMonth() + 1).padStart(2, '0') + '-' + String(probe.getDate()).padStart(2, '0');
+    }
+  }
+  return now.toISOString().slice(0, 10);
+}
+
+function showQr() {
+  const dstr = nextTrainingDayISO();
+  const day = TRAINING_SCHEDULE[new Date(dstr + 'T00:00:00').getDay()] || { start: '16:30', end: '18:00' };
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">GENERATE TRAINING QR CODE</div>
+      <p class="text-[12px] text-neutral-500 mb-4">One unique code per training day, valid only inside the session window (Africa/Lagos). Print it and display it at the dojo entrance — members scan → enter their CFK ID → checked in, one session consumed, renewal alerts shown automatically.</p>
+      <div class="grid md:grid-cols-[170px_1fr_1fr_auto] gap-2 items-end">
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">TRAINING DATE</div>
+          <input type="date" id="qrDate" class="input" value="${dstr}" onchange="qrDateChanged()"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">STARTS</div>
+          <input type="time" id="qrStart" class="input" value="${day.start}"></label>
+        <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">ENDS</div>
+          <input type="time" id="qrEnd" class="input" value="${day.end}"></label>
+        <button onclick="generateQr()" id="qrGenBtn" class="h-[42px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">Generate QR →</button>
+      </div>
+      <div id="qrDayHint" class="mt-2 text-[11px] text-neutral-400"></div>
+      <div id="qrResult" class="mt-4"></div>
+    </div>
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">RECENT QR CODES</div>
+      <div id="qrListWrap"><div class="p-6 text-[13px] text-neutral-400">Loading…</div></div>
+    </div>
+  </div>`;
+  qrDateChanged();
+  loadQrList();
+}
+
+function qrDateChanged() {
+  const d = $('qrDate').value;
+  if (!d) return;
+  const dow = new Date(d + 'T00:00:00').getDay();
+  const s = TRAINING_SCHEDULE[dow];
+  if (s) {
+    $('qrStart').value = s.start; $('qrEnd').value = s.end;
+    $('qrDayHint').innerHTML = `${ic('calendar','w-3.5 h-3.5 inline -mt-0.5')} <b>${s.name}</b> — scheduled ${s.start}–${s.end} (editable). `;
+  } else {
+    $('qrDayHint').innerHTML = `${ic('alert','w-3.5 h-3.5 inline -mt-0.5')} <b>${new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' })}</b> is not a regular training day (Fri / Sat / Sun) — set custom hours if needed. `;
+  }
+  $('qrDayHint').innerHTML += `Times are enforced server-side in Africa/Lagos (WAT).`;
+}
+
+function qrTokenFor(dateStr) {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  let rand = ''; for (const b of bytes) rand += chars[b % chars.length];
+  return 'CIF-' + dateStr.replaceAll('-', '') + '-' + rand;
+}
+
+function qrLinkFor(token) {
+  try { return new URL('attendance.html?qr=' + token, location.href).href; }
+  catch (e) { return 'attendance.html?qr=' + token; }
+}
+
+async function generateQr() {
+  const dateStr = $('qrDate').value;
+  const start = $('qrStart').value, end = $('qrEnd').value;
+  if (!dateStr || !start || !end || end <= start) return toast('Set a valid date and time window (end must be after start).', true);
+  const btn = $('qrGenBtn'); btn.disabled = true; btn.textContent = 'Generating…';
+  // one active code per training day → retire any previous one first
+  await sb.from('attendance_qr').update({ is_active: false }).eq('training_date', dateStr).eq('is_active', true);
+  const token = qrTokenFor(dateStr);
+  const dow = new Date(dateStr + 'T00:00:00').getDay();
+  const { error } = await sb.from('attendance_qr').insert({
+    token, training_date: dateStr,
+    day_name: TRAINING_SCHEDULE[dow]?.name || new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long' }),
+    start_time: start, end_time: end, is_active: true, created_by: currentUser.id,
+  });
+  btn.disabled = false; btn.textContent = 'Generate QR →';
+  if (error) return toast('✗ ' + error.message, true);
+  toast('✓ QR generated for ' + fmtDate(dateStr));
+  showQrResult(token, dateStr, start, end);
+  loadQrList();
+}
+
+function showQrResult(token, dateStr, start, end) {
+  const link = qrLinkFor(token);
+  $('qrResult').innerHTML = `
+    <div class="rounded-[18px] border-2 border-brand/30 bg-brand-light/40 p-5 grid sm:grid-cols-[190px_1fr] gap-5 items-center">
+      <div id="qrCanvas" class="bg-white rounded-[14px] p-3 border border-brand-border w-fit mx-auto"></div>
+      <div class="min-w-0">
+        <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">ACTIVE — ${escapeHtml(fmtDate(dateStr))} • ${escapeHtml(start)}–${escapeHtml(end)} WAT</div>
+        <div class="mt-1 text-[16px] font-extrabold tracking-tight">${escapeHtml(token)}</div>
+        <div class="mt-1 text-[11px] text-neutral-500 break-all">${escapeHtml(link)}</div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button onclick="printQr('${token}','${dateStr}','${start}','${end}')" class="h-9 px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('printer','w-3.5 h-3.5')} Print</button>
+          <button onclick="copyQrLink('${token}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Copy link</button>
+        </div>
+        <div class="mt-2 text-[11px] text-neutral-500">Display at the dojo entrance — the printed sheet includes the code in text form as backup.</div>
+      </div>
+    </div>`;
+  $('qrCanvas').innerHTML = '';
+  new QRCode($('qrCanvas'), { text: link, width: 166, height: 166, colorDark: '#111111', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+}
+
+function printQr(token, dateStr, start, end) {
+  const canvas = $('qrCanvas') ? $('qrCanvas').querySelector('canvas') : null;
+  const img = canvas ? canvas.toDataURL('image/png') : '';
+  const w = window.open('', '_blank', 'width=600,height=800');
+  if (!w) return toast('Allow pop-ups for this site to print.', true);
+  w.document.write(`<!DOCTYPE html><html><head><title>CIFIKA QR ${dateStr}</title><style>
+    body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fff}
+    .box{text-align:center;padding:44px 48px;border:3px solid #111;border-radius:28px}
+    h1{margin:0;font-size:22px;letter-spacing:1px}.sub{font-size:12px;color:#555;margin-top:5px}
+    img{width:330px;height:330px;margin-top:18px}.tok{font-size:19px;font-weight:800;margin-top:14px;letter-spacing:2px}
+    .hrs{font-size:14px;font-weight:700;margin-top:4px}</style></head><body><div class="box">
+    <h1>CITY FITNESS KARATE CLUB</h1><div class="sub">Scan with your phone camera to check in — Powered by TTOSR</div>
+    <img src="${img}" alt="QR code"><div class="tok">${token}</div>
+    <div class="hrs">${new Date(dateStr + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} • ${start}–${end}</div>
+    <div class="sub">Valid only during the session window • CIFIKA</div></div></body></html>`);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 350);
+}
+
+async function copyQrLink(token) {
+  try { await navigator.clipboard.writeText(qrLinkFor(token)); toast('✓ Link copied'); }
+  catch (e) { toast('Copy failed — copy the link shown above manually.', true); }
+}
+
+async function loadQrList() {
+  const { data } = await sb.from('attendance_qr')
+    .select('*').order('training_date', { ascending: false }).order('created_at', { ascending: false }).limit(14);
+  qrList = data || [];
+  const today = new Date().toISOString().slice(0, 10);
+  $('qrListWrap').innerHTML = !qrList.length
+    ? `<div class="p-6 text-[13px] text-neutral-400">No QR codes yet — generate the first one above.</div>`
+    : qrList.map(q => `
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-semibold truncate">${escapeHtml(q.day_name)} ${escapeHtml(fmtDate(q.training_date))} ${q.training_date === today ? '<span class="text-[9.5px] font-bold tracking-[0.1em] text-brand uppercase">Today</span>' : ''}</div>
+        <div class="text-[11px] text-neutral-500 truncate">${escapeHtml(String(q.start_time).slice(0, 5))}–${escapeHtml(String(q.end_time).slice(0, 5))} • ${escapeHtml(q.token)}</div>
+      </div>
+      ${q.is_active ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">ACTIVE</span>' : '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-500 border border-neutral-200 shrink-0">RETIRED</span>'}
+      <div class="flex gap-1.5 shrink-0">
+        <button onclick="showQrResult('${q.token}','${q.training_date}','${String(q.start_time).slice(0, 5)}','${String(q.end_time).slice(0, 5)}'); window.scrollTo({top:0,behavior:'smooth'})" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Show</button>
+        ${q.is_active ? `<button onclick="deactivateQr('${q.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Retire</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function deactivateQr(id) {
+  const { error } = await sb.from('attendance_qr').update({ is_active: false }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast('Code retired — members can no longer check in with it.');
+  loadQrList();
+}
+
+/* ═══════════ BELT REVIEWS (Sensei queue) ═══════════ */
+function showReviews() {
+  const pending = membersList.filter(m => m.belt_review_status === 'pending');
+  const approved = membersList.filter(m => m.belt_review_status === 'approved')
+    .sort((a, b) => String(b.belt_reviewed_at || '').localeCompare(String(a.belt_reviewed_at || '')))
+    .slice(0, 12);
+
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-6">
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-1">BELT REVIEWS — SENSEI QUEUE</div>
+      <p class="text-[12px] text-neutral-500">Members who joined with prior karate experience keep their registered belt but sit as <b>pending review</b>. Once reviewed here, their belt is regularised to the CIFIKA standard and the pending flag clears in their portal automatically.</p>
+    </div>
+
+    ${pending.length ? `<div class="grid gap-3">${pending.map(m => `
+      <div class="card p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-[13px] font-bold text-amber-700 shrink-0">${initial(m.full_name)}</div>
+            <div class="min-w-0">
+              <div class="text-[13.5px] font-semibold truncate">${escapeHtml(m.full_name || '—')} <span class="text-[11px] text-neutral-400 font-medium">${escapeHtml(m.registration_ref || '')}</span></div>
+              <div class="text-[11.5px] text-neutral-500 mt-1 flex items-center gap-1.5 flex-wrap">Registered: ${beltChipHTML(m.current_belt)}
+                ${m.previous_rank ? `<span>• previous rank: <b>${escapeHtml(m.previous_rank)}</b></span>` : ''}
+                ${m.years_trained ? `<span>• ${escapeHtml(m.years_trained)} training</span>` : ''}</div>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 items-center shrink-0">
+            <select id="rb-${m.id}" class="input lg:w-[160px]">
+              ${beltLevels.map(b => `<option value="${escapeHtml(b.belt_name)}" ${b.belt_name === m.current_belt ? 'selected' : ''}>${escapeHtml(b.belt_name)}</option>`).join('')}
+            </select>
+            <input id="rbn-${m.id}" class="input lg:w-[190px]" placeholder="Review note (optional)">
+            <button onclick="approveReview('${m.id}')" class="h-[42px] px-5 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition shrink-0 inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Regularise</button>
+          </div>
+        </div>
+      </div>`).join('')}</div>`
+    : `<div class="card p-8 text-center text-[13px] text-neutral-400">No pending belt reviews — all caught up ✓</div>`}
+
+    ${approved.length ? `
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em]">RECENTLY REGULARISED</div>
+      ${approved.map(m => `
+        <div class="flex items-center justify-between gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+          <div class="text-[13px] font-semibold truncate">${escapeHtml(m.full_name || '—')} <span class="text-[11px] text-neutral-400 font-medium">${escapeHtml(m.registration_ref || '')}</span></div>
+          <div class="flex items-center gap-2 shrink-0">${beltChipHTML(m.current_belt)}<span class="text-[11px] text-neutral-400">${m.belt_reviewed_at ? fmtDate(String(m.belt_reviewed_at).slice(0, 10)) : ''}</span></div>
+        </div>`).join('')}
+    </div>` : ''}
+  </div>`;
+}
+
+async function approveReview(id) {
+  const belt = $('rb-' + id)?.value;
+  const note = $('rbn-' + id)?.value.trim() || null;
+  if (!belt) return toast('Pick the correct belt first.', true);
+  const m = membersList.find(x => x.id === id);
+  const { data, error } = await sb.rpc('regularize_belt', { p_student_id: id, p_new_belt: belt, p_note: note });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message), true);
+  toast(`✓ ${m?.full_name || 'Member'} regularised to ${belt} Belt`);
+  await refreshMembers();
+  showReviews();
+}
+
+/* ═══════════ GRADING WINDOWS ═══════════ */
+let gwEntries = [];
+
+async function loadGradingWindows() {
+  const [w, e] = await Promise.all([
+    sb.from('grading_windows').select('*').order('created_at', { ascending: false }).limit(10),
+    sb.from('grading_entries')
+      .select('id, window_id, student_id, target_belt, status, entered_at, students(full_name, registration_ref, current_belt)')
+      .order('entered_at', { ascending: false }).limit(200),
+  ]);
+  const windows = w.data || [];
+  gwEntries = e.data || [];
+  const card = $('gwCard');
+  if (!card) return;
+
+  card.innerHTML = `
+    <div class="flex items-center justify-between mb-1 gap-3 flex-wrap">
+      <div class="text-[12px] font-bold tracking-[0.14em]">GRADING WINDOWS</div>
+      <div class="text-[11px] text-neutral-400">members can only enter while a window is open</div>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-2 mb-4 mt-3">
+      <input id="gwTitle" class="input md:col-span-2" placeholder="Title — e.g. Autumn Kyu Grading">
+      <input type="date" id="gwDate" class="input" title="Grading date">
+      <button onclick="createWindow()" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition">Open Window →</button>
+    </div>
+    ${windows.length ? `<div class="grid gap-2">${windows.map(wd => {
+      const entries = gwEntries.filter(x => x.window_id === wd.id);
+      return `
+      <div class="rounded-[14px] border ${wd.is_open ? 'border-emerald-200 bg-emerald-50/50' : 'border-neutral-200 bg-neutral-50/60'} p-4">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3 justify-between">
+          <div class="min-w-0">
+            <div class="text-[13.5px] font-semibold truncate">${escapeHtml(wd.title)}
+              ${wd.is_open ? '<span class="ml-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-100 text-emerald-700">OPEN</span>' : '<span class="ml-1.5 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-neutral-100 text-neutral-500">CLOSED</span>'}
+            </div>
+            <div class="text-[11px] text-neutral-500 mt-0.5">${wd.grading_date ? 'Grading: ' + fmtDate(wd.grading_date) + ' • ' : ''}scope: ${escapeHtml(wd.belt_scope || 'all')} • ${entries.length} member${entries.length === 1 ? '' : 's'} entered</div>
+          </div>
+          <div class="flex gap-1.5 shrink-0">
+            <button onclick="toggleWindow('${wd.id}', ${!wd.is_open})" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">${wd.is_open ? 'Close window' : 'Re-open'}</button>
+            <button onclick="toggleGwEntries('${wd.id}')" class="h-8 px-3.5 rounded-full border border-neutral-200 bg-white text-[10.5px] font-bold hover:border-black transition">Entries</button>
+          </div>
+        </div>
+        <div id="gwEntries-${wd.id}" class="hidden mt-3 grid gap-1.5">
+          ${entries.length ? entries.map(en => `
+            <div class="flex items-center justify-between gap-3 px-3.5 py-2 rounded-[10px] bg-white border border-neutral-100">
+              <span class="text-[12px] font-medium truncate">${escapeHtml(en.students?.full_name || '—')} <span class="text-neutral-400 text-[10.5px]">${escapeHtml(en.students?.registration_ref || '')}</span></span>
+              <span class="text-[11px] text-neutral-500 shrink-0">→ ${escapeHtml(en.target_belt || en.students?.current_belt || '')}</span>
+            </div>`).join('') : '<div class="text-[11.5px] text-neutral-400 px-1">No entries yet.</div>'}
+        </div>
+      </div>`;
+    }).join('')}</div>` : `<div class="text-[12.5px] text-neutral-400">No grading windows yet — open one to let members enter.</div>`}
+    <div class="text-[10.5px] text-neutral-400 mt-2">Members no longer request gradings — you announce a window here, they enter from their portal, then you record results as usual.</div>`;
+}
+
+async function createWindow() {
+  const title = $('gwTitle').value.trim();
+  if (!title) return toast('Give the grading window a title.', true);
+  const { error } = await sb.from('grading_windows').insert({
+    title, belt_scope: 'all', grading_date: $('gwDate').value || null, is_open: true, announced_by: currentUser.id,
+  });
+  if (error) return toast('✗ ' + error.message, true);
+  toast('✓ Grading window open — members can now enter from their portal');
+  $('gwTitle').value = ''; $('gwDate').value = '';
+  loadGradingWindows();
+}
+
+async function toggleWindow(id, val) {
+  const { error } = await sb.from('grading_windows').update({ is_open: val }).eq('id', id);
+  if (error) return toast('✗ ' + error.message, true);
+  toast(val ? 'Window open — portal entry enabled' : 'Window closed');
+  loadGradingWindows();
+}
+
+function toggleGwEntries(id) {
+  const el = $('gwEntries-' + id);
+  if (el) el.classList.toggle('hidden');
+}
+
+/* ═══════════ CHECK-IN LOG (per-ID time, late chips, remarks) ═══════════ */
+let qrlogDate = null;   // null = today (WAT)
+
+function lagosToday() {
+  const t = new Date(Date.now() + 60 * 60 * 1000); // WAT = UTC+1, no DST
+  return t.toISOString().slice(0, 10);
+}
+
+async function showQrLog() {
+  const dateVal = qrlogDate || lagosToday();
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-5 flex flex-col sm:flex-row sm:items-end gap-3">
+      <div class="flex-1">
+        <div class="text-[12px] font-bold tracking-[0.14em] mb-1">CHECK-IN LOG</div>
+        <p class="text-[12px] text-neutral-500">Every ID's exact check-in time, punctuality and a light remark — QR and front-desk check-ins together.</p>
+      </div>
+      <label class="block">
+        <div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">TRAINING DAY</div>
+        <input type="date" id="qrlogDate" class="input" value="${dateVal}" onchange="qrlogDate=this.value; renderQrLog()">
+      </label>
+      <button onclick="renderQrLog()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition">Refresh</button>
+      <button onclick="exportQrLog()" class="h-[42px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-1.5">${ic('download','w-3.5 h-3.5')} CSV</button>
+    </div>
+    <div id="qrlogBody" class="grid gap-4"></div>
+  </div>`;
+  renderQrLog();
+}
+
+function logRemark(r) {
+  const parts = [];
+  if (r.minutes_after_start == null) parts.push('no QR window that day');
+  else if (r.minutes_after_start <= 0) parts.push('Early on the mat');
+  else if (r.minutes_after_start <= 15) parts.push(`On time ✓ (${r.minutes_after_start} min in)`);
+  else parts.push(`Late — ${r.minutes_after_start} min after start`);
+  const wc = r.week_count ?? 1;
+  if (wc >= 2) parts.push(`${wc} sessions this week — target hit`);
+  else if (wc === 1) parts.push('1st session this week');
+  return parts.join(' • ');
+}
+
+async function renderQrLog() {
+  const dateVal = qrlogDate || lagosToday();
+  const { data, error } = await sb.rpc('attendance_log', { p_date: qrlogDate || null });
+  const d = !error && data;
+  const rows = (d && d.rows) || [];
+  const onTime = rows.filter(r => r.status !== 'late');
+  const late = rows.filter(r => r.status === 'late');
+
+  $('qrlogBody').innerHTML = (error || !d || d.status !== 'ok') ? `
+    <div class="card p-6 text-[12.5px] leading-[1.6] bg-amber-50 border-amber-200 text-amber-800">
+      <b>Couldn't load the log.</b> ${escapeHtml(d?.message || error?.message || 'Unknown error.')}<br>
+      If it says the function doesn't exist: run <b>cifika_v2_migration.sql</b> once in Supabase → SQL Editor, then come back.
+    </div>` : `
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${statCard('CHECK-INS', rows.length, fmtDate(d.date))}
+      ${statCard('ON TIME', onTime.length, rows.length ? Math.round(onTime.length / rows.length * 100) + '% of check-ins' : '')}
+      ${statCard('LATE', late.length, '15+ min after start', late.length ? 'text-amber-600' : '')}
+      ${statCard('SESSIONS CONSUMED', rows.filter(r => r.session_consumed).length, 'counted against balance')}
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+        <div class="text-[12px] font-bold tracking-[0.14em]">PER-ID RECORDS</div>
+        <div class="text-[11px] text-neutral-400">${escapeHtml(d.day_name || '')} ${fmtDate(d.date)}${d.start_time ? ' • class ' + String(d.start_time).slice(0,5) : ''}</div>
+      </div>
+      ${rows.length ? rows.map(r => `
+      <div class="flex items-start gap-3 px-5 py-3 border-b border-neutral-100 last:border-0">
+        <div class="text-center shrink-0 w-[52px]">
+          <div class="text-[14px] font-extrabold leading-none">${escapeHtml(r.at_local || '—')}</div>
+          <div class="text-[8.5px] font-bold tracking-[0.08em] text-neutral-400 mt-1">WAT</div>
+        </div>
+        <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[12px] font-bold shrink-0">${initial(r.full_name)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[13px] font-semibold truncate">${escapeHtml(r.full_name || '—')}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.status === 'late' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'} inline-flex items-center gap-1">${r.status === 'late' ? ic('clock','w-3 h-3') + ' LATE' : ic('check','w-3 h-3') + ' ON TIME'}</span>
+            <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${r.check_in_source === 'qr' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'} inline-flex items-center gap-1">${r.check_in_source === 'qr' ? ic('qr','w-3 h-3') + ' QR' : ic('dashboard','w-3 h-3') + ' DESK'}</span>
+          </div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">${escapeHtml(r.registration_ref || '')} • ${escapeHtml(r.current_belt || '')}</div>
+          <div class="text-[11.5px] text-neutral-600 mt-1">${escapeHtml(logRemark(r))}</div>
+        </div>
+        <div class="text-right shrink-0">
+          ${r.session_consumed
+            ? '<span class="text-[10px] font-bold text-neutral-400">SESSION COUNTED</span>'
+            : '<span class="text-[10px] font-bold text-neutral-300">NO SESSION USED</span>'}
+          ${r.alert_level && r.alert_level !== 'green' ? `<div class="mt-1 text-[9.5px] font-bold ${r.alert_level === 'red' ? 'text-red-600' : r.alert_level === 'yellow' ? 'text-amber-600' : 'text-[#B34700]'}">RENEWAL ${r.alert_level.toUpperCase()}</div>` : ''}
+        </div>
+      </div>`).join('')
+      : `<div class="p-10 text-center text-[13px] text-neutral-400">No check-ins recorded for this day.</div>`}
+    </div>`;
+}
+
+function exportQrLog() {
+  // uses whatever is currently rendered — re-fetch to be safe
+  sb.rpc('attendance_log', { p_date: qrlogDate || null }).then(({ data }) => {
+    const rows = (data && data.rows) || [];
+    download(`cifika-checkin-log-${qrlogDate || lagosToday()}.csv`, csv([[
+      'Date', 'Check-in Time (WAT)', 'Member ID', 'Name', 'Belt', 'Status', 'Source',
+      'Minutes After Start', 'Sessions This Week', 'Session Consumed', 'Renewal Alert'],
+      ...rows.map(r => [qrlogDate || lagosToday(), r.at_local, r.registration_ref, r.full_name,
+        r.current_belt, r.status, r.check_in_source, r.minutes_after_start ?? '',
+        r.week_count ?? '', r.session_consumed ? 'yes' : 'no', r.alert_level || 'green'])
+    ]));
+    toast('✓ CSV downloaded');
+  });
+}
+
+/* ═══════════ CONSISTENCY (weekly 2-session tracking) ═══════════ */
+let consWeeks = 6;
+
+async function showConsistency() {
+  $('content').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div class="card p-5 flex flex-col sm:flex-row sm:items-end gap-3">
+      <div class="flex-1">
+        <div class="text-[12px] font-bold tracking-[0.14em] mb-1">CONSISTENCY</div>
+        <p class="text-[12px] text-neutral-500">Sessions per week against the club target of <b>2 per week</b> — spot perfect streaks and silent drop-offs early.</p>
+      </div>
+      <div class="flex gap-1.5">
+        ${[4, 6, 8].map(w => `<button onclick="consWeeks=${w}; showConsistency()" class="h-9 px-4 rounded-full border text-[11.5px] font-bold transition ${consWeeks === w ? 'bg-black text-white border-black' : 'bg-white text-neutral-600 border-neutral-200 hover:border-black'}">${w}w</button>`).join('')}
+      </div>
+    </div>
+    <div id="consBody" class="grid gap-4"></div>
+  </div>`;
+  await renderConsistency();
+}
+
+function streakOf(weekMap, weeks) {
+  let s = 0;
+  for (let i = weeks.length - 1; i >= 0; i--) {
+    const n = Number(weekMap[weeks[i]] || 0);
+    if (n >= 2) s++;
+    else if (i === weeks.length - 1) continue; // current week still in progress — don't break the streak
+    else break;
+  }
+  return s;
+}
+
+function weekLabel(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+async function renderConsistency() {
+  const { data, error } = await sb.rpc('attendance_consistency', { p_weeks: consWeeks });
+  const d = !error && data;
+  if (error || !d || d.status !== 'ok') {
+    $('consBody').innerHTML = `
+    <div class="card p-6 text-[12.5px] leading-[1.6] bg-amber-50 border-amber-200 text-amber-800">
+      <b>Couldn't load consistency data.</b> ${escapeHtml(d?.message || error?.message || 'Unknown error.')}<br>
+      If it says the function doesn't exist: run <b>cifika_v2_migration.sql</b> once in Supabase → SQL Editor.
+    </div>`;
+    return;
+  }
+  const weeks = d.weeks || [];
+  const rows = d.rows || [];
+  const prevWk = weeks.length >= 2 ? weeks[weeks.length - 2] : null;
+  const curWk = weeks[weeks.length - 1] || null;
+
+  const perfectPrev = prevWk ? rows.filter(r => Number(r.week_map?.[prevWk] || 0) >= 2).length : 0;
+  const silentPrev  = prevWk ? rows.filter(r => Number(r.week_map?.[prevWk] || 0) === 0) : [];
+  const activeCur   = curWk ? rows.filter(r => Number(r.week_map?.[curWk] || 0) > 0).length : 0;
+
+  const cell = n => n >= 2 ? 'bg-emerald-500 text-white'
+                : n === 1 ? 'bg-amber-300 text-amber-900'
+                : 'bg-neutral-100 text-neutral-300';
+
+  $('consBody').innerHTML = `
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    ${statCard('MEMBERS TRACKED', rows.length, `last ${weeks.length} weeks`)}
+    ${statCard('PERFECT LAST WEEK', perfectPrev, prevWk ? '2 of 2 sessions' : '', perfectPrev ? 'text-emerald-600' : '')}
+    ${statCard('TRAINED THIS WEEK', activeCur, 'at least 1 session so far')}
+    ${statCard('WATCHLIST', silentPrev.length, '0 sessions last week', silentPrev.length ? 'text-red-600' : '')}
+  </div>
+
+  ${silentPrev.length ? `
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-neutral-100 text-[12px] font-bold tracking-[0.14em] flex items-center gap-2">${ic('alert','w-4 h-4 text-amber-500')} WATCHLIST — TRAINED 0× LAST WEEK</div>
+    <div class="px-5 py-2 text-[11px] text-neutral-500">Reach out before the habit breaks — a WhatsApp nudge works wonders.</div>
+    ${silentPrev.map(r => `
+    <div class="flex items-center gap-3 px-5 py-2.5 border-t border-neutral-100">
+      <div class="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[11px] font-bold shrink-0">${initial(r.full_name)}</div>
+      <div class="text-[12.5px] font-semibold truncate flex-1">${escapeHtml(r.full_name || '—')} <span class="text-neutral-400 text-[10.5px]">${escapeHtml(r.registration_ref || '')}</span></div>
+      <span class="text-[10.5px] text-neutral-400 shrink-0">${escapeHtml(r.current_belt || '')}</span>
+    </div>`).join('')}
+  </div>` : ''}
+
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between flex-wrap gap-2">
+      <div class="text-[12px] font-bold tracking-[0.14em]">WEEK-BY-WEEK (target 2/week)</div>
+      <div class="flex items-center gap-3 text-[10px] text-neutral-400 font-semibold">
+        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500"></span>2+</span>
+        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-300"></span>1</span>
+        <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-neutral-100 border border-neutral-200"></span>0</span>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-[12px]" style="min-width:${380 + weeks.length * 44}px">
+        <thead><tr class="text-[10px] text-neutral-400 tracking-[0.08em]">
+          <th class="text-left font-bold px-5 py-2.5">MEMBER</th>
+          ${weeks.map(w => `<th class="font-bold px-1 py-2.5 text-center">${weekLabel(w)}</th>`).join('')}
+          <th class="font-bold px-3 py-2.5 text-center">STREAK</th>
+          <th class="font-bold px-3 py-2.5 text-center">TOTAL</th>
+        </tr></thead>
+        <tbody>
+          ${rows.length ? rows.map(r => {
+            const streak = streakOf(r.week_map || {}, weeks);
+            const total = r.total ?? 0;
+            const rate = Math.round(total / (weeks.length * 2) * 100);
+            return `
+            <tr class="border-t border-neutral-100 hover:bg-neutral-50/60">
+              <td class="px-5 py-2.5">
+                <div class="font-semibold truncate max-w-[220px]">${escapeHtml(r.full_name || '—')}</div>
+                <div class="text-[10px] text-neutral-400">${escapeHtml(r.registration_ref || '')} • ${escapeHtml(r.current_belt || '')}</div>
+              </td>
+              ${weeks.map(w => {
+                const n = Number(r.week_map?.[w] || 0);
+                return `<td class="px-1 py-2.5 text-center"><span class="inline-flex w-7 h-7 items-center justify-center rounded-lg text-[10.5px] font-bold ${cell(n)}">${n || '·'}</span></td>`;
+              }).join('')}
+              <td class="px-3 py-2.5 text-center"><span class="text-[12px] font-extrabold inline-flex items-center gap-1 ${streak >= 3 ? 'text-emerald-600' : streak > 0 ? 'text-neutral-700' : 'text-neutral-300'}">${streak > 0 ? ic('flame','w-3.5 h-3.5') + streak : '—'}</span></td>
+              <td class="px-3 py-2.5 text-center"><span class="text-[12px] font-bold ${rate >= 75 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-red-500'}">${total}</span><div class="text-[9px] text-neutral-400">${rate}%</div></td>
+            </tr>`;
+          }).join('') : `<tr><td colspan="${weeks.length + 3}" class="px-5 py-10 text-center text-[13px] text-neutral-400">No members to track yet.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-3 text-[10.5px] text-neutral-400 border-t border-neutral-100">Weeks run Monday–Sunday (WAT). The flame icon = consecutive weeks with both sessions done. Current week updates live as members check in.</div>
+  </div>`;
+}
+
+/* ═══════════ SHARED COMPONENTS ═══════════ */
+function statCard(label, value, sub) {
+  return `<div class="card p-5">
+    <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">${label}</div>
+    <div class="mt-2 text-[24px] font-extrabold tracking-tight">${escapeHtml(String(value ?? '—'))}</div>
+    ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${sub}</div>` : ''}</div>`;
+}
+function infoRow(k, v) {
+  if (v === null || v === undefined || v === '') return '';
+  return `<div class="flex justify-between gap-4 py-2 border-b border-neutral-100">
+    <span class="text-[11.5px] text-neutral-500 shrink-0">${k}</span>
+    <span class="text-[12.5px] font-medium text-right break-words">${escapeHtml(String(v))}</span></div>`;
+}
+function selectFilter(stateKey, onchange, options, current) {
+  return `<select class="input" onchange="${stateKey}=this.value; ${onchange}">
+    ${options.map(([v,l])=>`<option value="${escapeHtml(v)}" ${current===v?'selected':''}>${escapeHtml(l)}</option>`).join('')}</select>`;
+}
+function beltChipHTML(name) {
+  const b = beltLevels.find(x => x.belt_name === name);
+  const hex = b?.belt_color_hex || '#E5E5E5';
+  const dark = isDark(hex);
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-bold border"
+    style="background:${hex}; color:${dark ? '#fff' : '#1a1a1a'}; border-color:${dark ? hex : '#ddd'}">
+    <span class="w-2 h-2 rounded-full" style="background:${dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.25)'}"></span>${escapeHtml(name || '—')}</span>`;
+}
+function statusChip(s) {
+  const map = {
+    active:    'bg-emerald-50 text-emerald-700 border-emerald-200',
+    pending:   'bg-amber-50 text-amber-700 border-amber-200',
+    inactive:  'bg-neutral-100 text-neutral-500 border-neutral-200',
+    suspended: 'bg-red-50 text-red-600 border-red-200',
+  };
+  return `<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${map[s] || map.inactive}">${cap(s || 'pending')}</span>`;
+}
+function resultPill(r) {
+  const map = {
+    'pass':             'bg-emerald-50 text-emerald-700 border-emerald-200',
+    'fail':             'bg-red-50 text-red-600 border-red-200',
+    'conditional pass': 'bg-amber-50 text-amber-700 border-amber-200',
+    'deferred':         'bg-neutral-100 text-neutral-600 border-neutral-200',
+  };
+  return `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${map[r] || map['deferred']}">${(r || '—').toUpperCase()}</span>`;
+}
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function isDark(hex) {
+  const c = (hex || '#fff').replace('#','');
+  const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+  return (0.299*r + 0.587*g + 0.114*b) < 140;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+function calcAge(dob) {
+  if (!dob) return null;
+  const d = new Date(dob), t = new Date();
+  let a = t.getFullYear() - d.getFullYear();
+  const m = t.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < d.getDate())) a--;
+  return a;
+}
+function initial(name) { return (name || '?').trim()[0]?.toUpperCase() || '?'; }
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.background = isErr ? '#B91C1C' : '#111';
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 4200);
+}
+</script>
+</body>
+</html>

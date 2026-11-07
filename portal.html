@@ -86,6 +86,49 @@
     #sidebar { box-shadow: 12px 0 40px rgba(0,0,0,.35); }
   }
 </style>
+
+<!-- CIFIKA Member ID Card — standalone block so printMemberIdCard() can copy it into the print iframe -->
+<style id="idCardCSS">
+  .idc-card { width:100%; max-width:400px; aspect-ratio:1.586; background:linear-gradient(135deg,#191919 0%,#0a0a0a 55%,#251500 100%);
+              border-radius:16px; color:#fff; padding:15px 18px 13px; display:flex; flex-direction:column; justify-content:space-between;
+              position:relative; overflow:hidden; box-shadow:0 14px 34px rgba(0,0,0,.18);
+              font-family:'Inter',system-ui,sans-serif; user-select:none; }
+  .idc-card::before { content:''; position:absolute; right:-70px; top:-70px; width:190px; height:190px; border-radius:50%;
+                      background:radial-gradient(circle, rgba(255,107,0,.22), transparent 70%); }
+  .idc-card::after { content:'空'; position:absolute; right:10px; bottom:-12px; font-size:64px; font-weight:900;
+                     color:rgba(255,255,255,.045); line-height:1; pointer-events:none; }
+  .idc-top { display:flex; align-items:center; gap:10px; position:relative; z-index:1; }
+  .idc-logo { width:38px; height:38px; border-radius:9px; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.16); object-fit:contain; padding:3px; }
+  .idc-logo-fallback { display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; color:#FF6B00; padding:0; }
+  .idc-club { font-size:11px; font-weight:800; letter-spacing:.13em; min-width:0; }
+  .idc-club small { display:block; font-size:8px; font-weight:700; color:#FF6B00; letter-spacing:.3em; margin-top:2.5px; }
+  .idc-badge { margin-left:auto; font-size:8px; font-weight:800; letter-spacing:.18em; color:#FF6B00;
+               border:1px solid rgba(255,107,0,.45); background:rgba(255,107,0,.12); padding:3.5px 9px; border-radius:999px; white-space:nowrap; }
+  .idc-mid { display:flex; gap:13px; align-items:center; position:relative; z-index:1; margin-top:9px; }
+  .idc-photo { position:relative; width:63px; height:83px; border-radius:10px; border:2px solid rgba(255,255,255,.28);
+               background:rgba(255,255,255,.12); overflow:hidden; flex-shrink:0;
+               display:flex; align-items:center; justify-content:center; font-size:23px; font-weight:800; color:rgba(255,255,255,.9); }
+  .idc-info { min-width:0; flex:1; }
+  .idc-name { font-size:15.5px; font-weight:800; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .idc-ref { font-size:19px; font-weight:900; letter-spacing:.14em; color:#FF6B00; margin-top:1px; }
+  .idc-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+  .idc-chip { font-size:8.5px; font-weight:800; letter-spacing:.09em; padding:3px 8px; border-radius:999px;
+              display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+  .idc-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
+  .idc-rows { margin-top:7px; font-size:8.5px; color:rgba(255,255,255,.6); letter-spacing:.05em; font-weight:600; white-space:nowrap; }
+  .idc-rows b { color:rgba(255,255,255,.94); font-weight:800; letter-spacing:.08em; }
+  .idc-bottom { display:flex; align-items:flex-end; gap:14px; position:relative; z-index:1; margin-top:8px; }
+  .idc-barcode { flex:1; max-width:220px; min-width:0; }
+  .idc-foot { font-size:7.5px; letter-spacing:.24em; color:rgba(255,255,255,.5); font-weight:700; margin-top:3px; white-space:nowrap; }
+  .idc-valid { text-align:right; font-size:7.5px; letter-spacing:.16em; color:rgba(255,255,255,.55); font-weight:700; line-height:1.7; white-space:nowrap; }
+  .idc-valid b { color:#4ade80; display:block; font-size:8.5px; letter-spacing:.1em; }
+  @media (max-width:430px) {
+    .idc-card { padding:12px 13px 11px; }
+    .idc-photo { width:52px; height:70px; }
+    .idc-name { font-size:13.5px; } .idc-ref { font-size:16px; }
+    .idc-logo { width:32px; height:32px; }
+  }
+</style>
 </head>
 <body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
 
@@ -196,7 +239,7 @@
     <nav id="navWrap" class="flex-1 overflow-y-auto py-3 px-2.5 space-y-1"></nav>
     <div class="p-3 border-t border-neutral-800 shrink-0">
       <div class="flex items-center gap-2.5 px-1.5 min-w-0">
-        <div id="sbAvatar" class="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-bold shrink-0"></div>
+        <div id="sbAvatar" class="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-bold shrink-0 relative overflow-hidden"></div>
         <div class="sb-label min-w-0 flex-1">
           <div id="sbEmail" class="text-[11px] text-neutral-300 truncate"></div>
           <div id="sbRole" class="text-[9px] font-bold tracking-[0.12em] text-neutral-500"></div>
@@ -294,6 +337,35 @@ const ICONS = {
 };
 function ic(name, cls) {
   return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
+/* ═══════════ MEMBER PHOTO — registration passport first, then the Google profile picture ═══════════ */
+function googlePhotoURL() {
+  const u = currentUser?.user_metadata || {};
+  return (u.avatar_url || u.picture || '').trim() || null;
+}
+function memberPhotoURL(student) {
+  if (student?.passport_photo_url) return student.passport_photo_url;
+  // Google picture only counts for the signed-in member's own record — never for a linked child
+  if (student?.user_id && currentUser && student.user_id === currentUser.id) return googlePhotoURL();
+  return null;
+}
+function sidebarPhotoURL() {
+  if (window.mineStudent) return memberPhotoURL(window.mineStudent) || googlePhotoURL();
+  const s = window._dash?.student;
+  if (s && s.user_id && currentUser && s.user_id === currentUser.id) return memberPhotoURL(s);
+  return googlePhotoURL();
+}
+function updateSidebarAvatar() {
+  if (!$('sbAvatar')) return;
+  const init = (currentProfile?.full_name || currentUser?.email || '?').trim()[0]?.toUpperCase() || '?';
+  $('sbAvatar').innerHTML = avatarImgHTML(sidebarPhotoURL(), init);
+}
+/* Photo with graceful fallback to the initial letter underneath */
+function avatarImgHTML(url, initial) {
+  const init = escapeHtml(initial || '?');
+  if (!url) return init;
+  return `${init}<img src="${escapeHtml(url)}" alt="" class="absolute inset-0 w-full h-full rounded-full object-cover" onerror="this.remove()">`;
 }
 
 /* Portal sidebar sections — like the Admin Console nav */
@@ -503,7 +575,7 @@ async function enterApp(user) {
   $('hdrEmail').textContent = user.email;
   $('hdrRole').textContent = profile.role.toUpperCase();
   $('sbEmail').textContent = user.email;
-  $('sbAvatar').textContent = (user.email || '?').trim()[0]?.toUpperCase() || '?';
+  $('sbAvatar').innerHTML = avatarImgHTML(googlePhotoURL(), (user.email || '?').trim()[0]?.toUpperCase() || '?');
   $('sbRole').textContent = profile.role.toUpperCase() + ' PORTAL';
   if (window.matchMedia('(min-width:1024px)').matches && localStorage.getItem('cifika_portal_rail') === '1')
     $('sidebar').classList.add('rail');
@@ -602,6 +674,7 @@ async function renderParentHome() {
   ]);
   parentChildren = (links || []).map(l => l.students).filter(Boolean);
   window.mineStudent = mine || null;
+  updateSidebarAvatar();
 
   window._view = 'parentHome';
   portalSection = 'home';
@@ -613,7 +686,7 @@ async function renderParentHome() {
   const cards = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
   const myCard = mine ? `
       <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="renderDashboard(window.mineStudent, { back:true, backLabel:'Back to parent home' })">
-        <div class="w-14 h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0">${(mine.full_name || '?').trim()[0]?.toUpperCase() || '?'}</div>
+        <div class="w-14 h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(memberPhotoURL(mine), (mine.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
         <div class="flex-1 min-w-0">
           <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">MY TRAINING</div>
           <div class="font-bold text-[14.5px] truncate">${escapeHtml(mine.full_name || 'Me')}</div>
@@ -672,8 +745,8 @@ function childCardHTML(c, i) {
   const age = calcAge(c.date_of_birth);
   return `
   <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="viewChild(${i})">
-    <div class="w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[18px] font-extrabold overflow-hidden shrink-0">
-      ${c.passport_photo_url ? `<img src="${escapeHtml(c.passport_photo_url)}" class="w-full h-full object-cover" alt="">` : initial}
+    <div class="w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[18px] font-extrabold overflow-hidden shrink-0 relative">
+      ${avatarImgHTML(c.passport_photo_url || null, initial)}
     </div>
     <div class="flex-1 min-w-0">
       <div class="font-bold text-[14.5px] truncate">${escapeHtml(c.full_name || 'Member')}</div>
@@ -748,6 +821,7 @@ async function renderDashboard(student, opts = {}) {
   /* cache everything — the sidebar sections render from this */
   window._dash = { student, att, grd, scoreById, rate, bal, anns: anns || [], attended, thisWeek };
   window._view = opts.back ? 'child' : 'student';
+  updateSidebarAvatar();
   $('sidebar').classList.remove('hidden');
   $('navToggle').classList.remove('hidden');
   portalSection = 'home';
@@ -821,13 +895,16 @@ function renderDashboardHome() {
 
     <!-- WELCOME -->
     <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome back, ${escapeHtml(displayName)}</h1>
-        <div class="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-neutral-500">
-          ${beltChipHTML(student.current_belt)}
-          <span class="px-2.5 py-0.5 rounded-full border font-semibold ${student.membership_status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">${escapeHtml(student.membership_status || 'pending')}</span>
-          ${student.belt_review_status === 'pending' ? `<span class="px-2.5 py-0.5 rounded-full border font-semibold bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700] inline-flex items-center gap-1">${ic('hourglass','w-3 h-3')} Belt review pending</span>` : ''}
-          <span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>
+      <div class="flex items-center gap-4 min-w-0">
+        <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(memberPhotoURL(student), (student.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
+        <div class="min-w-0">
+          <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome back, ${escapeHtml(displayName)}</h1>
+          <div class="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-neutral-500">
+            ${beltChipHTML(student.current_belt)}
+            <span class="px-2.5 py-0.5 rounded-full border font-semibold ${student.membership_status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">${escapeHtml(student.membership_status || 'pending')}</span>
+            ${student.belt_review_status === 'pending' ? `<span class="px-2.5 py-0.5 rounded-full border font-semibold bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700] inline-flex items-center gap-1">${ic('hourglass','w-3 h-3')} Belt review pending</span>` : ''}
+            <span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>
+          </div>
         </div>
       </div>
       <div class="text-[12px] text-neutral-500 md:text-right">
@@ -1020,6 +1097,107 @@ function gradingsTabHTML(grd) {
   </div>`;
 }
 
+/* ═══════════ MEMBER ID CARD — printable CIFIKA member ID (Account tab) ═══════════ */
+function idcBarcodeSVG(text) {
+  const t = (text || 'CIFIKA').replace(/[^A-Za-z0-9-]/g, '').toUpperCase() || 'CIFIKA';
+  const seq = [];
+  for (let i = 0; i < t.length; i++) {
+    const c = t.charCodeAt(i);
+    seq.push(1 + (c % 3), 1 + ((c >> 2) % 2), 1 + ((c >> 4) % 3), 1 + ((c >> 6) % 2));
+  }
+  let x = 0, bars = '';
+  for (let i = 0; i < seq.length; i++) {
+    if (i % 2 === 0) bars += `<rect x="${x}" y="0" width="${seq[i]}" height="26"/>`;
+    x += seq[i];
+  }
+  return `<svg viewBox="0 0 ${x} 26" preserveAspectRatio="none" style="width:100%;height:26px;display:block" fill="#fff" aria-hidden="true">${bars}</svg>`;
+}
+
+function memberIdCardHTML(s) {
+  const photo = memberPhotoURL(s);
+  const belt = beltLevels.find(b => b.belt_name === s.current_belt);
+  const hex = belt?.belt_color_hex || '#E5E5E5';
+  const darkBelt = isDark(hex);
+  const name = (s.full_name || 'Member').toUpperCase();
+  const ref = s.registration_ref || 'CFK-';
+  const status = (s.membership_status || 'pending').toLowerCase();
+  const active = status === 'active';
+  const initial = (s.full_name || '?').trim()[0]?.toUpperCase() || '?';
+  const stColor = active ? '#4ade80' : '#fbbf24';
+  return `
+  <div class="rounded-[18px] border border-neutral-200 bg-neutral-50/60 p-4 md:p-5">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3.5">
+      <div>
+        <div class="text-[12px] font-bold tracking-[0.14em]">MEMBER ID CARD</div>
+        <div class="text-[11px] text-neutral-500 mt-0.5">Your official CIFIKA member ID — print it, cut it out and bring it to the dojo.</div>
+      </div>
+      <button onclick="printMemberIdCard()" class="h-9 px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('card','w-4 h-4')} Print ID Card</button>
+    </div>
+    <div id="idCardFront">
+      <div class="idc-card">
+        <div class="idc-top">
+          <img class="idc-logo" src="assets/logo/cifika-w-logo.png" alt="CIFIKA logo" onerror="this.outerHTML='<div class=&quot;idc-logo idc-logo-fallback&quot;>空</div>'">
+          <div class="idc-club">CITY FITNESS KARATE CLUB<small>CIFIKA · KARATE DOJO</small></div>
+          <div class="idc-badge">MEMBER ID</div>
+        </div>
+        <div class="idc-mid">
+          <div class="idc-photo">${initial}${photo ? `<img src="${escapeHtml(photo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()">` : ''}</div>
+          <div class="idc-info">
+            <div class="idc-name">${escapeHtml(name)}</div>
+            <div class="idc-ref">${escapeHtml(ref)}</div>
+            <div class="idc-chips">
+              <span class="idc-chip" style="background:${hex};color:${darkBelt ? '#fff' : '#111'}">${escapeHtml(s.current_belt || 'White Belt')} BELT</span>
+              <span class="idc-chip" style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.85)">${escapeHtml((s.training_category || 'adult').toUpperCase())}</span>
+              <span class="idc-chip" style="background:rgba(${active ? '74,222,128' : '251,191,36'},.14);color:${stColor}"><span class="idc-dot" style="background:${stColor}"></span>${escapeHtml(status.toUpperCase())}</span>
+            </div>
+            <div class="idc-rows">MEMBER SINCE <b>${fmtDate(s.registration_date)}</b> &nbsp;·&nbsp; DOB <b>${fmtDate(s.date_of_birth)}</b></div>
+          </div>
+        </div>
+        <div class="idc-bottom">
+          <div class="idc-barcode">${idcBarcodeSVG(ref)}<div class="idc-foot">${escapeHtml(ref)} · CIFIKATTOSR</div></div>
+          <div class="idc-valid">VALID WHILE<b>MEMBERSHIP ACTIVE</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="text-[10.5px] text-neutral-400 mt-3 leading-[1.55]">Prints at exact bank-card size (85.6 × 54 mm) — cut along the edge and it fits any badge holder. The photo comes from your registration passport or your Google profile picture.</div>
+  </div>`;
+}
+
+function printMemberIdCard() {
+  const card = $('idCardFront');
+  if (!card) return;
+  const f = document.createElement('iframe');
+  f.setAttribute('aria-hidden', 'true');
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;visibility:hidden;';
+  document.body.appendChild(f);
+  const doc = f.contentDocument;
+  doc.open();
+  doc.write('<!doctype html><html><head><meta charset="utf-8"><title>CIFIKA Member ID</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">'
+    + '<style>' + ($('idCardCSS') ? $('idCardCSS').textContent : '')
+    + ' @page { margin: 8mm; } html, body { margin:0; padding:0; background:#fff; }'
+    + ' body { display:flex; justify-content:center; align-items:flex-start; padding-top:6mm; }'
+    + ' .idc-card { width:85.6mm; max-width:none; aspect-ratio:auto; height:54mm; box-shadow:none; border-radius:3mm; padding:4.2mm 5mm 3.6mm; }'
+    + ' .idc-photo { width:13.5mm; height:18mm; font-size:5mm; }'
+    + ' .idc-logo { width:9mm; height:9mm; border-radius:2mm; }'
+    + ' .idc-club { font-size:2.7mm; } .idc-club small { font-size:2mm; margin-top:0.6mm; }'
+    + ' .idc-badge { font-size:2mm; padding:0.8mm 2.2mm; }'
+    + ' .idc-name { font-size:3.7mm; } .idc-ref { font-size:4.7mm; }'
+    + ' .idc-chip { font-size:2.1mm; padding:0.7mm 2mm; } .idc-dot { width:1.5mm; height:1.5mm; }'
+    + ' .idc-rows { font-size:2.1mm; } .idc-foot { font-size:1.9mm; }'
+    + ' .idc-valid { font-size:1.9mm; } .idc-valid b { font-size:2.1mm; }'
+    + ' .idc-barcode svg { height:5.5mm !important; }'
+    + ' .idc-card::after { font-size:15mm; }'
+    + '</style></head><body>' + card.outerHTML + '</body></html>');
+  doc.close();
+  const w = f.contentWindow;
+  const ready = (w.document.fonts && w.document.fonts.ready) ? w.document.fonts.ready : Promise.resolve();
+  Promise.race([ready, new Promise(r => setTimeout(r, 1500))]).then(() => setTimeout(() => {
+    try { w.focus(); w.print(); } catch (e) {}
+    setTimeout(() => f.remove(), 10000);
+  }, 200));
+}
+
 function profileTabHTML(s) {
   const ec = s.emergency_contact || {};
   const rows = [
@@ -1041,7 +1219,8 @@ function profileTabHTML(s) {
     ['Emergency Contact', ec.name ? `${ec.name}${ec.relationship ? ' (' + ec.relationship + ')' : ''} — ${ec.primaryPhone || ''}` : null],
   ].filter(r => r[1]);
   return `
-    <div class="grid md:grid-cols-2 gap-x-8">
+    ${memberIdCardHTML(s)}
+    <div class="grid md:grid-cols-2 gap-x-8 mt-6">
       ${rows.map(([k, v]) => `
         <div class="flex justify-between gap-4 py-2.5 border-b border-neutral-100">
           <span class="text-[12px] text-neutral-500 shrink-0">${k}</span>
@@ -1450,18 +1629,11 @@ function accountSettingsHTML(s) {
   const st = mine ? (mine.membership_status || 'pending') : null;
 
   const statusBlock = !st ? `
-      <div class="text-[11.5px] text-neutral-500 leading-[1.6]">Your own membership isn't linked to this account yet — connect your CIFIKA ID below to manage your status.</div>`
-    : (st === 'active' || st === 'inactive') ? `
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${st === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500 border-neutral-200'}">${capitalize(st)}</span>
-        ${st === 'active'
-          ? `<button onclick="setMyStatus('inactive')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Pause membership</button>`
-          : `<button onclick="setMyStatus('active')" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11.5px] font-semibold hover:bg-emerald-700 transition">Reactivate membership</button>`}
-      </div>`
+      <div class="text-[11.5px] text-neutral-500 leading-[1.6]">Your own membership isn't linked to this account yet — connect your CIFIKA ID below to see your status.</div>`
     : `
       <div class="flex items-center gap-2 flex-wrap">
-        <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${st === 'suspended' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">${capitalize(st)}</span>
-        <span class="text-[11px] text-neutral-400">A ${escapeHtml(st)} membership can only be changed by the club admin.</span>
+        <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${st === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : st === 'suspended' ? 'bg-red-50 text-red-600 border-red-200' : st === 'inactive' ? 'bg-neutral-100 text-neutral-500 border-neutral-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">${capitalize(st)}</span>
+        <span class="text-[11px] text-neutral-400">Members can't pause their own account — the club front desk handles pauses, resumes and all status changes.</span>
       </div>`;
 
   const linkBlock = isParent ? `
@@ -1492,7 +1664,7 @@ function accountSettingsHTML(s) {
 
       <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
         <div class="text-[12.5px] font-bold">Membership status</div>
-        <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Pause or resume your own membership. Pending &amp; suspended statuses are managed by the club admin.</div>
+        <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">View your current membership status here.</div>
         <div class="mt-2.5">${statusBlock}</div>
       </div>
 
@@ -1507,19 +1679,6 @@ function accountSettingsHTML(s) {
         </div>
       </div>
     </div>`;
-}
-
-async function setMyStatus(next) {
-  const { data, error } = await sb.rpc('update_my_membership_status', { p_status: next });
-  const d = !error && data;
-  if (error || !d || d.status !== 'ok')
-    return toast('✗ ' + (d?.message || error?.message || 'Could not update status.'), true);
-  toast(next === 'inactive' ? 'Membership paused — you can reactivate anytime.' : 'Membership reactivated — see you on the mat!');
-  const s = window._gw?.student;
-  if (s) s.membership_status = next;
-  if (window.mineStudent) window.mineStudent.membership_status = next;
-  if (window._dash?.student) window._dash.student.membership_status = next;
-  renderPortalSection(portalSection === 'account' ? 'account' : 'home');
 }
 
 async function switchToParentAccount() {
