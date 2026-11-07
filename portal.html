@@ -76,10 +76,14 @@
   #sidebar { scrollbar-width:thin; scrollbar-color:#333 transparent; }
   #sidebar::-webkit-scrollbar { width:5px; }
   #sidebar::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+  .nav-group { display:block; padding:14px 10px 4px; font-size:9.5px; font-weight:800; letter-spacing:.16em; color:#6b7280; text-transform:uppercase; }
+  .nav-btn.kid-btn { height:38px; padding-left:9px; }
+  .kid-ava { width:24px; height:24px; border-radius:9999px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#d4d4d4; flex-shrink:0; }
   @media (min-width:1024px) {
     #sidebar.rail { width:68px; }
     #sidebar.rail .sb-label { display:none; }
     #sidebar.rail .sb-hide { display:none; }
+    #sidebar.rail .nav-group { display:none; }
     #sidebar.rail .nav-btn { justify-content:center; padding-left:0; padding-right:0; }
   }
   @media (max-width:1023.98px) {
@@ -306,7 +310,8 @@ const DOJO_KUN = [
 let sb, currentUser, currentProfile, beltLevels = [], parentChildren = [];
 let signupRole = 'student';
 let verifiedRef = null;
-let portalSection = 'home';
+let portalSection = 'home';           // active sidebar item id
+window._pview = null;                 // 'parent' → guardian account shell · 'member' → a linked member's dashboard · null → personal student account
 
 const $ = id => document.getElementById(id);
 
@@ -334,6 +339,9 @@ const ICONS = {
   mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
   arrow: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
   external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  mega: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
 };
 function ic(name, cls) {
   return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -369,7 +377,7 @@ function avatarImgHTML(url, initial) {
 }
 
 /* Portal sidebar sections — like the Admin Console nav */
-const NAV_ITEMS = [
+const NAV_ITEMS = [                    // personal student account
   ['home',       'dashboard', 'Home'],
   ['attendance', 'calendar',  'Attendance'],
   ['gradings',   'medal',     'Gradings'],
@@ -377,6 +385,68 @@ const NAV_ITEMS = [
   ['dojo',       'book',      'Dojo Code'],
   ['account',    'user',      'Account'],
 ];
+const PARENT_NAV = [                   // parent / guardian account shell
+  ['home',      'dashboard', 'Home'],          // general info + kids overview + announcements preview
+  ['kids',      'users',     'My Kids'],       // manage every linked child
+  ['link',      'link',      'Link Child'],
+  ['ann',       'mega',      'Announcements'],
+  ['dojo',      'book',      'Dojo Code'],
+  ['profile',   'user',      'Profile'],       // the parent's own account details
+  ['settings',  'gear',      'Settings'],      // owner settings — parent manages everything here
+];
+const MEMBER_NAV = [                   // a linked child (or the parent's own training) inside the parent portal
+  ['m-home',   'dashboard', 'Home'],
+  ['m-att',    'calendar',  'Attendance'],
+  ['m-grd',    'medal',     'Gradings'],
+  ['m-abs',    'ban',       'Absences'],
+  ['m-idcard', 'id',        'ID & Details'],   // personal details + printable CIFIKA member ID
+];
+
+function navBtnHTML(id, icon, label, onclick) {
+  return `
+    <button onclick="${onclick || `showPortalSection('${id}')`}" data-nav="${id}" title="${escapeHtml(label)}"
+      class="nav-btn ${portalSection === id ? 'bg-brand text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}
+             w-full h-10 px-3 rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
+      ${ic(icon, 'w-[18px] h-[18px] shrink-0')}<span class="sb-label">${escapeHtml(label)}</span>
+    </button>`;
+}
+function navKidBtnHTML(sel, name, photo) {
+  const initial = (name || '?').trim()[0]?.toUpperCase() || '?';
+  const on = portalSection === `kid-${sel}`;
+  return `
+    <button onclick="openMember('${sel}')" data-nav="kid-${sel}" title="${escapeHtml(name)}"
+      class="nav-btn kid-btn ${on ? 'bg-brand text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}
+             w-full rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
+      <span class="kid-ava">${avatarImgHTML(photo || null, initial)}</span><span class="sb-label truncate">${escapeHtml(name)}</span>
+    </button>`;
+}
+
+/* Parent view sidebar — account tabs + a "MY KIDS" group with every linked member */
+function renderParentNav() {
+  const items = PARENT_NAV.map(([id, icon, label]) => navBtnHTML(id, icon, label));
+  if (window.mineStudent || parentChildren.length) {
+    items.push('<span class="nav-group sb-hide">My kids</span>');
+    if (window.mineStudent)
+      items.push(navKidBtnHTML('me', 'My training' + (window.mineStudent.full_name ? ' — ' + window.mineStudent.full_name.split(' ')[0] : ''), memberPhotoURL(window.mineStudent)));
+    parentChildren.forEach((c, i) => items.push(navKidBtnHTML(String(i), c.full_name || 'Member', c.passport_photo_url)));
+  }
+  $('navWrap').innerHTML = items.join('');
+}
+
+/* Member view sidebar — the member's personal sections + a "GUARDIAN" group to jump back */
+function renderMemberNav() {
+  const items = MEMBER_NAV.map(([id, icon, label]) => navBtnHTML(id, icon, label));
+  items.push('<span class="nav-group sb-hide">Guardian account</span>');
+  items.push(navBtnHTML('p-home', 'dashboard', 'Parent Home', "goParent('home')"));
+  parentChildren.forEach((c, i) => {
+    const isCurrent = window._memberSel === String(i);
+    items.push(navKidBtnHTML(String(i), (isCurrent ? '• ' : '') + (c.full_name || 'Member'), c.passport_photo_url));
+  });
+  if (window.mineStudent && window._memberSel !== 'me')
+    items.push(navKidBtnHTML('me', 'My training', memberPhotoURL(window.mineStudent)));
+  items.push(navBtnHTML('p-settings', 'gear', 'Settings', "goParent('settings')"));
+  $('navWrap').innerHTML = items.join('');
+}
 
 /* ═══════════════ BOOT ═══════════════ */
 window.addEventListener('DOMContentLoaded', boot);
@@ -574,9 +644,9 @@ async function enterApp(user) {
   $('appView').classList.remove('hidden');
   $('hdrEmail').textContent = user.email;
   $('hdrRole').textContent = profile.role.toUpperCase();
-  $('sbEmail').textContent = user.email;
-  $('sbAvatar').innerHTML = avatarImgHTML(googlePhotoURL(), (user.email || '?').trim()[0]?.toUpperCase() || '?');
-  $('sbRole').textContent = profile.role.toUpperCase() + ' PORTAL';
+  $('sbEmail').textContent = profile.full_name?.trim() || user.email;
+  $('sbAvatar').innerHTML = avatarImgHTML(googlePhotoURL(), (profile.full_name || user.email || '?').trim()[0]?.toUpperCase() || '?');
+  $('sbRole').textContent = (profile.role === 'parent' ? 'PARENT / GUARDIAN — ACCOUNT OWNER' : profile.role.toUpperCase() + ' PORTAL');
   if (window.matchMedia('(min-width:1024px)').matches && localStorage.getItem('cifika_portal_rail') === '1')
     $('sidebar').classList.add('rail');
 
@@ -589,14 +659,9 @@ async function enterApp(user) {
 }
 
 /* ═══════════════ SIDEBAR SHELL ═══════════════ */
-function renderNav(items) {
+function renderNav(items) {   // personal student account nav (parent/member views have their own renderers)
   const list = items || NAV_ITEMS;
-  $('navWrap').innerHTML = list.map(([id, icon, label]) => `
-    <button onclick="showPortalSection('${id}')" data-nav="${id}" title="${label}"
-      class="nav-btn ${portalSection === id ? 'bg-brand text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'}
-             w-full h-10 px-3 rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
-      ${ic(icon, 'w-[18px] h-[18px] shrink-0')}<span class="sb-label">${label}</span>
-    </button>`).join('');
+  $('navWrap').innerHTML = list.map(([id, icon, label]) => navBtnHTML(id, icon, label)).join('');
 }
 
 /* Sidebar: off-canvas drawer on mobile · collapsible icon rail on desktop */
@@ -613,15 +678,41 @@ function toggleSidebar(force) {
   }
 }
 
-/* Sidebar navigation — sections render from the cached dashboard data */
+/* Sidebar navigation — routes by view: parent shell · member dashboard · personal student account */
 function showPortalSection(id) {
-  if (id === 'home' && window._view === 'parentHome') {
-    portalSection = 'home'; markNav('home');
-    renderParentHome();
+  if (window._pview === 'parent') {
+    portalSection = id; markNav(id);
+    renderParentSection(id);
+  } else if (window._pview === 'member' && String(id).startsWith('m-')) {
+    portalSection = id; markNav(id);
+    renderMemberSection(id);
   } else {
     portalSection = id; markNav(id);
     renderPortalSection(id);
   }
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+}
+
+/* Back into the guardian account shell (sidebar GUARDIAN group / back buttons) */
+function goParent(section) {
+  window._pview = 'parent';
+  window._memberSel = null;
+  window._dash = window._dash;               // keep cached member data for quick re-entry
+  portalSection = section || 'home';
+  $('sidebar').classList.remove('hidden');
+  $('navToggle').classList.remove('hidden');
+  renderParentNav(); markNav(portalSection);
+  renderParentSection(portalSection);
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+}
+
+/* Open a linked member's dashboard — sel: index into parentChildren, or 'me' for the parent's own training */
+async function openMember(sel) {
+  const student = sel === 'me' ? window.mineStudent : parentChildren[Number(sel)];
+  if (!student) return;
+  await renderDashboard(student, { back: true, backLabel: 'Parent home', parentCtx: true, sel: String(sel) });
   if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
     toggleSidebar(false);
 }
@@ -659,6 +750,18 @@ function renderPortalSection(id) {
   else renderDashboardHome();
 }
 
+/* Member sections — a linked member's personal screens inside the guardian shell */
+function renderMemberSection(id) {
+  const d = window._dash;
+  if (!d) { goParent('home'); return; }
+  const who = (d.student.full_name || 'Member').split(' ')[0];
+  if (id === 'm-att') $('appMain').innerHTML = sectionCard('ATTENDANCE', `${who} — 80% required for grading`, attendanceTabHTML(d.att, d.rate));
+  else if (id === 'm-grd') $('appMain').innerHTML = sectionCard('GRADINGS', `${who} — ${d.grd.length} recorded`, gradingsTabHTML(d.grd, d.scoreById));
+  else if (id === 'm-abs') $('appMain').innerHTML = sectionCard('ABSENCES', 'request an excusal', absenceTabHTML(d.student));
+  else if (id === 'm-idcard') $('appMain').innerHTML = sectionCard('MEMBER ID & DETAILS', `${who}'s CIFIKA ID — printable`, memberDetailsHTML(d.student));
+  else renderDashboardHome();
+}
+
 /* ═══════════════ STUDENT HOME ═══════════════ */
 async function renderStudentHome() {
   const { data: student } = await sb.from('students').select('*').eq('user_id', currentUser.id).maybeSingle();
@@ -666,92 +769,336 @@ async function renderStudentHome() {
   await renderDashboard(student, {});
 }
 
-/* ═══════════════ PARENT HOME ═══════════════ */
+/* ═══════════════ PARENT PORTAL — guardian account shell ═══════════════
+   The parent owns the account: general info, announcements and settings live here,
+   while each kid's personal details live inside the kid's own dashboard.        */
+
+async function fetchParentAnnouncements(limit) {
+  const { data } = await sb.from('announcements').select('*').eq('status', 'published')
+    .in('audience', ['all', 'adult', 'child'])
+    .order('is_pinned', { ascending: false })
+    .order('event_date', { ascending: true, nullsFirst: false })
+    .limit(limit || 6);
+  return data || [];
+}
+
 async function renderParentHome() {
-  const [{ data: links }, { data: mine }] = await Promise.all([
+  const [{ data: links }, { data: mine }, anns] = await Promise.all([
     sb.from('parent_child_links').select('id, relationship, students(*)').eq('parent_id', currentUser.id),
     sb.from('students').select('*').eq('user_id', currentUser.id).maybeSingle(),
+    fetchParentAnnouncements(6),
   ]);
   parentChildren = (links || []).map(l => l.students).filter(Boolean);
   window.mineStudent = mine || null;
+  window._parentAnns = anns;
   updateSidebarAvatar();
 
-  window._view = 'parentHome';
+  window._pview = 'parent';
   portalSection = 'home';
   $('sidebar').classList.remove('hidden');
   $('navToggle').classList.remove('hidden');
-  renderNav([['home', 'dashboard', 'Home']]);
+  renderParentNav();
   markNav('home');
 
   const cards = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
   const myCard = mine ? `
-      <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="renderDashboard(window.mineStudent, { back:true, backLabel:'Back to parent home' })">
+      <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="openMember('me')">
         <div class="w-14 h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(memberPhotoURL(mine), (mine.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
         <div class="flex-1 min-w-0">
           <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">MY TRAINING</div>
           <div class="font-bold text-[14.5px] truncate">${escapeHtml(mine.full_name || 'Me')}</div>
-          <div class="mt-1.5">${beltChipHTML(mine.current_belt)}</div>
+          <div class="mt-1.5 flex items-center gap-2 flex-wrap">${beltChipHTML(mine.current_belt)}${memStatusPill(mine.membership_status)}</div>
         </div>
         <div class="text-neutral-400">→</div>
       </div>` : '';
 
+  const kidsBlock = parentChildren.length
+    ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`
+    : `<div class="rounded-[22px] border-2 border-dashed border-neutral-300 p-8 text-center">
+         <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic('users','w-6 h-6')}</div>
+         <div class="mt-2 text-[14px] font-bold">No children linked yet</div>
+         <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[46ch] mx-auto leading-[1.6]">
+           Register your child via the registration form, then use Link Child to connect their CIFIKA ID.
+           Your account email must match the guardian email on the registration.
+         </div>
+         <div class="mt-4 flex flex-wrap justify-center gap-2">
+           <button onclick="goParent('link')" class="h-[38px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('link','w-3.5 h-3.5')} Link a child</button>
+           <a href="${buildPortalRegUrl()}" class="h-[38px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-1.5">${ic('plus','w-3.5 h-3.5')} Register a child / ward</a>
+         </div>
+       </div>`;
+
   $('appMain').innerHTML = `
   <div class="fade-in grid gap-6">
     <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome, ${escapeHtml(currentProfile.full_name || 'Parent')}</h1>
-        <p class="text-[13px] text-neutral-500 mt-1">${mine ? 'Parent + member account — manage your children and keep training.' : 'Guardian portal — monitor training, attendance and grading progress.'}</p>
+      <div class="flex items-center gap-4 min-w-0">
+        <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(sidebarPhotoURL(), (currentProfile.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
+        <div class="min-w-0">
+          <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome, ${escapeHtml(currentProfile.full_name || 'Parent')}</h1>
+          <p class="text-[13px] text-neutral-500 mt-1">${mine ? 'Parent + member account — manage your children and keep training.' : 'Guardian portal — you own this account and manage your children\u2019s training from here.'}</p>
+        </div>
       </div>
-      <div class="text-[12px] text-neutral-500 md:text-right">
+      <div class="text-[12px] text-neutral-500 md:text-right shrink-0">
         <div class="font-semibold text-neutral-800">Next classes</div>
         <div>${CLUB.nextClass}</div>
       </div>
     </div>
 
     <div>
-      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">MY CHILDREN</div>
-      ${parentChildren.length
-        ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`
-        : `<div class="rounded-[22px] border-2 border-dashed border-neutral-300 p-8 text-center">
-             <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic('users','w-6 h-6')}</div>
-             <div class="mt-2 text-[14px] font-bold">No children linked yet</div>
-             <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[46ch] mx-auto leading-[1.6]">
-               Register your child via the registration form, then use "Link an existing registration" below.
-               Your account email must match the guardian email on the registration.
-             </div>
-             <a href="${buildPortalRegUrl()}" class="inline-flex mt-4 h-[38px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition items-center gap-1.5">${ic('plus','w-3.5 h-3.5')} Register a child / ward</a>
-           </div>`}
+      <div class="flex items-center justify-between mb-3">
+        <div class="text-[12px] font-bold tracking-[0.14em]">MY CHILDREN</div>
+        ${parentChildren.length ? `<button onclick="goParent('kids')" class="text-[11px] font-semibold text-neutral-400 hover:text-black transition">Manage all →</button>` : ''}
+      </div>
+      ${kidsBlock}
     </div>
 
     ${myCard ? `<div><div class="text-[12px] font-bold tracking-[0.14em] mb-3">ALSO ON THE MAT</div><div class="max-w-[420px]">${myCard}</div></div>` : ''}
 
+    ${announcementsHTML(window._parentAnns, 'CLUB UPDATES', 'general info • events • seminars')}
+  </div>`;
+}
+
+/* Parent shell router — Home · My Kids · Link Child · Announcements · Dojo Code · Profile · Settings */
+function renderParentSection(id) {
+  if (id === 'home')              renderParentHome();
+  else if (id === 'kids')         renderKidsManager();
+  else if (id === 'link')         renderLinkChildTab();
+  else if (id === 'ann')          renderAnnouncementsTab();
+  else if (id === 'dojo')         $('appMain').innerHTML = sectionCard('DOJO CODE', 'club rules & dojo kun', dojoCodeHTML());
+  else if (id === 'profile')      renderParentProfile();
+  else if (id === 'settings')     renderParentSettings();
+  else                            renderParentHome();
+}
+
+/* MY KIDS — manage every linked child from one screen */
+function renderKidsManager() {
+  const cards = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
+  $('appMain').innerHTML = `
+  <div class="fade-in grid gap-6">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">My Kids</h1>
+        <p class="text-[12.5px] text-neutral-500 mt-0.5">Open a child to see their dashboard — ID, attendance, gradings and personal details.</p>
+      </div>
+      <button onclick="goParent('link')" class="h-9 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5">${ic('link','w-3.5 h-3.5')} Link Child</button>
+    </div>
+    ${parentChildren.length
+      ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`
+      : emptyState('users', 'No children linked yet', 'Use Link Child to connect an existing registration, or register a new child from the Link Child tab.')}
+    ${window.mineStudent ? `
+    <div>
+      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">ALSO ON THE MAT</div>
+      <div class="max-w-[420px]">
+        <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="openMember('me')">
+          <div class="w-12 h-12 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[16px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(memberPhotoURL(window.mineStudent), (window.mineStudent.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">MY TRAINING</div>
+            <div class="font-bold text-[14px] truncate">${escapeHtml(window.mineStudent.full_name || 'Me')}</div>
+          </div>
+          <div class="text-neutral-400">→</div>
+        </div>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+/* LINK CHILD — connect an existing registration + start a new registration */
+function renderLinkChildTab() {
+  $('appMain').innerHTML = `
+  <div class="fade-in grid gap-6 max-w-[720px]">
+    <div>
+      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Link Child</h1>
+      <p class="text-[12.5px] text-neutral-500 mt-0.5">Connect an existing club registration to this account, or start a brand-new one.</p>
+    </div>
+
     <div class="card p-6">
-      <div class="text-[12px] font-bold tracking-[0.14em]">LINK AN EXISTING REGISTRATION</div>
-      <p class="text-[12.5px] text-neutral-500 mt-1.5 leading-[1.55]">
-        Enter your child's registration reference (from their confirmation, e.g. <b>CFK-00001</b>).
-        The account email must match the guardian email on the registration.
-      </p>
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0">${ic('link','w-4 h-4')}</div>
+        <div>
+          <div class="text-[14px] font-extrabold">Link an existing registration</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">Enter your child's CIFIKA ID (from their confirmation, e.g. <b>CFK-00001</b>).</div>
+        </div>
+      </div>
       <div class="mt-4 flex flex-col sm:flex-row gap-2 max-w-[520px]">
-        <input id="linkRef" class="input flex-1" placeholder="CFK-xxxxx">
+        <input id="linkRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
         <button onclick="linkChild()" class="h-[44px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Link Child</button>
       </div>
+      <p class="text-[11px] text-neutral-400 mt-2 leading-[1.55]">The account email must match the guardian email on the registration.</p>
       <p id="linkMsg" class="hidden mt-2 text-[12px]"></p>
     </div>
+
+    <div class="card p-6">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shrink-0">${ic('users','w-4 h-4')}</div>
+        <div>
+          <div class="text-[14px] font-extrabold">Register a child / ward</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">New to the club? The registration form opens with your guardian details pre-filled — the new ID connects automatically when you return.</div>
+        </div>
+      </div>
+      <a href="${buildPortalRegUrl()}" class="mt-4 h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Open the registration form →</a>
+    </div>
+
+    ${registerSelfCardHTML()}
   </div>`;
+}
+
+/* ANNOUNCEMENTS — the full club updates list (the parent home shows a preview) */
+async function renderAnnouncementsTab() {
+  $('appMain').innerHTML = `<div class="fade-in"><div class="card p-6 md:p-7"><div class="text-[12px] font-bold tracking-[0.14em]">ANNOUNCEMENTS</div><div class="text-[11.5px] text-neutral-400 mt-1">Loading club updates…</div></div></div>`;
+  const anns = await fetchParentAnnouncements(30);
+  $('appMain').innerHTML = `
+  <div class="fade-in grid gap-4">
+    <div>
+      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Announcements</h1>
+      <p class="text-[12.5px] text-neutral-500 mt-0.5">Everything the club publishes — grading windows, events, seminars and updates.</p>
+    </div>
+    ${anns.length
+      ? announcementsHTML(anns, 'CLUB UPDATES', `${anns.length} published`, true)
+      : emptyState('mega', 'No announcements yet', 'Club updates, events and grading windows will appear here as soon as the club publishes them.')}
+  </div>`;
+}
+
+/* PROFILE — the parent's own account details (+ their own member record when they train too) */
+function renderParentProfile() {
+  const mine = window.mineStudent;
+  const initial = (currentProfile.full_name || currentUser.email || '?').trim()[0]?.toUpperCase() || '?';
+  $('appMain').innerHTML = `
+  <div class="fade-in grid gap-6">
+    <div>
+      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Profile</h1>
+      <p class="text-[12.5px] text-neutral-500 mt-0.5">Your account details — you are the owner of this parent / guardian account.</p>
+    </div>
+
+    <div class="card p-6 md:p-7 flex items-center gap-4 flex-wrap">
+      <div class="w-16 h-16 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[22px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(sidebarPhotoURL(), initial)}</div>
+      <div class="min-w-0 flex-1">
+        <div class="text-[17px] font-extrabold truncate">${escapeHtml(currentProfile.full_name || 'Parent')}</div>
+        <div class="text-[12.5px] text-neutral-500 truncate">${escapeHtml(currentUser.email || '')}</div>
+        <div class="mt-2 flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold border bg-brand-light border-brand-border text-brand-text">PARENT / GUARDIAN — ACCOUNT OWNER</span>
+          ${mine ? memStatusPill(mine.membership_status) : ''}
+        </div>
+      </div>
+    </div>
+
+    ${mine ? `
+      <div class="card overflow-hidden">
+        <div class="px-5 md:px-6 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
+          <div class="text-[12px] font-bold tracking-[0.14em]">MY MEMBER DETAILS</div>
+          <div class="text-[11px] text-neutral-400">you train too — your own record</div>
+        </div>
+        <div class="p-5 md:p-6">${memberDetailsHTML(mine)}</div>
+      </div>`
+    : `
+      <div class="card p-6">
+        <div class="text-[14px] font-extrabold">Not registered as a member yet</div>
+        <p class="text-[12.5px] text-neutral-500 mt-1 leading-[1.6]">Parents can train too. Register yourself as a member to get your own CIFIKA ID, belt journey and attendance record — your kids stay linked to this same account.</p>
+        <a href="${buildPortalRegUrl('self')}" class="mt-4 h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register myself →</a>
+      </div>`}
+  </div>`;
+}
+
+/* SETTINGS — the owner's control panel: statuses, linking, registrations, password */
+function renderParentSettings() {
+  const mine = window.mineStudent;
+  const st = mine ? (mine.membership_status || 'pending') : null;
+
+  const selfStatus = !st
+    ? `<div class="text-[11.5px] text-neutral-500 leading-[1.6]">You're not linked to a member record yet — register yourself below to start training, or just manage your children from this account.</div>`
+    : `<div class="flex items-center gap-2 flex-wrap">${memStatusPill(st)}<span class="text-[11px] text-neutral-400">Your own membership.</span></div>`;
+
+  const kidRows = parentChildren.length ? parentChildren.map(c => `
+      <div class="flex items-center gap-3 py-2.5 border-t border-neutral-100">
+        <span class="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[11px] font-bold shrink-0 relative overflow-hidden">${avatarImgHTML(c.passport_photo_url || null, (c.full_name || '?').trim()[0]?.toUpperCase() || '?')}</span>
+        <div class="min-w-0 flex-1">
+          <div class="text-[12.5px] font-semibold truncate">${escapeHtml(c.full_name || 'Member')}</div>
+          <div class="text-[10.5px] text-neutral-400">${escapeHtml(c.registration_ref || '—')}</div>
+        </div>
+        ${memStatusPill(c.membership_status)}
+        <button onclick="openMember('${parentChildren.indexOf(c)}')" class="text-[11px] font-semibold text-neutral-400 hover:text-black transition shrink-0">Open →</button>
+      </div>`).join('') : '';
+
+  $('appMain').innerHTML = `
+  <div class="fade-in grid gap-6 max-w-[760px]">
+    <div>
+      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Settings</h1>
+      <p class="text-[12.5px] text-neutral-500 mt-0.5">You own this account — manage statuses, linked members, registrations and sign-in here.</p>
+    </div>
+
+    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+      <div class="text-[12.5px] font-bold">Membership status</div>
+      <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">View-only here — the club front desk handles pauses, resumes and all status changes.</div>
+      <div class="mt-2.5">${selfStatus}</div>
+      ${kidRows ? `<div class="mt-3">
+        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-400 uppercase">Linked children</div>
+        <div>${kidRows}</div>
+      </div>` : ''}
+    </div>
+
+    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+      <div class="text-[12.5px] font-bold">Account type</div>
+      <div class="mt-1.5 flex items-center gap-2 flex-wrap">
+        <span class="px-2.5 py-1 rounded-full bg-black text-white text-[11px] font-bold">PARENT / GUARDIAN</span>
+        <span class="text-[11.5px] text-neutral-500">holds multiple member IDs — one per child, plus your own if you train.</span>
+      </div>
+    </div>
+
+    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+      <div>
+        <div class="text-[12.5px] font-bold">Link another member</div>
+        <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. The account email must match the guardian email on their registration.</p>
+      </div>
+      <div class="mt-3 flex flex-col sm:flex-row gap-2">
+        <input id="setRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
+        <button onclick="connectFromSettings()" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Link member</button>
+      </div>
+      <div id="setRefMsg" class="hidden"></div>
+    </div>
+
+    ${registerSelfCardHTML()}
+
+    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+      <div class="text-[12.5px] font-bold">Register a child / ward</div>
+      <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Start a fresh club registration with your guardian details pre-filled — the new CIFIKA ID connects to this account automatically.</p>
+      <a href="${buildPortalRegUrl()}" class="mt-3 h-[40px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('file','w-4 h-4')} Register a child / ward →</a>
+    </div>
+
+    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+      <div class="text-[12.5px] font-bold">Change password</div>
+      <div class="mt-2.5 flex flex-col sm:flex-row gap-2">
+        <input id="newPass" type="password" class="input flex-1" placeholder="New password (min. 6 characters)" autocomplete="new-password">
+        <button onclick="changeMyPassword()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition shrink-0">Update password</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* "Register myself" — parents can become members and get their own CIFIKA ID */
+function registerSelfCardHTML() {
+  return `
+    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-full bg-brand-light border border-brand-border text-brand flex items-center justify-center shrink-0">${ic('user','w-4 h-4')}</div>
+        <div class="min-w-0">
+          <div class="text-[12.5px] font-bold">Register myself too</div>
+          <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parents can train as well. This starts a registration for <b>you</b> — your own details pre-filled — so you get your own CIFIKA ID while keeping this parent account for your kids.</p>
+          <a href="${buildPortalRegUrl('self')}" class="mt-3 h-[40px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register myself →</a>
+        </div>
+      </div>
+    </div>`;
 }
 
 function childCardHTML(c, i) {
   const initial = (c.full_name || '?').trim()[0]?.toUpperCase() || '?';
   const age = calcAge(c.date_of_birth);
   return `
-  <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="viewChild(${i})">
+  <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="openMember('${i}')">
     <div class="w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[18px] font-extrabold overflow-hidden shrink-0 relative">
       ${avatarImgHTML(c.passport_photo_url || null, initial)}
     </div>
     <div class="flex-1 min-w-0">
       <div class="font-bold text-[14.5px] truncate">${escapeHtml(c.full_name || 'Member')}</div>
       <div class="text-[11.5px] text-neutral-500 mt-0.5">${age !== null ? age + ' years • ' : ''}${escapeHtml(c.registration_ref || '')}</div>
-      <div class="mt-2">${beltChipHTML(c.current_belt)}</div>
+      <div class="mt-2 flex items-center gap-2 flex-wrap">${beltChipHTML(c.current_belt)}${memStatusPill(c.membership_status)}</div>
     </div>
     <div class="text-neutral-400">→</div>
   </div>`;
@@ -765,18 +1112,10 @@ async function linkChild() {
   const ok = !error && data?.status === 'ok';
     msg.textContent = ok ? `✓ Linked ${data.linked}!` : (data?.message || error?.message || 'Could not link.');
   msg.className = 'mt-2 text-[12px] ' + (ok ? 'text-emerald-700 font-semibold' : 'text-red-600');
-  if (ok) setTimeout(renderParentHome, 900);
+  if (ok) setTimeout(() => goParent('kids'), 900);
 }
 
-async function viewChild(i) {
-  const child = parentChildren[i];
-  if (child) await renderDashboard(child, { back: true });
-}
-
-function backToParentHome() {
-  portalSection = 'home';
-  renderParentHome();
-}
+function backToParentHome() { goParent('home'); }
 
 /* ═══════════════ DASHBOARD (shared by student & parent views) ═══════════════ */
 async function renderDashboard(student, opts = {}) {
@@ -824,10 +1163,21 @@ async function renderDashboard(student, opts = {}) {
   updateSidebarAvatar();
   $('sidebar').classList.remove('hidden');
   $('navToggle').classList.remove('hidden');
-  portalSection = 'home';
-  renderNav();
-  markNav('home');
-  renderDashboardHome();
+  if (opts.parentCtx) {
+    /* A linked member (child — or the parent's own training) inside the guardian shell */
+    window._pview = 'member';
+    window._memberSel = opts.sel ?? null;
+    portalSection = 'm-home';
+    renderMemberNav();
+    markNav('m-home');
+    renderDashboardHome();
+  } else {
+    window._pview = null;
+    portalSection = 'home';
+    renderNav();
+    markNav('home');
+    renderDashboardHome();
+  }
 }
 
 /* Home section — welcome, stats, training plan, updates, belt journey */
@@ -836,6 +1186,7 @@ function renderDashboardHome() {
   const opts = window._lastOpts || {};
   const attended = window._dash.attended;
   const thisWeek = window._dash.thisWeek;
+  const memberCtx = window._pview === 'member';   // a linked member inside the guardian shell — general info & announcements stay on the parent home
 
   const curIdx = Math.max(0, beltLevels.findIndex(b => b.belt_name === student.current_belt));
   const nextBelt = beltLevels[curIdx + 1] || null;
@@ -903,7 +1254,9 @@ function renderDashboardHome() {
             ${beltChipHTML(student.current_belt)}
             <span class="px-2.5 py-0.5 rounded-full border font-semibold ${student.membership_status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">${escapeHtml(student.membership_status || 'pending')}</span>
             ${student.belt_review_status === 'pending' ? `<span class="px-2.5 py-0.5 rounded-full border font-semibold bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700] inline-flex items-center gap-1">${ic('hourglass','w-3 h-3')} Belt review pending</span>` : ''}
-            <span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>
+            ${memberCtx
+              ? `<span class="px-2.5 py-1 rounded-full bg-black text-white text-[10.5px] font-bold tracking-wide inline-flex items-center gap-1.5" title="CIFIKA ID">${ic('id','w-3.5 h-3.5')} CIFIKA ID · ${escapeHtml(student.registration_ref || '—')}</span>`
+              : `<span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>`}
           </div>
         </div>
       </div>
@@ -912,6 +1265,17 @@ function renderDashboardHome() {
         <div>${CLUB.nextClass}</div>
       </div>
     </div>
+
+    ${memberCtx ? `
+    <!-- MEMBER ID — the linked member's CIFIKA ID, same as a personal account -->
+    <div class="card p-5 flex items-center gap-4 flex-wrap">
+      <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0">${ic('id','w-5 h-5')}</div>
+      <div class="flex-1 min-w-[230px]">
+        <div class="text-[13px] font-bold">${escapeHtml(displayName)}'s CIFIKA member ID</div>
+        <div class="text-[11.5px] text-neutral-500">Printable ID card with the club logo — ${escapeHtml(student.registration_ref || 'ID pending')} — exactly like a personal account.</div>
+      </div>
+      <button onclick="showPortalSection('m-idcard')" class="h-9 px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('card','w-4 h-4')} View &amp; print ID</button>
+    </div>` : ''}
 
     <!-- STATS -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -958,7 +1322,7 @@ function renderDashboardHome() {
       <p class="text-[10.5px] text-neutral-400 mt-2.5">Choose exactly 2 days. You may still check in on any training day — your selections are your regular weekly plan.</p>
     </div>
 
-    ${announcementsHTML(anns || [])}
+    ${!memberCtx ? announcementsHTML(anns || []) : ''}
 
     <!-- BELT JOURNEY -->
     <div class="card p-6 md:p-7 min-w-0">
@@ -1027,6 +1391,16 @@ function statusPill(s) {
   };
   const [cls, label] = map[s] || map.present;
   return `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border ${cls}">${label}</span>`;
+}
+
+/* Membership status pill — view-only everywhere in the portal (the club manages statuses) */
+function memStatusPill(st) {
+  const s = (st || 'pending').toLowerCase();
+  const cls = s === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : s === 'suspended' ? 'bg-red-50 text-red-600 border-red-200'
+            : s === 'inactive' ? 'bg-neutral-100 text-neutral-500 border-neutral-200'
+            : 'bg-amber-50 text-amber-700 border-amber-200';
+  return `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${cls}">${escapeHtml(capitalize(s))}</span>`;
 }
 
 function resultPill(r) {
@@ -1199,6 +1573,12 @@ function printMemberIdCard() {
 }
 
 function profileTabHTML(s) {
+  return `${memberDetailsHTML(s)}${accountSettingsHTML(s)}`;
+}
+
+/* Personal details + printable member ID — used by the Account tab (personal accounts)
+   and the "ID & Details" tab of every linked member inside the guardian shell */
+function memberDetailsHTML(s) {
   const ec = s.emergency_contact || {};
   const rows = [
     ['Full Name', s.full_name],
@@ -1227,12 +1607,11 @@ function profileTabHTML(s) {
           <span class="text-[12.5px] font-medium text-right break-words">${escapeHtml(String(v))}</span>
         </div>`).join('')}
     </div>
-    <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>
-    ${accountSettingsHTML(s)}`;
+    <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>`;
 }
 
-function announcementsHTML(list) {
-  if (!list.length) return '';
+function announcementsHTML(list, title, sub) {
+  if (!list || !list.length) return '';
   const typeCls = { grading:'bg-brand text-white', event:'bg-black text-white', seminar:'bg-purple-600 text-white',
                     promotion:'bg-emerald-600 text-white', announcement:'bg-blue-600 text-white', update:'bg-neutral-500 text-white' };
   const meta = a => [a.event_date ? fmtDate(a.event_date) : '',
@@ -1241,8 +1620,8 @@ function announcementsHTML(list) {
   return `
   <div class="card p-6 md:p-7">
     <div class="flex items-center justify-between mb-4">
-      <div class="text-[12px] font-bold tracking-[0.14em]">CLUB UPDATES</div>
-      <div class="text-[11px] text-neutral-400">announcements • events • seminars</div>
+      <div class="text-[12px] font-bold tracking-[0.14em]">${escapeHtml(title || 'CLUB UPDATES')}</div>
+      <div class="text-[11px] text-neutral-400">${escapeHtml(sub || 'announcements • events • seminars')}</div>
     </div>
     <div class="grid sm:grid-cols-2 gap-3">
       ${list.map(a => `
@@ -1556,14 +1935,17 @@ async function renderOnboarding(skipped) {
   </div>`;
 }
 
-/* Registration URL with the portal account's details pre-filled */
-function buildPortalRegUrl() {
+/* Registration URL with the portal account's details pre-filled.
+   mode 'self'  → the signed-in person registers THEMSELVES as a member (parents can train too).
+   mode 'child' (default for parent accounts) → a guardian registering a child / ward. */
+function buildPortalRegUrl(mode) {
   const isParent = currentProfile?.role === 'parent' || signupRole === 'parent';
+  const self = mode ? (mode === 'self') : !isParent;
   const name = currentProfile?.full_name || $('suName')?.value.trim() || '';
   const email = currentProfile?.email || currentUser?.email || $('suEmail')?.value.trim() || '';
   const p = new URLSearchParams({
     from: 'portal',
-    role: isParent ? 'parent' : 'self',
+    role: self ? 'self' : 'parent',
     name, email,
   });
   return 'registration.html?' + p.toString();
