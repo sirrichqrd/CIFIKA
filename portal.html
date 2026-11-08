@@ -1149,7 +1149,7 @@ async function renderDashboard(student, opts = {}) {
   const weekStart = startOfWeekLagos();
   const thisWeek = att.filter(a => a.class_date >= weekStart && (a.status === 'present' || a.status === 'late')).length;
   window._gw = { open: windows, entered: enteredWindows, student };
-  window._myDays = myDays ? { day_1: myDays.day_1, day_2: myDays.day_2 } : { day_1: null, day_2: null };
+  window._myDays = myDays ? { day_1: myDays.day_1 ?? null, day_2: myDays.day_2 ?? null } : { day_1: null, day_2: null };
   window._lastOpts = opts;
 
   const attended = att.filter(a => a.status === 'present' || a.status === 'late').length;
@@ -1223,7 +1223,7 @@ function renderDashboardHome() {
       <span class="text-brand shrink-0 mt-0.5">${ic('medal','w-[18px] h-[18px]')}</span>
       <div>
         <div class="text-[11px] font-bold tracking-[0.1em] uppercase text-brand-text">OFFICIAL CLASSES BEGIN ${fmtDate(CLUB.startDate).toUpperCase()}</div>
-        <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${daysToStart === 0 ? 'Classes kick off <b>today</b>! ' : daysToStart === 1 ? 'Classes kick off <b>tomorrow</b> — ' : `<b>${daysToStart} days to go</b> — `}regular classes run <b>Friday 4:30–6:00 PM • Saturday 8:00–10:00 AM • Sunday 4:30–6:00 PM</b>. Pick your 2 training days below and come ready.</p>
+        <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${daysToStart === 0 ? 'Classes kick off <b>today</b>! ' : daysToStart === 1 ? 'Classes kick off <b>tomorrow</b> — ' : `<b>${daysToStart} days to go</b> — `}regular classes run <b>Friday 4:30–6:00 PM • Saturday 8:00–10:00 AM • Sunday 4:30–6:00 PM</b> — 3 training days a week. Pick the 2 days that suit you below and come ready.</p>
       </div>
     </div>` : '';
   const excBanner = (student.excused_from && student.excused_until) ? excusedBannerHTML(student, todayLagos) : '';
@@ -1319,7 +1319,7 @@ function renderDashboardHome() {
             <div>${name}</div><div class="text-[10px] ${sel ? 'text-neutral-300' : 'text-neutral-400'} font-medium mt-0.5">${time}</div></button>`;
         }).join('')}
       </div>
-      <p class="text-[10.5px] text-neutral-400 mt-2.5">Choose exactly 2 days. You may still check in on any training day — your selections are your regular weekly plan.</p>
+      <p class="text-[10.5px] text-neutral-400 mt-2.5">Choose exactly 2 of the 3 training days. You may still check in on any training day — your selections are your regular weekly plan.</p>
     </div>
 
     ${!memberCtx ? announcementsHTML(anns || []) : ''}
@@ -2157,24 +2157,30 @@ async function enterGradingWindow(windowId, targetBelt) {
   renderDashboard(s, window._lastOpts || {});
 }
 
-/* ═══════════ TRAINING DAYS PICKER ═══════════ */
+/* ═══════════ TRAINING DAYS PICKER (pick 2 of the 3 training days) ═══════════ */
+/* The club runs 3 training days — Fri / Sat / Sun. The member picks exactly
+   2 of them. Click → update the cached selection and re-render from cache
+   immediately (never via renderDashboard() — that refetches and would reset
+   a partial pick back to what the DB row holds, which made the toggle look
+   dead). Persist through save_training_days() once both days are picked. */
 async function toggleTrainingDay(d) {
   const s = window._gw?.student; if (!s) return;
   const cur = window._myDays || { day_1: null, day_2: null };
   let sel = [cur.day_1, cur.day_2].filter(v => v !== null && v !== undefined);
-  if (sel.includes(d)) sel = sel.filter(x => x !== d);
-  else { sel.push(d); if (sel.length > 2) sel = sel.slice(1); }
+  if (sel.includes(d)) sel = sel.filter(x => x !== d);            // tap again to unselect
+  else { sel.push(d); if (sel.length > 2) sel.shift(); }          // keep the latest 2 picks
   window._myDays = { day_1: sel[0] ?? null, day_2: sel[1] ?? null };
+  renderDashboardHome();
   if (window._myDays.day_1 !== null && window._myDays.day_2 !== null) {
     const { data, error } = await sb.rpc('save_training_days', { p_student_id: s.id, p_day1: window._myDays.day_1, p_day2: window._myDays.day_2 });
     const dd = !error && data;
     if (error || !dd || dd.status !== 'ok') {
-      toast('✗ ' + (dd?.message || error?.message || 'Could not save training days.'), true);
+      console.warn('save_training_days failed:', error || dd);
+      toast('✗ ' + (dd?.message || error?.message || 'Could not save training days — check your connection and try again.'), true);
       return;
     }
-    toast('✓ Training days saved — ' + DAY_LABEL[window._myDays.day_1] + ' + ' + DAY_LABEL[window._myDays.day_2]);
+    toast('✓ Training days saved — ' + [window._myDays.day_1, window._myDays.day_2].map(x => DAY_LABEL[x]).join(' + '));
   }
-  renderDashboard(s, window._lastOpts || {});
 }
 const DAY_LABEL = { 0: 'Sunday', 5: 'Friday', 6: 'Saturday' };
 
