@@ -988,6 +988,8 @@
 
   // ===== Start a brand-new application for a person =====
   function newApp(forWho, opts = {}) {
+    // housekeeping: drop leftover blank drafts (nothing entered, never submitted)
+    store.apps = store.apps.filter(a => a.submitted || a.id === store.activeId || hasDraftContent(a));
     const app = {
       id: uid(),
       for: forWho,
@@ -1088,16 +1090,25 @@
   }
 
   // ===== Returning-user banner =====
+  /* A draft is only worth offering if the person actually entered something.
+     Blank drafts (created by a stray tap on a registration type) used to show up
+     as “Continue: Myself”, opened an empty step 1 and made it look like the
+     registration had restarted. Blank drafts are now hidden — and pruned. */
+  function hasDraftContent(a) {
+    const f = (a && a.fields) || {};
+    return !!(f.fullName || f.dob || f.phone || f.email || f.pFullName || f.eName || f.signature);
+  }
+
   function renderReturningBanner() {
-    if (!store.apps.length) return;
-    $('returningBanner').classList.remove('hidden');
     const submitted = store.apps.filter(a => a.submitted);
-    const drafts = store.apps.filter(a => !a.submitted);
+    const drafts = store.apps.filter(a => !a.submitted && hasDraftContent(a));
+    if (!submitted.length && !drafts.length) return;   // nothing meaningful → clean start
+    $('returningBanner').classList.remove('hidden');
     const parts = [];
     if (submitted.length) parts.push(`${submitted.length} submitted application${submitted.length > 1 ? 's' : ''}`);
     if (drafts.length) parts.push(`${drafts.length} unfinished draft${drafts.length > 1 ? 's' : ''}`);
     $('rbTitle').textContent = 'Welcome back! 🥋';
-    $('rbText').textContent = `You have ${parts.join(' and ')} on this device. View, continue, or start a new registration below.`;
+    $('rbText').textContent = `You have ${parts.join(' and ')} on this device. Continue where you stopped, view a submitted application, or start a new one below.`;
 
     const actions = $('rbActions');
     actions.innerHTML = '';
@@ -1110,23 +1121,27 @@
       actions.appendChild(b);
     };
 
-    store.apps.slice(-4).reverse().forEach(app => {
+    // unfinished drafts first (newest first), then submitted applications
+    drafts.slice(-3).reverse().forEach(app => {
       const name = (app.fields && (app.fields.fullName || app.fields.preferredName)) ||
                    (app.for === 'child' ? 'Child/Ward' : 'Myself');
-      if (app.submitted) {
-        mkBtn(`View: ${name}${app.ref ? ' · ' + app.ref : ''}`,
-          'h-[40px] px-4 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition',
-          () => viewApplication(app.id));
-      } else {
-        mkBtn(`Continue: ${name}`,
-          'h-[40px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-900 transition',
-          () => applyApp(app));
-      }
+      const total = app.for === 'child' ? 6 : 5;
+      const step = Math.min(Math.max(app.step || 1, 1), total);
+      mkBtn(`Continue: ${name} · Step ${step}/${total}`,
+        'h-[40px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-900 transition',
+        () => applyApp(app));
     });
-    if (store.apps.length > 4) {
+    submitted.slice(-2).reverse().forEach(app => {
+      const name = (app.fields && (app.fields.fullName || app.fields.preferredName)) ||
+                   (app.for === 'child' ? 'Child/Ward' : 'Myself');
+      mkBtn(`View: ${name}${app.ref ? ' · ' + app.ref : ''}`,
+        'h-[40px] px-4 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition',
+        () => viewApplication(app.id));
+    });
+    if (drafts.length > 3 || submitted.length > 2) {
       const span = document.createElement('span');
       span.className = 'h-[40px] flex items-center text-[11px] text-neutral-400';
-      span.textContent = `+${store.apps.length - 4} more saved`;
+      span.textContent = `+${Math.max(0, drafts.length - 3) + Math.max(0, submitted.length - 2)} more saved`;
       actions.appendChild(span);
     }
     mkBtn('Start New Registration',
@@ -1395,13 +1410,36 @@
     toast('Your progress is saved — choose a registration type to begin.');
   }
 
-  function selectSelf() { newApp('self'); }
+  /* Resume-or-create: tapping the same registration type again must CONTINUE the
+     unfinished draft — not silently wipe it and restart from step 1. */
+  function resumeOrCreate(forWho, opts = {}) {
+    const cur = currentApp();
+    if (cur && !cur.submitted && cur.for === forWho) {
+      if (!hasDraftContent(cur)) { applyApp(cur); return cur; }   // just started — keep filling it
+      if (confirm(`Continue your unfinished registration for “${cur.fields.fullName || 'Myself'}” (saved at step ${cur.step || 1})?\n\nOK — continue where you stopped\nCancel — start a fresh form`)) {
+        applyApp(cur);
+        return cur;
+      }
+      return newApp(forWho, opts);                                // explicit fresh start
+    }
+    const drafts = store.apps.filter(a => !a.submitted && a.for === forWho && hasDraftContent(a));
+    if (drafts.length) {
+      const last = drafts[drafts.length - 1];
+      if (confirm(`You have an unfinished ${forWho === 'child' ? 'child/ward' : 'self'} registration for “${last.fields.fullName || 'Myself'}”.\n\nOK — continue it\nCancel — start a fresh form`)) {
+        applyApp(last);
+        return last;
+      }
+    }
+    return newApp(forWho, opts);
+  }
+
+  function selectSelf() { resumeOrCreate('self'); }
   function openParentModal() { $('parentModal').classList.remove('hidden'); }
   function closeParentModal() { $('parentModal').classList.add('hidden'); }
   function selectParentOption(which) {
     closeParentModal();
-    if (which === 'child') newApp('child');
-    else newApp('self', { type: 'parent', prefillContact: !!store.guardian });
+    if (which === 'child') resumeOrCreate('child');
+    else resumeOrCreate('self', { type: 'parent', prefillContact: !!store.guardian });
   }
 
   // Auto-save on any input
@@ -1471,6 +1509,136 @@
     if (!res.ok) return null;
     const rows = await res.json();
     return Array.isArray(rows) && rows.length ? rows[0] : null;
+  }
+
+  /* ── DUPLICATE PROTECTION HELPERS ─────────────────────────────────────────────
+     Read the sheet once per submit and find the row that already belongs to this
+     person, so an existing CIFIKA ID is REUSED (and updated) instead of a second
+     ID being created for the same client. */
+  let _sheetRowsCache = null;
+  async function sheetAllRows() {
+    if (_sheetRowsCache) return _sheetRowsCache;
+    const res = await fetch(SHEETDB_API_URL, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error('SheetDB read failed (' + res.status + ')');
+    _sheetRowsCache = await res.json();
+    return _sheetRowsCache;
+  }
+  const normEmail = v => String(v || '').trim().toLowerCase();
+  const normPhone = v => String(v || '').replace(/\D/g, '').slice(-9);   // last 9 digits — 0803… and +234803… match
+  const normName  = v => String(v || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const newerRow  = (a, b) => (!a ? b : (!b ? a : (String(a.Created || '') >= String(b.Created || '') ? a : b)));
+
+  async function findExistingMemberRow(d) {
+    try {
+      const rows = await sheetAllRows();
+      if (!Array.isArray(rows)) return null;
+      const isChild = d.RegisteredFor === 'Child / Ward';
+      let match = null;
+      if (!isChild && normEmail(d.Email)) {
+        // Self registration → the member's own email identifies the person
+        rows.forEach(r => { if (normEmail(r.Email) === normEmail(d.Email)) match = newerRow(match, r); });
+      }
+      if (!match && !isChild && normPhone(d.Phone)) {
+        rows.forEach(r => { if (normPhone(r.Phone) && normPhone(r.Phone) === normPhone(d.Phone)) match = newerRow(match, r); });
+      }
+      if (!match && isChild && normEmail(d.GuardianEmail) && normName(d.FullName)) {
+        // Child → guardian email is shared between siblings, so the child's full name must match too
+        rows.forEach(r => {
+          if (normEmail(r.GuardianEmail) === normEmail(d.GuardianEmail) && normName(r.FullName) === normName(d.FullName))
+            match = newerRow(match, r);
+        });
+      }
+      return (match && match.Ref) ? match : null;
+    } catch (e) {
+      console.warn('Could not check the sheet for an existing record — a new ID will be created.', e);
+      return null;
+    }
+  }
+
+  /* ═══════════ SUPABASE SYNC — registration → public.students ═══════════
+     The portal reads member data from the Supabase `students` table, so every
+     submission is upserted there keyed by registration_ref:
+       • Ref not in Supabase yet → INSERT (the client now reflects in Supabase)
+       • Ref already there       → UPDATE the same row (never duplicates)
+     This runs regardless of cifika-supabase.js so the two stores can't drift. */
+  const SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
+  let _supaClient = null;
+  function supaClient() {
+    if (!_supaClient && window.supabase) _supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return _supaClient;
+  }
+
+  function memberTrainingCategory(d) {
+    if (d.RegisteredFor === 'Child / Ward') return 'child';
+    if (d.DOB) {
+      const age = Math.floor((Date.now() - new Date(d.DOB).getTime()) / (365.25 * 86400000));
+      if (age && age < 18) return 'child';
+    }
+    return 'adult';
+  }
+
+  async function syncStudentToSupabase(ref, d) {
+    try {
+      const client = supaClient();
+      if (!client) { console.warn('Supabase SDK not loaded — student not synced.'); return; }
+      const dash = v => (v && v !== '—') ? v : null;
+      const row = {
+        registration_ref: ref,
+        full_name: d.FullName || null,
+        preferred_name: d.PreferredName || null,
+        date_of_birth: d.DOB || null,
+        nationality: d.Nationality || null,
+        gender: dash(d.Gender),
+        phone: d.Phone || null,
+        email: d.Email || d.GuardianEmail || null,   // member email first, guardian as fallback
+        address: d.Address || null,
+        city_state: d.CityState || null,
+        training_category: memberTrainingCategory(d),
+        karate_style: dash(d.KarateStyle),
+        previous_rank: dash(d.KarateRank) || dash(d.MartialRank),
+        years_trained: dash(d.KarateYears) || dash(d.MartialYears),
+        media_consent: d.MediaConsent === 'Yes',
+        medical_conditions: d.Medical === 'Yes' ? (d.MedicalDesc || 'Declared — see application PDF') : null,
+        injuries: d.Injury === 'Yes' ? (d.InjuryDesc || 'Declared — see application PDF') : null,
+        emergency_contact: {
+          name: d.EmergencyName || '',
+          relationship: d.EmergencyRelationship || '',
+          primaryPhone: d.EmergencyPhone || '',
+          altPhone: d.EmergencyAlt || ''
+        },
+        membership_status: 'pending'
+      };
+      // manual upsert by Ref — works with or without a unique constraint on registration_ref
+      const { data: existing, error: selErr } = await client.from('students').select('id').eq('registration_ref', ref).limit(1);
+      if (selErr) console.warn('Supabase lookup by Ref failed:', selErr.message);
+      let error;
+      if (existing && existing.length) {
+        ({ error } = await client.from('students').update(row).eq('id', existing[0].id));
+      } else {
+        ({ error } = await client.from('students').insert(row));
+      }
+      if (error) {
+        console.error('Supabase student sync failed:', error.message);
+        toast('Saved to the club sheet, but the portal database sync failed: ' + error.message);
+        return;
+      }
+      // passport photo (large data URL) — best-effort second pass, never blocks the main sync
+      if (passportData) {
+        const pid = existing && existing.length ? existing[0].id : null;
+        if (pid) {
+          await client.from('students').update({ passport_photo_url: passportData }).eq('id', pid);
+        } else {
+          const { data: justInserted } = await client.from('students').select('id').eq('registration_ref', ref).limit(1);
+          if (justInserted && justInserted.length)
+            await client.from('students').update({ passport_photo_url: passportData }).eq('id', justInserted[0].id);
+        }
+      }
+      console.info('Supabase: member synced for ' + ref);
+    } catch (e) {
+      console.error('Supabase sync error:', e);
+      toast('Saved to the club sheet — portal database sync could not run (' + (e.message || 'network error') + ').');
+    }
   }
 
   // Diagnostic: confirm the sheet actually stored Nationality
@@ -1567,8 +1735,24 @@
     btn.textContent = 'Submitting…';
 
     const app = currentApp() || (() => { saveDraft(); return currentApp(); })();
-    const isResubmit = !!app.ref; // already has a Ref → update existing sheet row
-    const ref = app.ref || 'CFK-' + String(Math.floor(10000 + Math.random() * 89999));
+
+    /* ── DUPLICATE PROTECTION ─────────────────────────────────────────────────
+       Before minting a new CIFIKA ID, look for this person's existing row in the
+       club sheet (same member email — or, for a child, same guardian email AND
+       child name). If found, that row's Ref is reused and the sheet row is
+       UPDATED in place — no more second ID for the same client. */
+    let isResubmit = !!app.ref;   // this draft already carries a Ref → update that row
+    let ref = app.ref || null;
+    if (!ref) {
+      btn.textContent = 'Checking for an existing record…';
+      const existingRow = await findExistingMemberRow(d);
+      if (existingRow && existingRow.Ref) {
+        ref = String(existingRow.Ref);
+        isResubmit = true;
+        toast(`Existing record found (${ref}) — your details will be updated, no duplicate ID.`);
+      }
+    }
+    if (!ref) ref = 'CFK-' + String(Math.floor(10000 + Math.random() * 89999));
     app.ref = ref;
     app.submitted = true;
     app.submittedAt = new Date().toISOString();
@@ -1610,7 +1794,7 @@
     toast(isResubmit && result === 'updated'
       ? `Your existing record was updated — Ref unchanged: ${ref}`
       : 'Application submitted. Ref: ' + ref);
-    if (window.CIFIKA_SUPABASE) CIFIKA_SUPABASE.syncNow();
+    await syncStudentToSupabase(ref, d);   // upsert into Supabase `students`, keyed by Ref — no drift, no duplicates
   }
 
   // ===== Add another member from the confirmation screen =====
@@ -1961,25 +2145,57 @@ const PORTAL_PARAMS = new URLSearchParams(location.search);
 const PORTAL_MODE = PORTAL_PARAMS.get('from') === 'portal';
 if (PORTAL_MODE) {
   const pName  = PORTAL_PARAMS.get('name')  || '';
-  const pEmail = PORTAL_PARAMS.get('email') || '';
+  const pEmail = (PORTAL_PARAMS.get('email') || '').trim().toLowerCase();
   const pRole  = PORTAL_PARAMS.get('role') === 'parent' ? 'parent' : 'self';
-  let app;
-  if (pRole === 'parent') {
-    app = newApp('child');
-    if (pName)  app.fields.pFullName = pName;
-    if (pEmail) app.fields.pEmail = pEmail;
-    app.fields.pRelationship = app.fields.pRelationship || 'Parent';
-    app.fields.pResponsible = 'on';
+  const wantChild = pRole === 'parent';
+
+  /* ── RESUME, don't restart ──
+     Returning from the portal used to create a brand-new application on EVERY
+     visit, wiping the member's progress. Now: if an unfinished draft for this
+     person already exists (matching contact email, or a blank shell draft),
+     resume it at the exact step where they stopped — only top up empty
+     pre-filled fields. A new application is created only when nothing matches. */
+  const matchesPerson = (a) => {
+    const f = a.fields || {};
+    if (a.for !== (wantChild ? 'child' : 'self')) return false;
+    if (wantChild) return !f.pFullName || String(f.pEmail || '').trim().toLowerCase() === pEmail;
+    return !f.fullName || String(f.email || '').trim().toLowerCase() === pEmail;
+  };
+  let app = [...store.apps].reverse().find(a => !a.submitted && matchesPerson(a) && (wantChild ? a.fields.pFullName : a.fields.fullName))
+        ||  [...store.apps].reverse().find(a => !a.submitted && matchesPerson(a));
+
+  if (app) {
+    if (wantChild) {
+      if (pName  && !app.fields.pFullName)      app.fields.pFullName = pName;
+      if (pEmail && !app.fields.pEmail)         app.fields.pEmail = PORTAL_PARAMS.get('email');
+      app.fields.pRelationship  = app.fields.pRelationship || 'Parent';
+      app.fields.pResponsible   = app.fields.pResponsible || 'on';
+    } else {
+      if (pName  && !app.fields.fullName)       app.fields.fullName = pName;
+      if (pEmail && !app.fields.email)          app.fields.email = PORTAL_PARAMS.get('email');
+    }
+    registration = app.registration || { type: app.type, for: app.for };
+    saveStore();
+    applyApp(app);   // resumes at app.step — exactly where they stopped
+    toast('Welcome back — we picked up your registration where you left off ✓');
   } else {
-    app = newApp('self');
-    if (pName)  app.fields.fullName = pName;
-    if (pEmail) app.fields.email = pEmail;
+    if (wantChild) {
+      app = newApp('child');
+      if (pName)  app.fields.pFullName = pName;
+      if (pEmail) app.fields.pEmail = PORTAL_PARAMS.get('email');
+      app.fields.pRelationship = app.fields.pRelationship || 'Parent';
+      app.fields.pResponsible = 'on';
+    } else {
+      app = newApp('self');
+      if (pName)  app.fields.fullName = pName;
+      if (pEmail) app.fields.email = PORTAL_PARAMS.get('email');
+    }
+    saveStore();
+    applyApp(app, 1);
+    toast(wantChild
+      ? 'Guardian details pre-filled from your portal account — now fill in your child\u2019s information.'
+      : 'Your details are pre-filled from your portal account — complete the rest and submit.');
   }
-  saveStore();
-  applyApp(app, 1);
-  toast(pRole === 'parent'
-    ? 'Guardian details pre-filled from your portal account — now fill in your child\u2019s information.'
-    : 'Your details are pre-filled from your portal account — complete the rest and submit.');
 }
 
 /* ---- PORTAL PROMPT ---- */

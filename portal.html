@@ -55,27 +55,36 @@
 </script>
 
   <style>
-  body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: clip; }
-  .input { width:100%; height:44px; border-radius:9999px; border:1.5px solid #e5e5e5; background:#fff;
-           padding:0 16px; font-size:13px; outline:none; transition: border-color .15s, box-shadow .15s; }
-  .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.06); }
-  .card { background:#fff; border:1px solid #e5e5e5; border-radius:22px; }
+  body { font-family:'Inter',system-ui,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:clip;
+         background:linear-gradient(180deg,#F1EEE9 0%,#EBE7E0 100%); }
+  .input { width:100%; height:48px; border-radius:9999px; border:1.5px solid #E8E5DF; background:#fff;
+           padding:0 18px; font-size:13px; outline:none; transition: border-color .15s, box-shadow .15s; }
+  .input:focus { border-color:#111; box-shadow:0 0 0 3px rgba(0,0,0,.05); }
+  textarea.input { height:auto; border-radius:20px; padding:14px 18px; line-height:1.6; }
+  .card { background:#fff; border:1px solid #ECE9E3; border-radius:26px; }
+  .soft { background:#fff; border:1px solid #EFECE6; border-radius:20px; box-shadow:0 2px 12px rgba(30,24,16,.05); }
   .fade-in { animation: fadeIn .35s ease-out; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-  .tab-btn { transition: all .15s ease; }
-  .tab-btn.active { background:#111; color:#fff; border-color:#111; }
   .role-btn { transition: all .15s ease; }
   .role-btn.active { background:#111; color:#fff; border-color:#111; }
   .ring-pulse { animation: ringPulse 1.6s ease-out infinite; }
   @keyframes ringPulse { 0% { box-shadow:0 0 0 0 rgba(255,107,0,.4); } 100% { box-shadow:0 0 0 10px rgba(255,107,0,0); } }
   .scroll-x::-webkit-scrollbar { height:0; }
   .scroll-x { -webkit-overflow-scrolling: touch; }
-  .nav-btn { transition: all .15s ease; }
-  .nav-btn.active { background:#FF6B00; color:#fff; }
+
+  /* ---- Dark hero card (Sandhill-style greeting header) ---- */
+  .hero-dark { position:relative; overflow:hidden; color:#fff;
+               background:linear-gradient(135deg,#191919 0%,#0B0B0B 55%,#221404 100%); }
+
+  /* ---- Responsive app shell — NO device frame: sidebar + full-width main column ---- */
+  #appMainWrap { background:#FAF8F5; }
+
   /* ---- Sidebar (collapsible rail on desktop · off-canvas drawer on mobile) ---- */
   #sidebar { scrollbar-width:thin; scrollbar-color:#333 transparent; }
   #sidebar::-webkit-scrollbar { width:5px; }
   #sidebar::-webkit-scrollbar-thumb { background:#333; border-radius:3px; }
+  .nav-btn { transition: all .15s ease; }
+  .nav-btn.active { background:#FF6B00; color:#fff; }
   .nav-group { display:block; padding:14px 10px 4px; font-size:9.5px; font-weight:800; letter-spacing:.16em; color:#6b7280; text-transform:uppercase; }
   .nav-btn.kid-btn { height:38px; padding-left:9px; }
   .kid-ava { width:24px; height:24px; border-radius:9999px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:#d4d4d4; flex-shrink:0; }
@@ -89,6 +98,19 @@
   @media (max-width:1023.98px) {
     #sidebar { box-shadow: 12px 0 40px rgba(0,0,0,.35); }
   }
+
+  /* ---- Timeline (gradings & attendance) ---- */
+  .tl { position:relative; }
+  .tl::before { content:''; position:absolute; left:9px; top:20px; bottom:20px; width:2px;
+                border-radius:2px; background:#E7E3DB; }
+  .tl-item { position:relative; padding-left:30px; }
+  .tl-dot { position:absolute; left:4px; top:20px; width:12px; height:12px; border-radius:50%;
+            background:#fff; border:2.5px solid #CFC9BF; z-index:1; }
+
+  /* ---- Quick search dropdown ---- */
+  .qs-row { display:flex; align-items:center; gap:12px; width:100%; padding:11px 16px;
+            font-size:12.5px; font-weight:600; color:#33302B; transition:background .12s; text-align:left; }
+  .qs-row:hover { background:#FAF8F5; }
 </style>
 
 <!-- CIFIKA Member ID Card — standalone block so printMemberIdCard() can copy it into the print iframe -->
@@ -134,39 +156,43 @@
   }
 </style>
 </head>
-<body class="min-h-screen bg-[#f8f7f6] text-neutral-900">
+<body class="min-h-screen text-neutral-900">
 
 <!-- ═══════════════ AUTH VIEW ═══════════════ -->
-<div id="authView" class="hidden min-h-screen flex items-center justify-center px-5 py-10">
+<div id="authView" class="hidden min-h-screen flex items-start sm:items-center justify-center px-5 py-10">
   <div class="w-full max-w-[440px]">
-    <div class="text-center mb-6">
-      <div class="inline-flex items-center gap-2.5">
-        <span class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-[14px] font-bold">空</span>
-        <span class="text-[12px] font-bold tracking-[0.16em]">CITY FITNESS <span class="text-brand">KARATE</span></span>
+    <div class="hero-dark rounded-[30px] px-6 pt-6 pb-10">
+      <div class="relative z-10">
+        <div class="inline-flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-[14px] font-bold">空</span>
+          <span class="text-[11px] font-bold tracking-[0.16em] text-white/85">CITY FITNESS <span class="text-brand">KARATE</span></span>
+        </div>
+        <h1 class="mt-6 text-[25px] font-extrabold tracking-tight leading-[1.18]">Hey champ!<br>Let's find your path to <span class="text-brand">black belt</span>!</h1>
+        <p class="mt-2.5 text-[12.5px] text-white/55 font-medium">Track training, attendance and belt progression.</p>
       </div>
-      <h1 class="mt-4 text-[28px] font-extrabold tracking-tight leading-tight">Member Portal</h1>
-      <p class="text-[13px] text-neutral-500 mt-1.5">Track training, attendance and belt progression.</p>
     </div>
 
-    <div class="card shadow-[0_16px_48px_rgba(0,0,0,0.07)] p-6 md:p-8">
-      <div class="grid grid-cols-2 gap-2 p-1 bg-neutral-100 rounded-full">
-        <button id="tabIn" onclick="switchAuthTab('in')" class="h-9 rounded-full text-[12px] font-semibold bg-white shadow-sm">Sign In</button>
-        <button id="tabUp" onclick="switchAuthTab('up')" class="h-9 rounded-full text-[12px] font-semibold text-neutral-500">Create Account</button>
+    <div class="-mt-7 relative z-20 px-0.5">
+      <div class="grid grid-cols-2 gap-1 p-1 bg-white rounded-full shadow-[0_14px_34px_rgba(25,18,10,0.14)] border border-neutral-100">
+        <button id="tabIn" onclick="switchAuthTab('in')" class="h-10 rounded-full text-[12.5px] font-bold bg-[#111] text-white shadow-sm transition">Sign In</button>
+        <button id="tabUp" onclick="switchAuthTab('up')" class="h-10 rounded-full text-[12.5px] font-bold text-neutral-400 transition">Create Account</button>
       </div>
+    </div>
 
-      <div id="authError" class="hidden mt-4 text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border"></div>
+    <div class="card rounded-[26px] shadow-[0_18px_50px_rgba(0,0,0,0.06)] p-6 md:p-7 mt-5">
+      <div id="authError" class="hidden mt-0 mb-1 text-[12px] leading-[1.5] px-4 py-3 rounded-[16px] border"></div>
 
       <!-- SIGN IN -->
-      <form id="signInForm" class="mt-5 grid gap-3" onsubmit="event.preventDefault(); doSignIn();">
+      <form id="signInForm" class="mt-1 grid gap-3" onsubmit="event.preventDefault(); doSignIn();">
         <input id="siEmail" type="email" class="input" placeholder="Email address" autocomplete="email">
         <input id="siPassword" type="password" class="input" placeholder="Password" autocomplete="current-password">
-        <button id="siBtn" type="submit" class="h-[46px] rounded-full bg-black text-white text-[13.5px] font-semibold hover:bg-neutral-800 transition">Sign In →</button>
+        <button id="siBtn" type="submit" class="h-[48px] rounded-full bg-black text-white text-[13.5px] font-semibold hover:bg-brand transition">Sign In →</button>
         <div class="flex items-center gap-3">
           <div class="h-px bg-neutral-200 flex-1"></div>
           <span class="text-[10.5px] text-neutral-400 font-semibold tracking-wide">OR</span>
           <div class="h-px bg-neutral-200 flex-1"></div>
         </div>
-        <button type="button" onclick="doGoogle()" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
+        <button type="button" onclick="doGoogle()" class="h-[46px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
           <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.99 11.99 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
           Continue with Google
         </button>
@@ -178,13 +204,13 @@
       </form>
 
       <!-- SIGN UP -->
-      <form id="signUpForm" class="hidden mt-5 grid gap-3" onsubmit="event.preventDefault(); doSignUp();">
+      <form id="signUpForm" class="hidden mt-1 grid gap-3" onsubmit="event.preventDefault(); doSignUp();">
         <input id="suName" class="input" placeholder="Full name">
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" id="roleStudent" onclick="setSignupRole('student')" class="role-btn active h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold flex items-center justify-center gap-2">
+          <button type="button" id="roleStudent" onclick="setSignupRole('student')" class="role-btn active h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold flex items-center justify-center gap-2">
             <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             I'm a Student</button>
-          <button type="button" id="roleParent" onclick="setSignupRole('parent')" class="role-btn h-[42px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold flex items-center justify-center gap-2">
+          <button type="button" id="roleParent" onclick="setSignupRole('parent')" class="role-btn h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold flex items-center justify-center gap-2">
             <svg viewBox="0 0 24 24" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Parent / Guardian</button>
         </div>
@@ -192,27 +218,27 @@
           <input id="suRef" class="input" placeholder="CIFIKA ID (optional) — e.g. CFK-12345" style="text-transform:uppercase" onblur="verifyRef(false)">
           <p class="text-[11px] text-neutral-400 mt-1 px-1">Got a <b>CFK-xxxxx</b> ID from registration? Enter it to link instantly — or leave it blank and connect it later from Account Settings.</p>
         </div>
-        <div id="refStatus" class="hidden text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border"></div>
+        <div id="refStatus" class="hidden text-[12px] leading-[1.5] px-4 py-3 rounded-[16px] border"></div>
         <input id="suEmail" type="email" class="input" placeholder="Email address" autocomplete="email" onblur="if(document.getElementById('suRef').value.trim()) verifyRef(false)">
         <input id="suPassword" type="password" class="input" placeholder="Create password (min. 6 characters)" autocomplete="new-password">
-        <button id="suBtn" type="submit" class="h-[46px] rounded-full bg-brand text-white text-[13.5px] font-semibold hover:bg-brand-dark transition">Create Account →</button>
+        <button id="suBtn" type="submit" class="h-[48px] rounded-full bg-brand text-white text-[13.5px] font-semibold hover:bg-brand-dark transition">Create Account →</button>
         <div class="flex items-center gap-3">
           <div class="h-px bg-neutral-200 flex-1"></div>
           <span class="text-[10.5px] text-neutral-400 font-semibold tracking-wide">OR</span>
           <div class="h-px bg-neutral-200 flex-1"></div>
         </div>
-        <button type="button" onclick="doGoogle()" class="h-[44px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
+        <button type="button" onclick="doGoogle()" class="h-[46px] rounded-full border-[1.5px] border-neutral-200 bg-white text-[13px] font-semibold hover:border-black transition flex items-center justify-center gap-2.5">
           <svg viewBox="0 0 24 24" class="w-4 h-4" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47a5.57 5.57 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.27 14.29A7.2 7.2 0 0 1 4.89 12c0-.8.14-1.57.38-2.29V6.62H1.29a11.99 11.99 0 0 0 0 10.76l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"/></svg>
           Sign up with Google
         </button>
-      <div class="mt-5 p-4 rounded-[16px] bg-neutral-50 border border-neutral-200 flex items-start gap-3">
+      <div class="mt-5 p-4 rounded-[18px] bg-neutral-50 border border-neutral-200 flex items-start gap-3">
         <div class="w-9 h-9 rounded-full bg-white border border-neutral-200 flex items-center justify-center shrink-0">
           <svg viewBox="0 0 24 24" class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h6"/></svg>
         </div>
         <div class="flex-1">
           <div class="text-[12.5px] font-bold">No CIFIKA ID yet? No problem.</div>
           <div class="text-[11.5px] text-neutral-600 mt-1 leading-[1.5]">Create your account now — after sign-up you can connect your <span class="font-semibold text-black">CFK-xxxxx</span> ID to unlock your dojo data, or register to get an ID.</div>
-          <a href="registration.html?from=portal" id="registerLink" onclick="this.href=buildPortalRegUrl()" class="inline-flex mt-3 h-[36px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition items-center gap-1.5">
+          <a href="registration.html?from=portal" id="registerLink" onclick="this.href=buildPortalRegUrl()" class="inline-flex mt-3 h-[36px] px-4 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-brand transition items-center gap-1.5">
             <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
             Register to get an ID →
           </a>
@@ -224,12 +250,12 @@
   </div>
 </div>
 
-<!-- ═══════════════ APP VIEW — responsive shell with sidebar (like the Admin Console) ═══════════════ -->
+<!-- ═══════════════ APP VIEW — responsive shell with sidenav (no mobile frame) ═══════════════ -->
 <div id="appView" class="hidden min-h-screen flex">
   <!-- MOBILE OVERLAY -->
   <div id="sbOverlay" onclick="toggleSidebar(false)" class="hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"></div>
 
-  <!-- SIDEBAR — off-canvas drawer on mobile, collapsible rail on desktop -->
+  <!-- SIDEBAR — off-canvas drawer on mobile · collapsible rail on desktop -->
   <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-[248px] shrink-0 bg-[#0a0a0a] text-white border-r border-neutral-800 flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200">
     <div class="h-[56px] flex items-center justify-between pl-4 pr-3 border-b border-neutral-800 shrink-0">
       <div class="flex items-center gap-2.5 min-w-0">
@@ -256,16 +282,16 @@
   </aside>
 
   <!-- MAIN COLUMN -->
-  <div class="flex-1 min-w-0 flex flex-col min-h-screen">
-    <header class="sticky top-0 z-30 bg-black/95 backdrop-blur text-white border-b border-neutral-800">
+  <div id="appMainWrap" class="flex-1 min-w-0 flex flex-col min-h-screen">
+    <header class="sticky top-0 z-30 bg-[#FAF8F5]/90 backdrop-blur border-b border-[#ECE9E3]">
       <div class="max-w-[1200px] mx-auto pl-3 pr-3 sm:pr-5 md:pl-6 md:pr-6 h-[56px] flex items-center gap-2">
-        <button onclick="toggleSidebar()" id="navToggle" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center shrink-0" title="Toggle menu">
+        <button onclick="toggleSidebar()" id="navToggle" class="w-9 h-9 rounded-full hover:bg-black/5 flex items-center justify-center shrink-0 text-neutral-700" title="Toggle menu">
           <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <span class="lg:hidden text-[12px] font-bold tracking-[0.14em] whitespace-nowrap">CIFIKA <span class="text-brand">PORTAL</span></span>
-        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-neutral-700 text-neutral-300 font-semibold"></span>
+        <span id="hdrRole" class="hidden md:inline-flex text-[10px] tracking-[0.12em] px-2 py-0.5 rounded-full border border-[#E4DFD7] bg-white text-neutral-500 font-semibold"></span>
         <span id="hdrEmail" class="hidden sm:block text-[11px] text-neutral-400 max-w-[180px] truncate ml-auto"></span>
-        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold transition shrink-0">Sign out</button>
+        <button onclick="signOut()" class="h-8 px-4 rounded-full bg-black hover:bg-brand text-white text-[11px] font-semibold transition shrink-0">Sign out</button>
       </div>
     </header>
     <main id="appMain" class="flex-1 w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-5 md:py-7"></main>
@@ -273,7 +299,7 @@
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-black text-white text-[12px] font-medium px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] max-w-[90vw] text-center"></div>
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] bg-black text-white text-[12px] font-medium px-5 py-3 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.25)] max-w-[90vw] text-center"></div>
 
 <script>
 /* ═══════════════ CONFIG — replace these two values ═══════════════ */
@@ -342,6 +368,8 @@ const ICONS = {
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   mega: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
 };
 function ic(name, cls) {
   return `<svg viewBox="0 0 24 24" class="${cls || 'w-4 h-4'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -364,11 +392,25 @@ function sidebarPhotoURL() {
   if (s && s.user_id && currentUser && s.user_id === currentUser.id) return memberPhotoURL(s);
   return googlePhotoURL();
 }
+/* Sidebar + hero avatar cache — the Sandhill-style hero cards render the member's photo.
+   Inside a linked member's dashboard the child's own identity is shown in the hero,
+   while the sidebar footer keeps the signed-in account owner's identity. */
 function updateSidebarAvatar() {
-  if (!$('sbAvatar')) return;
   const init = (currentProfile?.full_name || currentUser?.email || '?').trim()[0]?.toUpperCase() || '?';
-  $('sbAvatar').innerHTML = avatarImgHTML(sidebarPhotoURL(), init);
+  const sbA = $('sbAvatar');
+  if (sbA) sbA.innerHTML = avatarImgHTML(sidebarPhotoURL(), init);
+
+  let nameSrc = currentProfile?.full_name || currentUser?.email || '?';
+  let photo = null;
+  if (window._pview === 'member' && window._dash?.student) {
+    nameSrc = window._dash.student.full_name || nameSrc;
+    photo = memberPhotoURL(window._dash.student) || null;
+  } else {
+    photo = sidebarPhotoURL();
+  }
+  window._heroAvatar = avatarImgHTML(photo || null, (nameSrc).trim()[0]?.toUpperCase() || '?');
 }
+
 /* Photo with graceful fallback to the initial letter underneath */
 function avatarImgHTML(url, initial) {
   const init = escapeHtml(initial || '?');
@@ -376,7 +418,55 @@ function avatarImgHTML(url, initial) {
   return `${init}<img src="${escapeHtml(url)}" alt="" class="absolute inset-0 w-full h-full rounded-full object-cover" onerror="this.remove()">`;
 }
 
-/* Portal sidebar sections — like the Admin Console nav */
+/* ═══════════ HERO (Sandhill-style dark greeting card with flowing wave lines) ═══════════ */
+function heroWave() {
+  let paths = '';
+  for (let i = 0; i < 10; i++) {
+    const y = 118 + i * 13;
+    const o = Math.max(0.03, 0.10 - i * 0.006).toFixed(3);
+    paths += `<path d='M-20 ${y} C 70 ${y - 74}, 150 ${y + 34}, 230 ${y - 26} S 370 ${y - 88}, 440 ${y - 30}' stroke='rgba(255,255,255,${o})' fill='none' stroke-width='1'/>`;
+  }
+  paths += `<path d='M-20 96 C 70 22, 150 130, 230 70 S 370 8, 440 60' stroke='rgba(255,107,0,0.22)' fill='none' stroke-width='1.2'/>`;
+  return `<svg viewBox='0 0 420 250' preserveAspectRatio='xMidYMid slice' class='absolute inset-0 w-full h-full pointer-events-none' aria-hidden='true'>${paths}</svg>`;
+}
+
+function heroName() {
+  if (window._pview === 'member') {
+    const s = window._dash?.student;
+    return s?.preferred_name || (s?.full_name || 'Member').split(' ')[0] || 'Member';
+  }
+  return (currentProfile?.full_name || '').trim().split(' ')[0] || 'there';
+}
+function avatarTargetId() {
+  return window._pview === 'parent' ? 'profile' : window._pview === 'member' ? 'm-idcard' : 'account';
+}
+function avatarBtnHTML(sizeCls, dark) {
+  const base = sizeCls || 'w-11 h-11 text-[15px]';
+  const skin = dark
+    ? 'bg-white/10 border border-white/15 text-white ring-white/15'
+    : 'bg-white border border-neutral-200 text-brand ring-black/5';
+  return `<button onclick="showPortalSection('${avatarTargetId()}')" title="My account"
+    class="${base} ${skin} rounded-full flex items-center justify-center font-extrabold shrink-0 relative overflow-hidden ring-2 transition hover:scale-[1.04]">${window._heroAvatar || '?'}</button>`;
+}
+function heroHTML(sub, chips) {
+  return `
+  <div class="hero-dark rounded-[30px] px-6 pt-6 pb-9">
+    ${heroWave()}
+    <div class="absolute right-4 top-4 w-44 h-44 rounded-full pointer-events-none" style="background:radial-gradient(circle, rgba(255,107,0,.25), transparent 70%)"></div>
+    <div class="relative z-10 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <div class="text-[13px] font-medium text-white/70">Hey ${escapeHtml(heroName())}!</div>
+        <h1 class="mt-1.5 text-[22px] leading-[1.22] font-extrabold tracking-tight">${sub}</h1>
+        <div class="mt-3.5 flex items-center gap-1.5 flex-wrap">${chips || ''}</div>
+      </div>
+      ${avatarBtnHTML('w-12 h-12 text-[16px]', true)}
+    </div>
+  </div>`;
+}
+
+/* ═══════════════ SIDEBAR NAV SHELL ═══════════════
+   Restored sidenav — off-canvas drawer on mobile · collapsible icon rail on
+   desktop (68px), persisted in localStorage. The Sandhill skin stays:        */
 const NAV_ITEMS = [                    // personal student account
   ['home',       'dashboard', 'Home'],
   ['attendance', 'calendar',  'Attendance'],
@@ -402,6 +492,10 @@ const MEMBER_NAV = [                   // a linked child (or the parent's own tr
   ['m-idcard', 'id',        'ID & Details'],   // personal details + printable CIFIKA member ID
 ];
 
+function currentViewKey() {
+  return window._pview === 'parent' ? 'parent' : window._pview === 'member' ? 'member' : 'student';
+}
+
 function navBtnHTML(id, icon, label, onclick) {
   return `
     <button onclick="${onclick || `showPortalSection('${id}')`}" data-nav="${id}" title="${escapeHtml(label)}"
@@ -419,6 +513,12 @@ function navKidBtnHTML(sel, name, photo) {
              w-full rounded-[12px] text-[12.5px] font-semibold flex items-center gap-2.5 text-left whitespace-nowrap">
       <span class="kid-ava">${avatarImgHTML(photo || null, initial)}</span><span class="sb-label truncate">${escapeHtml(name)}</span>
     </button>`;
+}
+
+/* Personal student account nav */
+function renderNav(items) {
+  const list = items || NAV_ITEMS;
+  $('navWrap').innerHTML = list.map(([id, icon, label]) => navBtnHTML(id, icon, label)).join('');
 }
 
 /* Parent view sidebar — account tabs + a "MY KIDS" group with every linked member */
@@ -446,6 +546,159 @@ function renderMemberNav() {
     items.push(navKidBtnHTML('me', 'My training', memberPhotoURL(window.mineStudent)));
   items.push(navBtnHTML('p-settings', 'gear', 'Settings', "goParent('settings')"));
   $('navWrap').innerHTML = items.join('');
+}
+
+/* Sidebar: off-canvas drawer on mobile · collapsible icon rail on desktop */
+function toggleSidebar(force) {
+  const sbs = $('sidebar'), ov = $('sbOverlay');
+  if (window.matchMedia('(min-width:1024px)').matches) {
+    const rail = force === undefined ? !sbs.classList.contains('rail') : !!force;
+    sbs.classList.toggle('rail', rail);
+    localStorage.setItem('cifika_portal_rail', rail ? '1' : '0');
+  } else {
+    const open = force === undefined ? sbs.classList.contains('-translate-x-full') : !!force;
+    sbs.classList.toggle('-translate-x-full', !open);
+    ov.classList.toggle('hidden', !open);
+  }
+}
+
+/* Active-state marking across the sidebar */
+function markNav(id) {
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    const on = b.dataset.nav === id;
+    b.classList.toggle('bg-brand', on);
+    b.classList.toggle('text-white', on);
+    b.classList.toggle('text-neutral-300', !on);
+  });
+}
+
+/* Quick-jump search pill — floats over the hero, like the template's search bar */
+function quickSearchHTML() {
+  return `
+  <div class="-mt-7 relative z-20 px-0.5">
+    <div class="relative">
+      <div class="flex items-center gap-2 pl-5 pr-1.5 h-[54px] bg-white rounded-full border border-neutral-100 shadow-[0_14px_34px_rgba(25,18,10,0.13)]">
+        <span class="text-neutral-400 shrink-0">${ic('search','w-[18px] h-[18px]')}</span>
+        <input id="quickSearch" type="text" placeholder="Jump to a section…" autocomplete="off"
+          class="flex-1 min-w-0 bg-transparent outline-none text-[13px] font-medium placeholder:text-neutral-400"
+          oninput="qsRender(this.value)" onfocus="qsRender(this.value)" onblur="setTimeout(qsHide,150)">
+        <button onclick="toggleSidebar()" class="w-[42px] h-[42px] rounded-full bg-[#111] text-white flex items-center justify-center shrink-0 hover:bg-neutral-800 transition" title="Toggle menu" aria-label="Toggle menu">${ic('dashboard','w-[18px] h-[18px]')}</button>
+      </div>
+      <div id="qsDrop" class="hidden absolute left-2 right-2 top-[60px] card rounded-[20px] shadow-[0_18px_44px_rgba(20,15,8,0.16)] overflow-hidden z-30"></div>
+    </div>
+  </div>`;
+}
+function qsSources() {
+  const key = currentViewKey();
+  const set = key === 'parent' ? PARENT_NAV : key === 'member' ? MEMBER_NAV : NAV_ITEMS;
+  const secs = set.map(([id, icon, label]) => ({ id, label, icon, sub: 'Section' }));
+  if (key === 'parent') {
+    if (window.mineStudent) secs.push({ id: 'kid-me', label: 'My training', icon: 'user', sub: 'Member' });
+    parentChildren.forEach((c, i) => secs.push({ id: 'kid-' + i, label: c.full_name || 'Member', icon: 'users', sub: 'Member' }));
+    (window._parentAnns || []).slice(0, 6).forEach(a => secs.push({ id: 'ann', label: a.title || 'Announcement', icon: 'mega', sub: 'Announcement' }));
+  }
+  return secs;
+}
+function qsRender(v) {
+  const drop = $('qsDrop'); if (!drop) return;
+  const q = (v || '').trim().toLowerCase();
+  const hits = qsSources().filter(s => !q || s.label.toLowerCase().includes(q) || s.sub.toLowerCase().includes(q));
+  drop.innerHTML = hits.length
+    ? hits.slice(0, 7).map(s => `
+        <button class="qs-row" onmousedown="qsGo('${s.id}')">
+          <span class="w-8 h-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-500 shrink-0">${ic(s.icon, 'w-[15px] h-[15px]')}</span>
+          <span class="flex-1 min-w-0 truncate">${escapeHtml(s.label)}</span>
+          <span class="text-[10px] font-bold text-neutral-300 uppercase tracking-wide shrink-0">${s.sub}</span>
+        </button>`).join('')
+    : `<div class="px-4 py-4 text-[12px] text-neutral-400 text-center">No matches — try “attendance” or “grading”.</div>`;
+  drop.classList.remove('hidden');
+}
+function qsHide() { const d = $('qsDrop'); if (d) d.classList.add('hidden'); }
+function qsGo(id) {
+  qsHide();
+  const inp = $('quickSearch'); if (inp) inp.value = ''; if (inp) inp.blur();
+  if (String(id).startsWith('kid-')) { openMember(id.slice(4)); return; }
+  if (currentViewKey() === 'parent') goParent(id);
+  else showPortalSection(id);
+}
+
+/* ═══════════════ SECTION ROUTING ═══════════════ */
+function showPortalSection(id) {
+  if (window._pview === 'parent') {
+    portalSection = id; markNav(id);
+    renderParentSection(id);
+  } else if (window._pview === 'member' && String(id).startsWith('m-')) {
+    portalSection = id; markNav(id);
+    renderMemberSection(id);
+  } else {
+    portalSection = id; markNav(id);
+    renderPortalSection(id);
+  }
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* Back into the guardian account shell */
+function goParent(section) {
+  window._pview = 'parent';
+  window._memberSel = null;
+  window._dash = window._dash;               // keep cached member data for quick re-entry
+  portalSection = section || 'home';
+  $('sidebar').classList.remove('hidden');
+  $('navToggle').classList.remove('hidden');
+  renderParentNav(); markNav(portalSection);
+  renderParentSection(portalSection);
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+}
+
+/* Open a linked member's dashboard — sel: index into parentChildren, or 'me' for the parent's own training */
+async function openMember(sel) {
+  const student = sel === 'me' ? window.mineStudent : parentChildren[Number(sel)];
+  if (!student) return;
+  await renderDashboard(student, { back: true, backLabel: 'Parent home', parentCtx: true, sel: String(sel) });
+  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
+    toggleSidebar(false);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* Shared section header — big bold title + avatar, like the template's "Today" header */
+function sectionCard(title, sub, bodyHTML) {
+  return `
+  <div class="fade-in">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <div class="min-w-0">
+        <h1 class="text-[25px] font-extrabold tracking-tight leading-tight">${title}</h1>
+        ${sub ? `<div class="text-[11.5px] text-neutral-400 mt-1">${sub}</div>` : ''}
+      </div>
+      ${avatarBtnHTML('w-10 h-10 text-[14px]', false)}
+    </div>
+    <div class="grid gap-4">${bodyHTML}</div>
+  </div>`;
+}
+
+function renderPortalSection(id) {
+  const d = window._dash;
+  if (!d) { renderStudentHome(); return; }
+  if (id === 'attendance') $('appMain').innerHTML = sectionCard('Attendance', '80% required for grading eligibility', attendanceTabHTML(d.att, d.rate));
+  else if (id === 'gradings') $('appMain').innerHTML = sectionCard('Gradings', `${d.grd.length} recorded`, gradingsSectionHTML(d));
+  else if (id === 'absences') $('appMain').innerHTML = sectionCard('Absences', 'request an excusal', absenceTabHTML(d.student));
+  else if (id === 'dojo') $('appMain').innerHTML = sectionCard('Dojo Code', 'club rules & dojo kun', dojoCodeHTML());
+  else if (id === 'account') $('appMain').innerHTML = sectionCard('Account', 'profile & settings', profileTabHTML(d.student));
+  else renderDashboardHome();
+}
+
+/* Member sections — a linked member's personal screens inside the guardian shell */
+function renderMemberSection(id) {
+  const d = window._dash;
+  if (!d) { goParent('home'); return; }
+  const who = (d.student.full_name || 'Member').split(' ')[0];
+  if (id === 'm-att') $('appMain').innerHTML = sectionCard('Attendance', `${who} — 80% required for grading`, attendanceTabHTML(d.att, d.rate));
+  else if (id === 'm-grd') $('appMain').innerHTML = sectionCard('Gradings', `${who} — ${d.grd.length} recorded`, gradingsSectionHTML(d));
+  else if (id === 'm-abs') $('appMain').innerHTML = sectionCard('Absences', 'request an excusal', absenceTabHTML(d.student));
+  else if (id === 'm-idcard') $('appMain').innerHTML = sectionCard('ID & Details', `${who}'s CIFIKA ID — printable`, memberDetailsHTML(d.student));
+  else renderDashboardHome();
 }
 
 /* ═══════════════ BOOT ═══════════════ */
@@ -489,8 +742,8 @@ function switchAuthTab(which) {
   const inBtn = $('tabIn'), upBtn = $('tabUp');
   inForm.classList.toggle('hidden', which !== 'in');
   upForm.classList.toggle('hidden', which !== 'up');
-  inBtn.className = 'h-9 rounded-full text-[12px] font-semibold ' + (which === 'in' ? 'bg-white shadow-sm' : 'text-neutral-500');
-  upBtn.className = 'h-9 rounded-full text-[12px] font-semibold ' + (which === 'up' ? 'bg-white shadow-sm' : 'text-neutral-500');
+  inBtn.className = 'h-10 rounded-full text-[12.5px] font-bold transition ' + (which === 'in' ? 'bg-[#111] text-white shadow-sm' : 'text-neutral-400 hover:text-neutral-600');
+  upBtn.className = 'h-10 rounded-full text-[12.5px] font-bold transition ' + (which === 'up' ? 'bg-[#111] text-white shadow-sm' : 'text-neutral-400 hover:text-neutral-600');
   hideAuthError();
 }
 
@@ -503,7 +756,7 @@ function setSignupRole(r) {
 function showRefStatus(msg, ok) {
   const box = $('refStatus');
   box.textContent = msg;
-  box.className = 'text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border ' +
+  box.className = 'text-[12px] leading-[1.5] px-4 py-3 rounded-[16px] border ' +
     (ok ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-700');
 }
 
@@ -535,7 +788,7 @@ async function verifyRef(silent) {
 function showAuthError(msg, isInfo) {
   const el = $('authError');
   el.textContent = msg;
-  el.className = 'mt-4 text-[12px] leading-[1.5] px-4 py-3 rounded-[14px] border ' +
+  el.className = 'mt-0 mb-1 text-[12px] leading-[1.5] px-4 py-3 rounded-[16px] border ' +
     (isInfo ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-700');
 }
 
@@ -645,126 +898,34 @@ async function enterApp(user) {
   $('hdrEmail').textContent = user.email;
   $('hdrRole').textContent = profile.role.toUpperCase();
   $('sbEmail').textContent = profile.full_name?.trim() || user.email;
-  $('sbAvatar').innerHTML = avatarImgHTML(googlePhotoURL(), (profile.full_name || user.email || '?').trim()[0]?.toUpperCase() || '?');
   $('sbRole').textContent = (profile.role === 'parent' ? 'PARENT / GUARDIAN — ACCOUNT OWNER' : profile.role.toUpperCase() + ' PORTAL');
+  updateSidebarAvatar();
   if (window.matchMedia('(min-width:1024px)').matches && localStorage.getItem('cifika_portal_rail') === '1')
     $('sidebar').classList.add('rail');
 
   if (profile.role === 'parent') return renderParentHome();
 
   // student / member — no linked member yet? → onboarding (connect ID / register for an ID)
-  const { data: linked } = await sb.from('students').select('id').eq('user_id', user.id).maybeSingle();
+  /* limit(2) instead of maybeSingle(): when the duplicate-registration bug left TWO
+     member rows on one account, maybeSingle() threw PGRST116, data came back null,
+     and the user was bounced straight back to this "Connect your ID" screen even
+     though the ID was already connected. limit() keeps the query working; the first
+     row wins and a console warning flags the cleanup. */
+  const { data: linkedRows, error: linkedErr } = await sb.from('students').select('id, registration_ref').eq('user_id', user.id).limit(2);
+  if (linkedErr) console.warn('Portal: member lookup failed —', linkedErr.message);
+  if (linkedRows && linkedRows.length > 1)
+    console.warn(`Portal: ${linkedRows.length} member rows are linked to this account — run supabase_duplicate_repair.sql to merge them. Using the first one.`);
+  const linked = (!linkedErr && linkedRows && linkedRows.length) ? linkedRows[0] : null;
   if (!linked && !sessionStorage.getItem('cifika_onboard_done')) return renderOnboarding(false);
   await renderStudentHome();
 }
 
-/* ═══════════════ SIDEBAR SHELL ═══════════════ */
-function renderNav(items) {   // personal student account nav (parent/member views have their own renderers)
-  const list = items || NAV_ITEMS;
-  $('navWrap').innerHTML = list.map(([id, icon, label]) => navBtnHTML(id, icon, label)).join('');
-}
-
-/* Sidebar: off-canvas drawer on mobile · collapsible icon rail on desktop */
-function toggleSidebar(force) {
-  const sbs = $('sidebar'), ov = $('sbOverlay');
-  if (window.matchMedia('(min-width:1024px)').matches) {
-    const rail = force === undefined ? !sbs.classList.contains('rail') : !!force;
-    sbs.classList.toggle('rail', rail);
-    localStorage.setItem('cifika_portal_rail', rail ? '1' : '0');
-  } else {
-    const open = force === undefined ? sbs.classList.contains('-translate-x-full') : !!force;
-    sbs.classList.toggle('-translate-x-full', !open);
-    ov.classList.toggle('hidden', !open);
-  }
-}
-
-/* Sidebar navigation — routes by view: parent shell · member dashboard · personal student account */
-function showPortalSection(id) {
-  if (window._pview === 'parent') {
-    portalSection = id; markNav(id);
-    renderParentSection(id);
-  } else if (window._pview === 'member' && String(id).startsWith('m-')) {
-    portalSection = id; markNav(id);
-    renderMemberSection(id);
-  } else {
-    portalSection = id; markNav(id);
-    renderPortalSection(id);
-  }
-  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
-    toggleSidebar(false);
-}
-
-/* Back into the guardian account shell (sidebar GUARDIAN group / back buttons) */
-function goParent(section) {
-  window._pview = 'parent';
-  window._memberSel = null;
-  window._dash = window._dash;               // keep cached member data for quick re-entry
-  portalSection = section || 'home';
-  $('sidebar').classList.remove('hidden');
-  $('navToggle').classList.remove('hidden');
-  renderParentNav(); markNav(portalSection);
-  renderParentSection(portalSection);
-  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
-    toggleSidebar(false);
-}
-
-/* Open a linked member's dashboard — sel: index into parentChildren, or 'me' for the parent's own training */
-async function openMember(sel) {
-  const student = sel === 'me' ? window.mineStudent : parentChildren[Number(sel)];
-  if (!student) return;
-  await renderDashboard(student, { back: true, backLabel: 'Parent home', parentCtx: true, sel: String(sel) });
-  if (window.matchMedia('(max-width:1023.98px)').matches && !$('sidebar').classList.contains('-translate-x-full'))
-    toggleSidebar(false);
-}
-
-function markNav(id) {
-  document.querySelectorAll('[data-nav]').forEach(b => {
-    const on = b.dataset.nav === id;
-    b.classList.toggle('bg-brand', on);
-    b.classList.toggle('text-white', on);
-    b.classList.toggle('text-neutral-300', !on);
-  });
-}
-
-function sectionCard(title, sub, bodyHTML) {
-  return `
-  <div class="fade-in grid gap-4">
-    <div class="card overflow-hidden">
-      <div class="px-5 md:px-6 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
-        <div class="text-[12px] font-bold tracking-[0.14em]">${title}</div>
-        ${sub ? `<div class="text-[11px] text-neutral-400">${sub}</div>` : ''}
-      </div>
-      <div class="p-5 md:p-6">${bodyHTML}</div>
-    </div>
-  </div>`;
-}
-
-function renderPortalSection(id) {
-  const d = window._dash;
-  if (!d) { renderStudentHome(); return; }
-  if (id === 'attendance') $('appMain').innerHTML = sectionCard('ATTENDANCE', '80% required for grading', attendanceTabHTML(d.att, d.rate));
-  else if (id === 'gradings') $('appMain').innerHTML = sectionCard('GRADINGS', `${d.grd.length} recorded`, gradingsTabHTML(d.grd, d.scoreById));
-  else if (id === 'absences') $('appMain').innerHTML = sectionCard('ABSENCES', 'request an excusal', absenceTabHTML(d.student));
-  else if (id === 'dojo') $('appMain').innerHTML = sectionCard('DOJO CODE', 'club rules & dojo kun', dojoCodeHTML());
-  else if (id === 'account') $('appMain').innerHTML = sectionCard('ACCOUNT', 'profile & settings', profileTabHTML(d.student));
-  else renderDashboardHome();
-}
-
-/* Member sections — a linked member's personal screens inside the guardian shell */
-function renderMemberSection(id) {
-  const d = window._dash;
-  if (!d) { goParent('home'); return; }
-  const who = (d.student.full_name || 'Member').split(' ')[0];
-  if (id === 'm-att') $('appMain').innerHTML = sectionCard('ATTENDANCE', `${who} — 80% required for grading`, attendanceTabHTML(d.att, d.rate));
-  else if (id === 'm-grd') $('appMain').innerHTML = sectionCard('GRADINGS', `${who} — ${d.grd.length} recorded`, gradingsTabHTML(d.grd, d.scoreById));
-  else if (id === 'm-abs') $('appMain').innerHTML = sectionCard('ABSENCES', 'request an excusal', absenceTabHTML(d.student));
-  else if (id === 'm-idcard') $('appMain').innerHTML = sectionCard('MEMBER ID & DETAILS', `${who}'s CIFIKA ID — printable`, memberDetailsHTML(d.student));
-  else renderDashboardHome();
-}
-
 /* ═══════════════ STUDENT HOME ═══════════════ */
 async function renderStudentHome() {
-  const { data: student } = await sb.from('students').select('*').eq('user_id', currentUser.id).maybeSingle();
+  /* limit() instead of maybeSingle() — duplicate member rows on one account must
+     never break the dashboard again (see enterApp note above). */
+  const { data: ownRows } = await sb.from('students').select('*').eq('user_id', currentUser.id).limit(2);
+  const student = (ownRows && ownRows.length) ? ownRows[0] : null;
   if (!student) return renderOnboarding(true);
   await renderDashboard(student, {});
 }
@@ -783,12 +944,13 @@ async function fetchParentAnnouncements(limit) {
 }
 
 async function renderParentHome() {
-  const [{ data: links }, { data: mine }, anns] = await Promise.all([
+  const [{ data: links }, { data: mineRows }, anns] = await Promise.all([
     sb.from('parent_child_links').select('id, relationship, students(*)').eq('parent_id', currentUser.id),
-    sb.from('students').select('*').eq('user_id', currentUser.id).maybeSingle(),
+    sb.from('students').select('*').eq('user_id', currentUser.id).limit(1),   // limit() — duplicate rows must not break the query
     fetchParentAnnouncements(6),
   ]);
   parentChildren = (links || []).map(l => l.students).filter(Boolean);
+  const mine = (mineRows && mineRows.length) ? mineRows[0] : null;
   window.mineStudent = mine || null;
   window._parentAnns = anns;
   updateSidebarAvatar();
@@ -800,60 +962,53 @@ async function renderParentHome() {
   renderParentNav();
   markNav('home');
 
-  const cards = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
-  const myCard = mine ? `
-      <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="openMember('me')">
-        <div class="w-14 h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(memberPhotoURL(mine), (mine.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
-        <div class="flex-1 min-w-0">
-          <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">MY TRAINING</div>
-          <div class="font-bold text-[14.5px] truncate">${escapeHtml(mine.full_name || 'Me')}</div>
-          <div class="mt-1.5 flex items-center gap-2 flex-wrap">${beltChipHTML(mine.current_belt)}${memStatusPill(mine.membership_status)}</div>
-        </div>
-        <div class="text-neutral-400">→</div>
-      </div>` : '';
-
-  const kidsBlock = parentChildren.length
-    ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`
-    : `<div class="rounded-[22px] border-2 border-dashed border-neutral-300 p-8 text-center">
-         <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic('users','w-6 h-6')}</div>
-         <div class="mt-2 text-[14px] font-bold">No children linked yet</div>
-         <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[46ch] mx-auto leading-[1.6]">
-           Register your child via the registration form, then use Link Child to connect their CIFIKA ID.
-           Your account email must match the guardian email on the registration.
-         </div>
-         <div class="mt-4 flex flex-wrap justify-center gap-2">
-           <button onclick="goParent('link')" class="h-[38px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('link','w-3.5 h-3.5')} Link a child</button>
-           <a href="${buildPortalRegUrl()}" class="h-[38px] px-5 rounded-full border border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-1.5">${ic('plus','w-3.5 h-3.5')} Register a child / ward</a>
-         </div>
-       </div>`;
+  const kidsRow = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
+  const mineRow = mine ? mineCardHTML(mine) : '';
+  const hasKids = !!(parentChildren.length || mine);
 
   $('appMain').innerHTML = `
-  <div class="fade-in grid gap-6">
-    <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-center gap-4 min-w-0">
-        <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(sidebarPhotoURL(), (currentProfile.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
-        <div class="min-w-0">
-          <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome, ${escapeHtml(currentProfile.full_name || 'Parent')}</h1>
-          <p class="text-[13px] text-neutral-500 mt-1">${mine ? 'Parent + member account — manage your children and keep training.' : 'Guardian portal — you own this account and manage your children\u2019s training from here.'}</p>
-        </div>
-      </div>
-      <div class="text-[12px] text-neutral-500 md:text-right shrink-0">
-        <div class="font-semibold text-neutral-800">Next classes</div>
-        <div>${CLUB.nextClass}</div>
+  <div class="fade-in">
+    ${heroHTML(`Let's keep your <span class="text-brand">champions</span> on track!`,
+      `<span class="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[9.5px] font-extrabold tracking-[0.08em] text-white/80">PARENT / GUARDIAN</span>
+       <span class="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[9.5px] font-bold text-white/60">${parentChildren.length + (mine ? 1 : 0)} linked member${parentChildren.length + (mine ? 1 : 0) === 1 ? '' : 's'}</span>`)}
+    ${quickSearchHTML()}
+
+    <div class="mt-6 soft px-5 py-4 flex items-start gap-3">
+      <span class="text-brand shrink-0 mt-0.5">${ic('calendar','w-[18px] h-[18px]')}</span>
+      <div class="min-w-0">
+        <div class="text-[11px] font-extrabold tracking-[0.1em] uppercase text-neutral-800">Next classes</div>
+        <div class="text-[11.5px] text-neutral-500 mt-1 leading-[1.55]">${CLUB.nextClass}</div>
       </div>
     </div>
 
-    <div>
-      <div class="flex items-center justify-between mb-3">
-        <div class="text-[12px] font-bold tracking-[0.14em]">MY CHILDREN</div>
-        ${parentChildren.length ? `<button onclick="goParent('kids')" class="text-[11px] font-semibold text-neutral-400 hover:text-black transition">Manage all →</button>` : ''}
+    <div class="mt-7">
+      <div class="flex items-end justify-between gap-3 mb-3">
+        <h2 class="text-[20px] font-extrabold tracking-tight">My children</h2>
+        ${hasKids ? `<button onclick="goParent('kids')" class="text-[12px] font-bold text-neutral-400 hover:text-black transition shrink-0">Manage all →</button>` : ''}
       </div>
-      ${kidsBlock}
+      ${hasKids
+        ? `<div class="flex gap-3 overflow-x-auto scroll-x snap-x snap-mandatory pb-1 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 lg:grid lg:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] lg:overflow-x-visible">${mineRow}${kidsRow}</div>`
+        : `<div class="rounded-[24px] border-2 border-dashed border-neutral-300 p-8 text-center">
+             <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic('users','w-5 h-5')}</div>
+             <div class="mt-3 text-[14px] font-extrabold">No children linked yet</div>
+             <div class="mt-1.5 text-[12.5px] text-neutral-500 max-w-[46ch] mx-auto leading-[1.6]">
+               Register your child via the registration form, then use Link Child to connect their CIFIKA ID.
+               Your account email must match the guardian email on the registration.
+             </div>
+             <div class="mt-4 flex flex-wrap justify-center gap-2">
+               <button onclick="goParent('link')" class="h-[40px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5">${ic('link','w-3.5 h-3.5')} Link a child</button>
+               <a href="${buildPortalRegUrl()}" class="h-[40px] px-5 rounded-full border-[1.5px] border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-1.5">${ic('plus','w-3.5 h-3.5')} Register a child / ward</a>
+             </div>
+           </div>`}
     </div>
 
-    ${myCard ? `<div><div class="text-[12px] font-bold tracking-[0.14em] mb-3">ALSO ON THE MAT</div><div class="max-w-[420px]">${myCard}</div></div>` : ''}
-
-    ${announcementsHTML(window._parentAnns, 'CLUB UPDATES', 'general info • events • seminars')}
+    <div class="mt-7">
+      <div class="flex items-end justify-between gap-3 mb-3">
+        <h2 class="text-[20px] font-extrabold tracking-tight">Club updates</h2>
+        ${(anns || []).length ? `<button onclick="goParent('ann')" class="text-[12px] font-bold text-neutral-400 hover:text-black transition shrink-0">View all →</button>` : ''}
+      </div>
+      ${(anns || []).length ? annRowsHTML(anns.slice(0, 4)) : emptyState('mega', 'No announcements yet', 'Club updates, events and grading windows will appear here as soon as the club publishes them.')}
+    </div>
   </div>`;
 }
 
@@ -863,7 +1018,7 @@ function renderParentSection(id) {
   else if (id === 'kids')         renderKidsManager();
   else if (id === 'link')         renderLinkChildTab();
   else if (id === 'ann')          renderAnnouncementsTab();
-  else if (id === 'dojo')         $('appMain').innerHTML = sectionCard('DOJO CODE', 'club rules & dojo kun', dojoCodeHTML());
+  else if (id === 'dojo')         $('appMain').innerHTML = sectionCard('Dojo Code', 'club rules & dojo kun', dojoCodeHTML());
   else if (id === 'profile')      renderParentProfile();
   else if (id === 'settings')     renderParentSettings();
   else                            renderParentHome();
@@ -872,88 +1027,63 @@ function renderParentSection(id) {
 /* MY KIDS — manage every linked child from one screen */
 function renderKidsManager() {
   const cards = parentChildren.map((c, i) => childCardHTML(c, i)).join('');
+  const mineRow = window.mineStudent ? mineCardHTML(window.mineStudent) : '';
   $('appMain').innerHTML = `
-  <div class="fade-in grid gap-6">
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-      <div>
-        <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">My Kids</h1>
-        <p class="text-[12.5px] text-neutral-500 mt-0.5">Open a child to see their dashboard — ID, attendance, gradings and personal details.</p>
-      </div>
-      <button onclick="goParent('link')" class="h-9 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5">${ic('link','w-3.5 h-3.5')} Link Child</button>
-    </div>
-    ${parentChildren.length
-      ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">${cards}</div>`
-      : emptyState('users', 'No children linked yet', 'Use Link Child to connect an existing registration, or register a new child from the Link Child tab.')}
-    ${window.mineStudent ? `
-    <div>
-      <div class="text-[12px] font-bold tracking-[0.14em] mb-3">ALSO ON THE MAT</div>
-      <div class="max-w-[420px]">
-        <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="openMember('me')">
-          <div class="w-12 h-12 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[16px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(memberPhotoURL(window.mineStudent), (window.mineStudent.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-[10.5px] font-bold tracking-[0.12em] text-brand">MY TRAINING</div>
-            <div class="font-bold text-[14px] truncate">${escapeHtml(window.mineStudent.full_name || 'Me')}</div>
-          </div>
-          <div class="text-neutral-400">→</div>
-        </div>
-      </div>
-    </div>` : ''}
+  <div class="fade-in">
+    ${sectionCard('My Kids', 'Open a child to see their dashboard — ID, attendance, gradings and personal details.', `
+      <button onclick="goParent('link')" class="w-fit h-10 px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5">${ic('link','w-3.5 h-3.5')} Link Child</button>
+      ${(parentChildren.length || window.mineStudent)
+        ? `<div class="flex gap-3 overflow-x-auto scroll-x snap-x snap-mandatory pb-1 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 lg:grid lg:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] lg:overflow-x-visible">${mineRow}${cards}</div>`
+        : emptyState('users', 'No children linked yet', 'Use Link Child to connect an existing registration, or register a new child from the Link Child tab.')}`)}
   </div>`;
 }
 
 /* LINK CHILD — connect an existing registration + start a new registration */
 function renderLinkChildTab() {
   $('appMain').innerHTML = `
-  <div class="fade-in grid gap-6 max-w-[720px]">
-    <div>
-      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Link Child</h1>
-      <p class="text-[12.5px] text-neutral-500 mt-0.5">Connect an existing club registration to this account, or start a brand-new one.</p>
-    </div>
-
-    <div class="card p-6">
+  <div class="fade-in grid gap-4">
+    ${sectionCard('Link Child', 'Connect an existing club registration to this account, or start a brand-new one.', `
+    <div class="card p-5">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0">${ic('link','w-4 h-4')}</div>
+        <div class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0">${ic('link','w-4 h-4')}</div>
         <div>
           <div class="text-[14px] font-extrabold">Link an existing registration</div>
           <div class="text-[11.5px] text-neutral-500 mt-0.5">Enter your child's CIFIKA ID (from their confirmation, e.g. <b>CFK-00001</b>).</div>
         </div>
       </div>
-      <div class="mt-4 flex flex-col sm:flex-row gap-2 max-w-[520px]">
+      <div class="mt-4 flex flex-col sm:flex-row gap-2">
         <input id="linkRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
-        <button onclick="linkChild()" class="h-[44px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Link Child</button>
+        <button onclick="linkChild()" class="h-[48px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Link Child</button>
       </div>
       <p class="text-[11px] text-neutral-400 mt-2 leading-[1.55]">The account email must match the guardian email on the registration.</p>
       <p id="linkMsg" class="hidden mt-2 text-[12px]"></p>
     </div>
 
-    <div class="card p-6">
+    <div class="card p-5">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shrink-0">${ic('users','w-4 h-4')}</div>
+        <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0">${ic('users','w-4 h-4')}</div>
         <div>
           <div class="text-[14px] font-extrabold">Register a child / ward</div>
           <div class="text-[11.5px] text-neutral-500 mt-0.5">New to the club? The registration form opens with your guardian details pre-filled — the new ID connects automatically when you return.</div>
         </div>
       </div>
-      <a href="${buildPortalRegUrl()}" class="mt-4 h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Open the registration form →</a>
+      <a href="${buildPortalRegUrl()}" class="mt-4 h-[46px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-brand transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Open the registration form →</a>
     </div>
 
-    ${registerSelfCardHTML()}
+    ${registerSelfCardHTML()}`)}
   </div>`;
 }
 
 /* ANNOUNCEMENTS — the full club updates list (the parent home shows a preview) */
 async function renderAnnouncementsTab() {
-  $('appMain').innerHTML = `<div class="fade-in"><div class="card p-6 md:p-7"><div class="text-[12px] font-bold tracking-[0.14em]">ANNOUNCEMENTS</div><div class="text-[11.5px] text-neutral-400 mt-1">Loading club updates…</div></div></div>`;
+  $('appMain').innerHTML = `<div class="fade-in">${sectionCard('Announcements', 'loading club updates…', `<div class="soft p-5 text-[11.5px] text-neutral-400">Loading club updates…</div>`)}</div>`;
   const anns = await fetchParentAnnouncements(30);
   $('appMain').innerHTML = `
-  <div class="fade-in grid gap-4">
-    <div>
-      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Announcements</h1>
-      <p class="text-[12.5px] text-neutral-500 mt-0.5">Everything the club publishes — grading windows, events, seminars and updates.</p>
-    </div>
-    ${anns.length
-      ? announcementsHTML(anns, 'CLUB UPDATES', `${anns.length} published`, true)
-      : emptyState('mega', 'No announcements yet', 'Club updates, events and grading windows will appear here as soon as the club publishes them.')}
+  <div class="fade-in">
+    ${sectionCard('Announcements', 'Everything the club publishes — grading windows, events, seminars and updates.',
+      anns.length
+        ? annRowsHTML(anns)
+        : emptyState('mega', 'No announcements yet', 'Club updates, events and grading windows will appear here as soon as the club publishes them.'))}
   </div>`;
 }
 
@@ -962,13 +1092,9 @@ function renderParentProfile() {
   const mine = window.mineStudent;
   const initial = (currentProfile.full_name || currentUser.email || '?').trim()[0]?.toUpperCase() || '?';
   $('appMain').innerHTML = `
-  <div class="fade-in grid gap-6">
-    <div>
-      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Profile</h1>
-      <p class="text-[12.5px] text-neutral-500 mt-0.5">Your account details — you are the owner of this parent / guardian account.</p>
-    </div>
-
-    <div class="card p-6 md:p-7 flex items-center gap-4 flex-wrap">
+  <div class="fade-in">
+    ${sectionCard('Profile', 'Your account details — you are the owner of this parent / guardian account.', `
+    <div class="card p-5 flex items-center gap-4 flex-wrap">
       <div class="w-16 h-16 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[22px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(sidebarPhotoURL(), initial)}</div>
       <div class="min-w-0 flex-1">
         <div class="text-[17px] font-extrabold truncate">${escapeHtml(currentProfile.full_name || 'Parent')}</div>
@@ -981,19 +1107,19 @@ function renderParentProfile() {
     </div>
 
     ${mine ? `
-      <div class="card overflow-hidden">
-        <div class="px-5 md:px-6 py-4 border-b border-neutral-100 flex items-center justify-between gap-3">
-          <div class="text-[12px] font-bold tracking-[0.14em]">MY MEMBER DETAILS</div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div class="text-[12px] font-extrabold tracking-[0.14em]">MY MEMBER DETAILS</div>
           <div class="text-[11px] text-neutral-400">you train too — your own record</div>
         </div>
-        <div class="p-5 md:p-6">${memberDetailsHTML(mine)}</div>
+        ${memberDetailsHTML(mine)}
       </div>`
     : `
-      <div class="card p-6">
+      <div class="card p-5">
         <div class="text-[14px] font-extrabold">Not registered as a member yet</div>
         <p class="text-[12.5px] text-neutral-500 mt-1 leading-[1.6]">Parents can train too. Register yourself as a member to get your own CIFIKA ID, belt journey and attendance record — your kids stay linked to this same account.</p>
-        <a href="${buildPortalRegUrl('self')}" class="mt-4 h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register myself →</a>
-      </div>`}
+        <a href="${buildPortalRegUrl('self')}" class="mt-4 h-[44px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-brand transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register myself →</a>
+      </div>`}`)}
   </div>`;
 }
 
@@ -1018,89 +1144,100 @@ function renderParentSettings() {
       </div>`).join('') : '';
 
   $('appMain').innerHTML = `
-  <div class="fade-in grid gap-6 max-w-[760px]">
-    <div>
-      <h1 class="text-[20px] md:text-[24px] font-extrabold tracking-tight">Settings</h1>
-      <p class="text-[12.5px] text-neutral-500 mt-0.5">You own this account — manage statuses, linked members, registrations and sign-in here.</p>
-    </div>
-
-    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
-      <div class="text-[12.5px] font-bold">Membership status</div>
+  <div class="fade-in">
+    ${sectionCard('Settings', 'You own this account — manage statuses, linked members, registrations and sign-in here.', `
+    <div class="soft p-5">
+      <div class="text-[13px] font-extrabold">Membership status</div>
       <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">View-only here — the club front desk handles pauses, resumes and all status changes.</div>
       <div class="mt-2.5">${selfStatus}</div>
       ${kidRows ? `<div class="mt-3">
-        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-400 uppercase">Linked children</div>
+        <div class="text-[10.5px] font-extrabold tracking-[0.14em] text-neutral-400 uppercase mb-1">Linked children</div>
         <div>${kidRows}</div>
       </div>` : ''}
     </div>
 
-    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
-      <div class="text-[12.5px] font-bold">Account type</div>
+    <div class="soft p-5">
+      <div class="text-[13px] font-extrabold">Account type</div>
       <div class="mt-1.5 flex items-center gap-2 flex-wrap">
         <span class="px-2.5 py-1 rounded-full bg-black text-white text-[11px] font-bold">PARENT / GUARDIAN</span>
         <span class="text-[11.5px] text-neutral-500">holds multiple member IDs — one per child, plus your own if you train.</span>
       </div>
     </div>
 
-    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+    <div class="soft p-5">
       <div>
-        <div class="text-[12.5px] font-bold">Link another member</div>
+        <div class="text-[13px] font-extrabold">Link another member</div>
         <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. The account email must match the guardian email on their registration.</p>
       </div>
       <div class="mt-3 flex flex-col sm:flex-row gap-2">
         <input id="setRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
-        <button onclick="connectFromSettings()" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Link member</button>
+        <button onclick="connectFromSettings()" class="h-[48px] px-5 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Link member</button>
       </div>
       <div id="setRefMsg" class="hidden"></div>
     </div>
 
     ${registerSelfCardHTML()}
 
-    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
-      <div class="text-[12.5px] font-bold">Register a child / ward</div>
+    <div class="soft p-5">
+      <div class="text-[13px] font-extrabold">Register a child / ward</div>
       <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Start a fresh club registration with your guardian details pre-filled — the new CIFIKA ID connects to this account automatically.</p>
-      <a href="${buildPortalRegUrl()}" class="mt-3 h-[40px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('file','w-4 h-4')} Register a child / ward →</a>
+      <a href="${buildPortalRegUrl()}" class="mt-3 h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-brand transition inline-flex items-center gap-2">${ic('file','w-4 h-4')} Register a child / ward →</a>
     </div>
 
-    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
-      <div class="text-[12.5px] font-bold">Change password</div>
+    <div class="soft p-5">
+      <div class="text-[13px] font-extrabold">Change password</div>
       <div class="mt-2.5 flex flex-col sm:flex-row gap-2">
         <input id="newPass" type="password" class="input flex-1" placeholder="New password (min. 6 characters)" autocomplete="new-password">
-        <button onclick="changeMyPassword()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition shrink-0">Update password</button>
+        <button onclick="changeMyPassword()" class="h-[48px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-brand transition shrink-0">Update password</button>
       </div>
-    </div>
+    </div>`)}
   </div>`;
 }
 
 /* "Register myself" — parents can become members and get their own CIFIKA ID */
 function registerSelfCardHTML() {
   return `
-    <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
+    <div class="soft p-5">
       <div class="flex items-start gap-3">
         <div class="w-9 h-9 rounded-full bg-brand-light border border-brand-border text-brand flex items-center justify-center shrink-0">${ic('user','w-4 h-4')}</div>
         <div class="min-w-0">
-          <div class="text-[12.5px] font-bold">Register myself too</div>
+          <div class="text-[13px] font-extrabold">Register myself too</div>
           <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parents can train as well. This starts a registration for <b>you</b> — your own details pre-filled — so you get your own CIFIKA ID while keeping this parent account for your kids.</p>
-          <a href="${buildPortalRegUrl('self')}" class="mt-3 h-[40px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register myself →</a>
+          <a href="${buildPortalRegUrl('self')}" class="mt-3 h-[42px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register myself →</a>
         </div>
       </div>
     </div>`;
 }
 
+/* Kid cards — horizontal snap-scroll featured cards (template's "Project" section) */
 function childCardHTML(c, i) {
   const initial = (c.full_name || '?').trim()[0]?.toUpperCase() || '?';
   const age = calcAge(c.date_of_birth);
+  const dark = i === 0;
   return `
-  <div class="card p-5 flex items-center gap-4 hover:border-black transition cursor-pointer" onclick="openMember('${i}')">
-    <div class="w-14 h-14 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[18px] font-extrabold overflow-hidden shrink-0 relative">
+  <div class="snap-start shrink-0 w-[200px] lg:w-auto rounded-[26px] ${dark ? 'bg-[#101010] text-white' : 'bg-white border border-neutral-200/70 text-neutral-900'} p-5 relative cursor-pointer hover:-translate-y-0.5 transition-transform" onclick="openMember('${i}')">
+    <div class="w-12 h-12 rounded-full ${dark ? 'bg-white/10 border border-white/15' : 'bg-neutral-50 border border-neutral-200'} flex items-center justify-center text-[16px] font-extrabold ${dark ? 'text-white' : 'text-brand'} shrink-0 relative overflow-hidden">
       ${avatarImgHTML(c.passport_photo_url || null, initial)}
     </div>
-    <div class="flex-1 min-w-0">
-      <div class="font-bold text-[14.5px] truncate">${escapeHtml(c.full_name || 'Member')}</div>
-      <div class="text-[11.5px] text-neutral-500 mt-0.5">${age !== null ? age + ' years • ' : ''}${escapeHtml(c.registration_ref || '')}</div>
-      <div class="mt-2 flex items-center gap-2 flex-wrap">${beltChipHTML(c.current_belt)}${memStatusPill(c.membership_status)}</div>
+    <div class="mt-4 font-extrabold text-[14.5px] truncate pr-6">${escapeHtml(c.full_name || 'Member')}</div>
+    <div class="text-[11px] ${dark ? 'text-white/50' : 'text-neutral-400'} mt-0.5 truncate">${age !== null ? age + ' years • ' : ''}${escapeHtml(c.registration_ref || '')}</div>
+    <div class="mt-2.5 flex items-center gap-1.5 flex-wrap pr-4">${beltChipHTML(c.current_belt)}${memStatusPill(c.membership_status)}</div>
+    <div class="absolute bottom-4 right-4 w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-[0_6px_16px_rgba(255,107,0,.4)]">${ic('arrow','w-3.5 h-3.5')}</div>
+    <div class="h-3"></div>
+  </div>`;
+}
+function mineCardHTML(mine) {
+  const initial = (mine.full_name || '?').trim()[0]?.toUpperCase() || '?';
+  return `
+  <div class="snap-start shrink-0 w-[200px] lg:w-auto rounded-[26px] bg-[#101010] text-white p-5 relative cursor-pointer hover:-translate-y-0.5 transition-transform" onclick="openMember('me')">
+    <div class="w-12 h-12 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[16px] font-extrabold text-white shrink-0 relative overflow-hidden">
+      ${avatarImgHTML(memberPhotoURL(mine), initial)}
     </div>
-    <div class="text-neutral-400">→</div>
+    <div class="mt-2.5 text-[9.5px] font-extrabold tracking-[0.14em] text-brand">MY TRAINING</div>
+    <div class="mt-1 font-extrabold text-[14.5px] truncate pr-6">${escapeHtml(mine.full_name || 'Me')}</div>
+    <div class="mt-2 flex items-center gap-1.5 flex-wrap pr-4">${beltChipHTML(mine.current_belt)}${memStatusPill(mine.membership_status)}</div>
+    <div class="absolute bottom-4 right-4 w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-[0_6px_16px_rgba(255,107,0,.4)]">${ic('arrow','w-3.5 h-3.5')}</div>
+    <div class="h-3"></div>
   </div>`;
 }
 
@@ -1131,7 +1268,7 @@ async function renderDashboard(student, opts = {}) {
       .order('event_date', { ascending: true, nullsFirst: false })
       .limit(6),
     sb.rpc('get_session_balance', { p_student: student.id }),
-    sb.from('member_training_days').select('*').eq('student_id', student.id).maybeSingle(),
+    sb.from('member_training_days').select('*').eq('student_id', student.id).limit(1),   // limit() — duplicate rows must not break the dashboard
     sb.from('grading_windows').select('*').eq('is_open', true).order('created_at', { ascending: false }),
     sb.from('grading_entries').select('*').eq('student_id', student.id),
     sb.from('absence_requests').select('*').eq('student_id', student.id).order('created_at', { ascending: false }).limit(30),
@@ -1143,7 +1280,7 @@ async function renderDashboard(student, opts = {}) {
 
   /* sessions balance, training days, grading windows */
   const bal = (balData && balData.status === 'ok') ? balData : { purchased: 0, used: 0, remaining: null, alert_level: 'green' };
-  const myDays = daysData || null;
+  const myDays = (daysData && daysData.length) ? daysData[0] : null;
   const windows = openWindows || [];
   const enteredWindows = new Set((myEntries || []).filter(e => e.status !== 'withdrawn').map(e => e.window_id));
   const weekStart = startOfWeekLagos();
@@ -1160,19 +1297,22 @@ async function renderDashboard(student, opts = {}) {
   /* cache everything — the sidebar sections render from this */
   window._dash = { student, att, grd, scoreById, rate, bal, anns: anns || [], attended, thisWeek };
   window._view = opts.back ? 'child' : 'student';
-  updateSidebarAvatar();
-  $('sidebar').classList.remove('hidden');
-  $('navToggle').classList.remove('hidden');
   if (opts.parentCtx) {
     /* A linked member (child — or the parent's own training) inside the guardian shell */
     window._pview = 'member';
     window._memberSel = opts.sel ?? null;
+  } else {
+    window._pview = null;
+  }
+  updateSidebarAvatar();
+  $('sidebar').classList.remove('hidden');
+  $('navToggle').classList.remove('hidden');
+  if (opts.parentCtx) {
     portalSection = 'm-home';
     renderMemberNav();
     markNav('m-home');
     renderDashboardHome();
   } else {
-    window._pview = null;
     portalSection = 'home';
     renderNav();
     markNav('home');
@@ -1180,7 +1320,9 @@ async function renderDashboard(student, opts = {}) {
   }
 }
 
-/* Home section — welcome, stats, training plan, updates, belt journey */
+/* ═══════════════ DASHBOARD HOME — Sandhill layout ═══════════════
+   Dark hero + floating search · featured cards · task-style training plan ·
+   belt journey strip · club updates rows                                     */
 function renderDashboardHome() {
   const { student, att, grd, rate, bal, anns } = window._dash;
   const opts = window._lastOpts || {};
@@ -1191,169 +1333,205 @@ function renderDashboardHome() {
   const curIdx = Math.max(0, beltLevels.findIndex(b => b.belt_name === student.current_belt));
   const nextBelt = beltLevels[curIdx + 1] || null;
   const displayName = student.preferred_name || (student.full_name || '').split(' ')[0] || 'Member';
-
   const curBelt = beltLevels[curIdx];
   const hex = curBelt?.belt_color_hex || '#E5E5E5';
-
-  const nextCard = !beltLevels.length
-    ? `<div class="rounded-[16px] bg-black text-white p-5"><p class="text-[12.5px] text-neutral-300">Belt system not configured — run the belt seed SQL.</p></div>`
-    : nextBelt ? `
-      <div class="rounded-[16px] bg-black text-white p-5">
-        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">NEXT GRADING</div>
-        <div class="mt-2 flex items-center gap-2">
-          <span class="w-4 h-4 rounded-full border border-neutral-600" style="background:${nextBelt.belt_color_hex}"></span>
-          <span class="text-[15px] font-bold">${escapeHtml(nextBelt.belt_name)} Belt</span>
-        </div>
-        <ul class="mt-3 text-[12px] text-neutral-300 leading-[1.7] list-disc list-inside space-y-0.5">
-          ${(nextBelt.requirements || '').split('. ').filter(Boolean).map(r => `<li>${escapeHtml(r.replace(/\.$/, ''))}</li>`).join('')}
-          ${nextBelt.minimum_months_at_previous ? `<li>Minimum ${nextBelt.minimum_months_at_previous} months at current rank</li>` : ''}
-          ${nextBelt.minimum_age ? `<li>Minimum age ${nextBelt.minimum_age}</li>` : ''}
-        </ul>
-        <div class="mt-4">${gradingEntryHTML(nextBelt)}</div>
-      </div>` : `
-      <div class="rounded-[16px] bg-black text-white p-5">
-        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">PATH COMPLETE</div>
-        <p class="mt-2 text-[12.5px] text-neutral-300 leading-[1.6]">You've reached the top of the kyu path. Dan (black belt) gradings are arranged directly with Sensei.</p>
-      </div>`;
 
   const todayLagos = lagosTodayStr();
   const daysToStart = Math.round((new Date(CLUB.startDate + 'T00:00:00') - new Date(todayLagos + 'T00:00:00')) / 86400000);
   const startBanner = daysToStart >= 0 ? `
-    <div class="rounded-[18px] border border-brand-border bg-brand-light p-4 md:p-5 flex items-start gap-3">
+    <div class="rounded-[20px] border border-brand-border bg-brand-light p-4 flex items-start gap-3">
       <span class="text-brand shrink-0 mt-0.5">${ic('medal','w-[18px] h-[18px]')}</span>
       <div>
-        <div class="text-[11px] font-bold tracking-[0.1em] uppercase text-brand-text">OFFICIAL CLASSES BEGIN ${fmtDate(CLUB.startDate).toUpperCase()}</div>
+        <div class="text-[11px] font-extrabold tracking-[0.1em] uppercase text-brand-text">OFFICIAL CLASSES BEGIN ${fmtDate(CLUB.startDate).toUpperCase()}</div>
         <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${daysToStart === 0 ? 'Classes kick off <b>today</b>! ' : daysToStart === 1 ? 'Classes kick off <b>tomorrow</b> — ' : `<b>${daysToStart} days to go</b> — `}regular classes run <b>Friday 4:30–6:00 PM • Saturday 8:00–10:00 AM • Sunday 4:30–6:00 PM</b> — 3 training days a week. Pick the 2 days that suit you below and come ready.</p>
       </div>
     </div>` : '';
   const excBanner = (student.excused_from && student.excused_until) ? excusedBannerHTML(student, todayLagos) : '';
 
-  $('appMain').innerHTML = `
-  <div class="fade-in grid gap-6">
-     ${opts.back ? `<button onclick="backToParentHome()" class="w-fit h-9 px-4 rounded-full border border-neutral-200 bg-white text-[12px] font-medium hover:border-black transition">← ${escapeHtml(opts.backLabel || 'All my children')}</button>` : ''}
-
-    ${startBanner}
-    ${excBanner}
-
-    ${bal.remaining !== null && bal.alert_level && bal.alert_level !== 'green' && !(bal.alert_level === 'red' && (bal.used ?? 0) === 0) ? `
-    <div class="rounded-[18px] border p-4 md:p-5 flex items-start gap-3 ${bal.alert_level === 'orange' ? 'bg-[#FFF5EB] border-[#FFD4A8]' : bal.alert_level === 'yellow' ? 'bg-amber-50 border-amber-300' : 'bg-red-50 border-red-300'}">
+  const balAlert = bal.remaining !== null && bal.alert_level && bal.alert_level !== 'green' && !(bal.alert_level === 'red' && (bal.used ?? 0) === 0) ? `
+    <div class="rounded-[20px] border p-4 flex items-start gap-3 ${bal.alert_level === 'orange' ? 'bg-[#FFF5EB] border-[#FFD4A8]' : bal.alert_level === 'yellow' ? 'bg-amber-50 border-amber-300' : 'bg-red-50 border-red-300'}">
       <span class="shrink-0 mt-0.5 ${bal.remaining <= 1 ? 'text-red-500' : 'text-[#FF6B00]'}">${ic('alert','w-[18px] h-[18px]')}</span>
       <div>
-        <div class="text-[11px] font-bold tracking-[0.1em] uppercase ${bal.alert_level === 'orange' ? 'text-[#B34700]' : bal.alert_level === 'yellow' ? 'text-amber-700' : 'text-red-700'}">${bal.remaining === 0 ? 'Payment complete — renew to keep training' : bal.remaining === 1 ? 'Last session — renew now' : 'Renewal reminder'}</div>
+        <div class="text-[11px] font-extrabold tracking-[0.1em] uppercase ${bal.alert_level === 'orange' ? 'text-[#B34700]' : bal.alert_level === 'yellow' ? 'text-amber-700' : 'text-red-700'}">${bal.remaining === 0 ? 'Payment complete — renew to keep training' : bal.remaining === 1 ? 'Last session — renew now' : 'Renewal reminder'}</div>
         <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${bal.remaining === 0 ? 'You have used all your paid sessions. Please renew your payment at the front desk — your next check-in will remind you too.' : bal.remaining === 1 ? 'Only <b>1 session</b> remains on your current payment. Renew at the front desk so you never miss a class.' : `You have <b>${bal.remaining} sessions</b> left. Consider renewing your payment at the front desk soon.`}</p>
       </div>
-    </div>` : ''}
+    </div>` : '';
 
-    <!-- WELCOME -->
-    <div class="card p-6 md:p-7 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-center gap-4 min-w-0">
-        <div class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-[18px] font-extrabold text-brand shrink-0 relative overflow-hidden">${avatarImgHTML(memberPhotoURL(student), (student.full_name || '?').trim()[0]?.toUpperCase() || '?')}</div>
-        <div class="min-w-0">
-          <h1 class="text-[22px] md:text-[26px] font-extrabold tracking-tight">Welcome back, ${escapeHtml(displayName)}</h1>
-          <div class="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-neutral-500">
-            ${beltChipHTML(student.current_belt)}
-            <span class="px-2.5 py-0.5 rounded-full border font-semibold ${student.membership_status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}">${escapeHtml(student.membership_status || 'pending')}</span>
-            ${student.belt_review_status === 'pending' ? `<span class="px-2.5 py-0.5 rounded-full border font-semibold bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700] inline-flex items-center gap-1">${ic('hourglass','w-3 h-3')} Belt review pending</span>` : ''}
-            ${memberCtx
-              ? `<span class="px-2.5 py-1 rounded-full bg-black text-white text-[10.5px] font-bold tracking-wide inline-flex items-center gap-1.5" title="CIFIKA ID">${ic('id','w-3.5 h-3.5')} CIFIKA ID · ${escapeHtml(student.registration_ref || '—')}</span>`
-              : `<span>Ref: <b class="text-neutral-700">${escapeHtml(student.registration_ref || '—')}</b></span>`}
-          </div>
+  /* hero chips */
+  const heroChips = memberCtx
+    ? `${beltChipHTML(student.current_belt)}
+       <span class="px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15 text-[10.5px] font-bold text-white/75 inline-flex items-center gap-1" title="CIFIKA ID">${ic('id','w-3 h-3')} ${escapeHtml(student.registration_ref || '—')}</span>`
+    : `${beltChipHTML(student.current_belt)}
+       <span class="text-[11px] text-white/45 font-semibold">Ref: ${escapeHtml(student.registration_ref || '—')}</span>`;
+
+  /* FEATURED CARDS (template "Project" section) */
+  const secfix = memberCtx ? 'm-grd' : 'gradings';
+  const attfix = memberCtx ? 'm-att' : 'attendance';
+  const nextCard = !beltLevels.length ? `
+      <div class="snap-start shrink-0 w-[210px] lg:w-auto rounded-[26px] bg-[#101010] text-white p-5 relative overflow-hidden">
+        ${heroWave()}
+        <div class="relative z-10">
+          <div class="w-10 h-10 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-brand">${ic('medal','w-5 h-5')}</div>
+          <div class="mt-5 text-[16px] font-extrabold">Belt system</div>
+          <div class="mt-1 text-[11.5px] text-white/55 leading-[1.5]">Not configured yet — run the belt seed SQL.</div>
         </div>
+      </div>`
+    : nextBelt ? `
+      <div class="snap-start shrink-0 w-[210px] lg:w-auto rounded-[26px] bg-[#101010] text-white p-5 relative overflow-hidden">
+        ${heroWave()}
+        <div class="relative z-10">
+          <div class="w-10 h-10 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-brand">${ic('medal','w-5 h-5')}</div>
+          <div class="mt-5 text-[16px] font-extrabold leading-snug">${escapeHtml(nextBelt.belt_name)} Belt</div>
+          <div class="mt-1 text-[11.5px] text-white/55 leading-[1.5]">Next grading${nextBelt.minimum_months_at_previous ? ` • min ${nextBelt.minimum_months_at_previous} months at rank` : ''}</div>
+        </div>
+        <button onclick="showPortalSection('${secfix}')" class="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shadow-[0_6px_18px_rgba(255,107,0,.45)] hover:bg-brand-dark transition" aria-label="Open gradings">${ic('arrow','w-4 h-4')}</button>
+      </div>`
+    : `
+      <div class="snap-start shrink-0 w-[210px] lg:w-auto rounded-[26px] bg-[#101010] text-white p-5 relative overflow-hidden">
+        ${heroWave()}
+        <div class="relative z-10">
+          <div class="w-10 h-10 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-brand">${ic('medal','w-5 h-5')}</div>
+          <div class="mt-5 text-[16px] font-extrabold leading-snug">Path complete</div>
+          <div class="mt-1 text-[11.5px] text-white/55 leading-[1.5]">Dan (black belt) gradings are arranged directly with Sensei.</div>
+        </div>
+        <button onclick="showPortalSection('${secfix}')" class="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shadow-[0_6px_18px_rgba(255,107,0,.45)] hover:bg-brand-dark transition" aria-label="Open gradings">${ic('arrow','w-4 h-4')}</button>
+      </div>`;
+
+  const attCard = `
+      <div class="snap-start shrink-0 w-[185px] lg:w-auto rounded-[26px] bg-white border border-neutral-200/70 p-5 relative">
+        <div class="w-10 h-10 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-brand">${ic('calendar','w-5 h-5')}</div>
+        <div class="mt-5 text-[17px] font-extrabold">${rate !== null ? rate + '%' : '—'}</div>
+        <div class="mt-0.5 text-[11.5px] text-neutral-400">attendance rate</div>
+        <div class="mt-3 h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+          <div class="h-full rounded-full ${rate >= 80 ? 'bg-emerald-500' : rate >= 60 ? 'bg-amber-500' : 'bg-red-500'}" style="width:${rate || 0}%"></div>
+        </div>
+        <button onclick="showPortalSection('${attfix}')" class="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-[#101010] text-white flex items-center justify-center hover:bg-neutral-800 transition" aria-label="Open attendance">${ic('arrow','w-4 h-4')}</button>
+      </div>`;
+
+  const sesColor = bal.remaining === null ? '' : bal.remaining <= 1 ? 'text-red-600' : bal.remaining === 2 ? 'text-amber-500' : bal.remaining === 3 ? 'text-brand' : 'text-emerald-600';
+  const sesCard = `
+      <div class="snap-start shrink-0 w-[185px] lg:w-auto rounded-[26px] bg-white border border-neutral-200/70 p-5 relative">
+        <div class="w-10 h-10 rounded-full bg-brand-light border border-brand-border flex items-center justify-center text-brand">${ic('card','w-5 h-5')}</div>
+        <div class="mt-5 text-[17px] font-extrabold ${sesColor}">${bal.remaining ?? '—'}</div>
+        <div class="mt-0.5 text-[11.5px] text-neutral-400">sessions left</div>
+        <div class="mt-3 text-[10.5px] text-neutral-400 font-semibold leading-[1.5]">${bal.purchased ?? 0} purchased • ${bal.used ?? 0} used<br>Renew at the front desk</div>
+      </div>`;
+
+  /* TRAINING PLAN — task-list rows (template "Tasks" section) */
+  const dayRows = [[5,'Friday','4:30–6:00 PM'],[6,'Saturday','8:00–10:00 AM'],[0,'Sunday','4:30–6:00 PM']].map(([d, name, time]) => {
+    const sel = window._myDays && (window._myDays.day_1 === d || window._myDays.day_2 === d);
+    return `
+      <button onclick="toggleTrainingDay(${d})" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-[16px] border ${sel ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-100 bg-white'} hover:border-neutral-400 transition text-left">
+        <span class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${sel ? 'bg-[#111] text-white' : 'border-[1.5px] border-neutral-300 bg-white text-transparent'}">${ic('check','w-3.5 h-3.5')}</span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-[13px] font-bold">${name}</span>
+          <span class="block text-[11px] text-neutral-400 mt-0.5">${time}</span>
+        </span>
+        <span class="w-1.5 h-1.5 rounded-full ${sel ? 'bg-brand' : 'bg-neutral-200'}"></span>
+      </button>`;
+  }).join('');
+
+  const reviewNote = student.belt_review_status === 'pending' ? `
+    <div class="mt-3 rounded-[14px] bg-[#FFF5EB] border border-[#FFD4A8] p-3.5 text-[11.5px] leading-[1.55] text-neutral-700">
+      <b>${ic('hourglass','w-3.5 h-3.5 inline -mt-0.5')} Belt review pending.</b> You'll keep training at your registered belt until Sensei reviews your previous experience and regularises it to the CIFIKA standard.
+    </div>` : '';
+
+  $('appMain').innerHTML = `
+  <div class="fade-in">
+    ${opts.back ? `<button onclick="backToParentHome()" class="mb-4 w-fit h-9 px-4 rounded-full border-[1.5px] border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition">← ${escapeHtml(opts.backLabel || 'Parent home')}</button>` : ''}
+
+    ${heroHTML(`Let's crush your <span class="text-brand">next grading</span>!`, heroChips)}
+    ${quickSearchHTML()}
+
+    <div class="mt-6 grid gap-3">
+      ${startBanner}
+      ${excBanner}
+      ${balAlert}
+    </div>
+
+    <!-- OVERVIEW — featured cards -->
+    <div class="mt-7">
+      <div class="flex items-end justify-between gap-3 mb-3">
+        <h2 class="text-[20px] font-extrabold tracking-tight">Overview</h2>
+        <span class="text-[11.5px] text-neutral-400 font-semibold">${attended}/${att.length} classes attended</span>
       </div>
-      <div class="text-[12px] text-neutral-500 md:text-right">
-        <div class="font-semibold text-neutral-800">Next class</div>
-        <div>${CLUB.nextClass}</div>
-      </div>
+      <div class="flex gap-3 overflow-x-auto scroll-x snap-x snap-mandatory pb-1 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 lg:grid lg:grid-cols-3 lg:overflow-x-visible">${nextCard}${attCard}${sesCard}</div>
     </div>
 
     ${memberCtx ? `
-    <!-- MEMBER ID — the linked member's CIFIKA ID, same as a personal account -->
-    <div class="card p-5 flex items-center gap-4 flex-wrap">
-      <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0">${ic('id','w-5 h-5')}</div>
-      <div class="flex-1 min-w-[230px]">
-        <div class="text-[13px] font-bold">${escapeHtml(displayName)}'s CIFIKA member ID</div>
-        <div class="text-[11.5px] text-neutral-500">Printable ID card with the club logo — ${escapeHtml(student.registration_ref || 'ID pending')} — exactly like a personal account.</div>
+    <!-- MEMBER ID quick row -->
+    <div class="mt-4 soft p-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0">${ic('id','w-4 h-4')}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[12.5px] font-extrabold truncate">${escapeHtml(displayName)}'s CIFIKA member ID</div>
+        <div class="text-[11px] text-neutral-400 mt-0.5">Printable ID card with the club logo</div>
       </div>
-      <button onclick="showPortalSection('m-idcard')" class="h-9 px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('card','w-4 h-4')} View &amp; print ID</button>
+      <button onclick="showPortalSection('m-idcard')" class="h-9 px-4 rounded-full bg-black text-white text-[11px] font-bold hover:bg-brand transition shrink-0">View</button>
     </div>` : ''}
 
-    <!-- STATS -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <div class="card p-5">
-        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">CURRENT BELT</div>
-        <div class="mt-2.5 flex items-center gap-2">
-          <span class="w-4 h-4 rounded-full border border-neutral-300" style="background:${hex}"></span>
-          <span class="text-[16px] font-extrabold">${escapeHtml(student.current_belt)}</span>
-        </div>
-        <div class="text-[11px] text-neutral-500 mt-1">current rank</div>
-      </div>
-      <div class="card p-5">
-        <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">SESSIONS LEFT</div>
-        <div class="mt-2 text-[20px] font-extrabold tracking-tight ${bal.remaining === null ? '' : bal.remaining <= 1 ? 'text-red-600' : bal.remaining === 2 ? 'text-amber-500' : bal.remaining === 3 ? 'text-brand' : 'text-emerald-600'}">${bal.remaining ?? '—'}</div>
-        <div class="text-[11px] text-neutral-500 mt-1">${bal.purchased ?? 0} purchased • ${bal.used ?? 0} used</div>
-      </div>
-      ${statCard('CLASSES ATTENDED', attended, `of ${att.length} recorded`)}
-      ${statCard('ATTENDANCE RATE', rate !== null ? rate + '%' : '—', '80% required for grading')}
-      ${statCard('NEXT GRADING', nextBelt ? nextBelt.belt_name : '—', nextBelt ? `min ${nextBelt.minimum_months_at_previous ?? '—'} months at rank` : 'kyu path complete')}
-    </div>
-
-    <!-- TRAINING PLAN -->
-    <div class="card p-6 md:p-7">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+    <!-- THIS WEEK — training plan -->
+    <div class="mt-7">
+      <div class="flex items-end justify-between gap-3 mb-3">
         <div>
-          <div class="text-[12px] font-bold tracking-[0.14em]">TRAINING PLAN</div>
-          <div class="text-[11px] text-neutral-400 mt-0.5">Pick your 2 flexible days — complete 2 sessions per week</div>
+          <h2 class="text-[20px] font-extrabold tracking-tight">This week</h2>
+          <div class="text-[11.5px] text-neutral-400 mt-0.5">Pick your 2 flexible training days</div>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="text-[22px] font-black ${thisWeek >= 2 ? 'text-emerald-600' : ''}">${thisWeek}</span>
-          <span class="text-[12px] text-neutral-500">/ 2 sessions this week</span>
+        <div class="text-right shrink-0">
+          <div class="text-[22px] font-black leading-none ${thisWeek >= 2 ? 'text-emerald-600' : ''}">${thisWeek}<span class="text-[13px] text-neutral-400 font-bold">/2</span></div>
+          <div class="text-[10px] text-neutral-400 font-semibold mt-0.5">sessions</div>
         </div>
       </div>
-      <div class="h-2 rounded-full bg-neutral-100 overflow-hidden mb-4 max-w-[420px]">
-        <div class="h-full rounded-full ${thisWeek >= 2 ? 'bg-emerald-500' : 'bg-brand'}" style="width:${Math.min(100, thisWeek / 2 * 100)}%"></div>
+      <div class="soft p-3.5 grid gap-2">
+        <div class="h-1.5 rounded-full bg-neutral-100 overflow-hidden mx-1 mt-0.5">
+          <div class="h-full rounded-full ${thisWeek >= 2 ? 'bg-emerald-500' : 'bg-brand'}" style="width:${Math.min(100, thisWeek / 2 * 100)}%"></div>
+        </div>
+        ${dayRows}
       </div>
-      <div class="grid grid-cols-3 gap-2 max-w-[460px]">
-        ${[[5,'Friday','4:30–6:00 PM'],[6,'Saturday','8:00–10:00 AM'],[0,'Sunday','4:30–6:00 PM']].map(([d, name, time]) => {
-          const sel = window._myDays && (window._myDays.day_1 === d || window._myDays.day_2 === d);
-          return `<button onclick="toggleTrainingDay(${d})" class="py-3 rounded-[14px] border-[1.5px] text-[12px] font-semibold transition ${sel ? 'bg-black text-white border-black' : 'bg-white text-neutral-700 border-neutral-200 hover:border-black'}">
-            <div>${name}</div><div class="text-[10px] ${sel ? 'text-neutral-300' : 'text-neutral-400'} font-medium mt-0.5">${time}</div></button>`;
-        }).join('')}
-      </div>
-      <p class="text-[10.5px] text-neutral-400 mt-2.5">Choose exactly 2 of the 3 training days. You may still check in on any training day — your selections are your regular weekly plan.</p>
+      <p class="text-[10.5px] text-neutral-400 mt-2 px-1 leading-[1.55]">Choose exactly 2 of the 3 training days. You may still check in on any training day — your selections are your regular weekly plan.</p>
     </div>
-
-    ${!memberCtx ? announcementsHTML(anns || []) : ''}
 
     <!-- BELT JOURNEY -->
-    <div class="card p-6 md:p-7 min-w-0">
-      <div class="flex items-center justify-between">
-        <div class="text-[12px] font-bold tracking-[0.14em]">BELT JOURNEY</div>
-        <div class="text-[11px] text-neutral-400">${beltLevels.length} ranks</div>
+    <div class="mt-7">
+      <div class="flex items-end justify-between gap-3 mb-3">
+        <h2 class="text-[20px] font-extrabold tracking-tight">Belt journey</h2>
+        <span class="text-[11.5px] text-neutral-400 font-semibold">${beltLevels.length} ranks</span>
       </div>
-      ${beltJourneyHTML(student.current_belt)}
-      <div class="mt-6 grid md:grid-cols-2 gap-4">
-        <div class="rounded-[16px] bg-neutral-50 border border-neutral-200 p-5">
-          <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">CURRENT RANK</div>
-          <div class="mt-2">${beltChipHTML(student.current_belt)}</div>
-          <div class="mt-2.5 text-[12px] text-neutral-500">Achieved: <b class="text-neutral-700">${fmtDate(student.last_grading_date)}</b></div>
-          <div class="text-[12px] text-neutral-500">Member since: <b class="text-neutral-700">${fmtDate(student.registration_date)}</b></div>
-          ${student.belt_review_status === 'pending' ? `<div class="mt-2.5 rounded-[12px] bg-[#FFF5EB] border border-[#FFD4A8] p-3 text-[11.5px] leading-[1.55] text-neutral-700"><b>${ic('hourglass','w-3.5 h-3.5 inline -mt-0.5')} Belt review pending.</b> You'll keep training at your registered belt until Sensei reviews your previous experience and regularises it to the CIFIKA standard.</div>` : ''}
+      <div class="card p-6 pb-5">
+        ${beltJourneyHTML(student.current_belt)}
+      </div>
+      <div class="mt-3 soft p-5">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>${beltChipHTML(student.current_belt)}</div>
+          <div class="text-[11px] text-neutral-400 font-semibold">rank ${curIdx + 1} of ${beltLevels.length || '—'}</div>
         </div>
-        ${nextCard}
+        <div class="mt-3 text-[12px] text-neutral-500 leading-[1.6]">
+          Achieved: <b class="text-neutral-700">${fmtDate(student.last_grading_date)}</b> · Member since: <b class="text-neutral-700">${fmtDate(student.registration_date)}</b>
+        </div>
+        ${reviewNote}
       </div>
     </div>
+
+    <!-- CLUB UPDATES -->
+    ${!memberCtx && (anns || []).length ? `
+    <div class="mt-7">
+      <div class="flex items-end justify-between gap-3 mb-3">
+        <h2 class="text-[20px] font-extrabold tracking-tight">Club updates</h2>
+        <span class="text-[11.5px] text-neutral-400 font-semibold">${anns.length} published</span>
+      </div>
+      ${annRowsHTML(anns.slice(0, 5))}
+    </div>` : ''}
   </div>`;
 }
 
 /* ═══════════════ DASHBOARD COMPONENTS ═══════════════ */
 
 function beltJourneyHTML(currentBelt) {
-  if (!beltLevels.length) return `<p class="mt-4 text-[12px] text-neutral-500">Belt system not configured.</p>`;
+  if (!beltLevels.length) return `<p class="text-[12px] text-neutral-500">Belt system not configured.</p>`;
   const curIdx = Math.max(0, beltLevels.findIndex(b => b.belt_name === currentBelt));
   const last = beltLevels.length - 1;
   const pct = last > 0 ? (curIdx / last) * 100 : 100;
   return `
-  <div class="mt-6 overflow-x-auto scroll-x">
+  <div class="overflow-x-auto scroll-x">
     <div class="relative" style="min-width:${Math.max(520, beltLevels.length * 56)}px">
       <div class="absolute left-2 right-2 top-[9px] h-[6px] rounded-full bg-neutral-200"></div>
       <div class="absolute left-2 top-[9px] h-[6px] rounded-full bg-gradient-to-r from-brand to-brand-dark" style="width:calc(${pct}% - 8px)"></div>
@@ -1392,6 +1570,10 @@ function statusPill(s) {
   const [cls, label] = map[s] || map.present;
   return `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold border ${cls}">${label}</span>`;
 }
+function statusDot(s) {
+  const map = { present: '#10b981', absent: '#ef4444', excused: '#f59e0b', late: '#f97316' };
+  return map[s] || '#10b981';
+}
 
 /* Membership status pill — view-only everywhere in the portal (the club manages statuses) */
 function memStatusPill(st) {
@@ -1414,60 +1596,170 @@ function resultPill(r) {
   return `<span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold border ${cls}">${label}</span>`;
 }
 
-function statCard(label, value, sub) {
-  return `
-  <div class="card p-5">
-    <div class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-400">${label}</div>
-    <div class="mt-2 text-[20px] font-extrabold tracking-tight truncate">${escapeHtml(String(value ?? '—'))}</div>
-    ${sub ? `<div class="text-[11px] text-neutral-500 mt-0.5">${sub}</div>` : ''}
-  </div>`;
-}
-
+/* ═══════════ ATTENDANCE — rate header + timeline rows (template's right screen) ═══════════ */
 function attendanceTabHTML(att, rate) {
   if (!att.length) return emptyState('calendar', 'No attendance recorded yet', 'Your classes will appear here once the club starts recording attendance.');
   return `
     ${rate !== null ? `
-    <div class="flex items-center gap-4 mb-5">
-      <div class="text-[26px] font-extrabold">${rate}%</div>
-      <div class="flex-1">
-        <div class="h-2 rounded-full bg-neutral-100 overflow-hidden">
-          <div class="h-full rounded-full ${rate >= 80 ? 'bg-emerald-500' : rate >= 60 ? 'bg-amber-500' : 'bg-red-500'}" style="width:${rate}%"></div>
+    <div class="soft p-5">
+      <div class="flex items-center gap-4">
+        <div class="text-[30px] font-extrabold tracking-tight">${rate}%</div>
+        <div class="flex-1">
+          <div class="h-2 rounded-full bg-neutral-100 overflow-hidden">
+            <div class="h-full rounded-full ${rate >= 80 ? 'bg-emerald-500' : rate >= 60 ? 'bg-amber-500' : 'bg-red-500'}" style="width:${rate}%"></div>
+          </div>
+          <div class="text-[10.5px] text-neutral-400 mt-1.5 font-semibold">attendance rate — 80% required for grading eligibility</div>
         </div>
-        <div class="text-[11px] text-neutral-500 mt-1">attendance rate — 80% required for grading eligibility</div>
       </div>
     </div>` : ''}
-    <div class="grid gap-2">
+    <div class="tl grid gap-2.5 mt-3">
       ${att.slice(0, 15).map(a => `
-        <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-white border border-neutral-200 flex items-center justify-center text-[11px] font-bold text-neutral-600">${fmtDay(a.class_date)}</div>
-            <div>
-              <div class="text-[12.5px] font-semibold">${fmtDate(a.class_date)}</div>
-              <div class="text-[11px] text-neutral-400 capitalize">${escapeHtml(a.class_type || 'regular')} class</div>
+        <div class="tl-item">
+          <span class="tl-dot" style="border-color:${statusDot(a.status)}"></span>
+          <div class="soft px-4 py-3 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-neutral-50 border border-neutral-200 flex flex-col items-center justify-center shrink-0">
+              <span class="text-[13px] font-extrabold leading-none">${fmtDay(a.class_date)}</span>
+              <span class="text-[7.5px] font-bold text-neutral-400 uppercase tracking-wide mt-0.5">${fmtMon(a.class_date)}</span>
             </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[12.5px] font-bold">${fmtDate(a.class_date)}</div>
+              <div class="text-[11px] text-neutral-400 capitalize mt-0.5">${escapeHtml(a.class_type || 'regular')} class</div>
+            </div>
+            ${statusPill(a.status)}
           </div>
-          ${statusPill(a.status)}
         </div>`).join('')}
     </div>
-    ${att.length > 15 ? `<div class="text-[11px] text-neutral-400 text-center mt-3">Showing 15 most recent of ${att.length} records</div>` : ''}`;
+    ${att.length > 15 ? `<div class="text-[11px] text-neutral-400 text-center mt-2">Showing 15 most recent of ${att.length} records</div>` : ''}`;
 }
 
-function gradingsTabHTML(grd) {
-  if (!grd.length) return emptyState('medal', 'No gradings yet', 'Your first grading will appear here with examiner, result and remarks. Train consistently — you\'ve got this!');
-  return `<div class="grid gap-3">
-    ${grd.map(g => `
-      <div class="rounded-[16px] border border-neutral-200 p-4">
-        <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
-          <div class="flex flex-wrap items-center gap-2">
-            ${beltChipHTML(g.previous_belt)}
-            <span class="text-neutral-400">→</span>
-            ${beltChipHTML(g.new_belt)}
-            <span class="text-[12px] text-neutral-500 md:ml-2">${fmtDate(g.grading_date)} • Examiner: ${escapeHtml(g.examiner_name || '—')}</span>
-          </div>
-          ${resultPill(g.result)}
+/* ═══════════ GRADINGS — next-grading dark card + timeline of recorded gradings ═══════════ */
+function gradingsSectionHTML(d) {
+  const student = d.student;
+  const curIdx = Math.max(0, beltLevels.findIndex(b => b.belt_name === student.current_belt));
+  const nextBelt = beltLevels[curIdx + 1] || null;
+  let nextBlock;
+  if (!beltLevels.length) {
+    nextBlock = `
+    <div class="rounded-[26px] bg-[#101010] text-white p-5 relative overflow-hidden">
+      ${heroWave()}
+      <div class="relative z-10 text-[12.5px] text-white/60">Belt system not configured — run the belt seed SQL.</div>
+    </div>`;
+  } else if (nextBelt) {
+    nextBlock = `
+    <div class="rounded-[26px] bg-[#101010] text-white p-5 relative overflow-hidden">
+      ${heroWave()}
+      <div class="relative z-10">
+        <div class="text-[10px] font-extrabold tracking-[0.16em] text-white/45">NEXT GRADING</div>
+        <div class="mt-2.5 flex items-center gap-2">
+          <span class="w-4 h-4 rounded-full border border-white/25" style="background:${nextBelt.belt_color_hex}"></span>
+          <span class="text-[17px] font-extrabold">${escapeHtml(nextBelt.belt_name)} Belt</span>
         </div>
-        ${g.remarks ? `<div class="mt-2 text-[12px] text-neutral-500 italic">"${escapeHtml(g.remarks)}"</div>` : ''}
+        <ul class="mt-3 text-[12px] text-white/60 leading-[1.7] list-disc list-inside space-y-0.5">
+          ${(nextBelt.requirements || '').split('. ').filter(Boolean).map(r => `<li>${escapeHtml(r.replace(/\.$/, ''))}</li>`).join('')}
+          ${nextBelt.minimum_months_at_previous ? `<li>Minimum ${nextBelt.minimum_months_at_previous} months at current rank</li>` : ''}
+          ${nextBelt.minimum_age ? `<li>Minimum age ${nextBelt.minimum_age}</li>` : ''}
+        </ul>
+        <div class="mt-4">${gradingEntryHTML(nextBelt)}</div>
+      </div>
+    </div>`;
+  } else {
+    nextBlock = `
+    <div class="rounded-[26px] bg-[#101010] text-white p-5 relative overflow-hidden">
+      ${heroWave()}
+      <div class="relative z-10">
+        <div class="text-[10px] font-extrabold tracking-[0.16em] text-white/45">PATH COMPLETE</div>
+        <p class="mt-2 text-[12.5px] text-white/60 leading-[1.6]">You've reached the top of the kyu path. Dan (black belt) gradings are arranged directly with Sensei.</p>
+      </div>
+    </div>`;
+  }
+  return `${nextBlock}<div class="mt-1">${gradingsTabHTML(d.grd, d.scoreById)}</div>`;
+}
+
+function gradingsTabHTML(grd, scoresById = {}) {
+  if (!grd.length) return `<div class="mt-3">${emptyState('medal', 'No gradings yet', 'Your first grading will appear here with examiner, result, score report and certificate. Train consistently — you\'ve got this!')}</div>`;
+  return `
+  <div class="mt-3 text-[11px] font-extrabold tracking-[0.14em] text-neutral-400 px-1">GRADING HISTORY</div>
+  <div class="tl grid gap-3 mt-2.5">
+    ${grd.map((g, i) => {
+      const sc = scoresById[g.id];
+      const dark = i === 0;
+      return `
+      <div class="tl-item">
+        <span class="tl-dot" style="border-color:${dark ? '#FF6B00' : '#CFC9BF'}"></span>
+        <div class="rounded-[24px] ${dark ? 'bg-[#101010] text-white p-5' : 'soft p-4'}">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${beltChipHTML(g.previous_belt)}<span class="${dark ? 'text-white/40' : 'text-neutral-400'}">→</span>${beltChipHTML(g.new_belt)}
+            </div>
+            ${resultPill(g.result)}
+          </div>
+          <div class="mt-2 text-[11px] ${dark ? 'text-white/50' : 'text-neutral-400'} font-semibold">${fmtDate(g.grading_date)} • Examiner: ${escapeHtml(g.examiner_name || '—')}</div>
+          ${g.remarks ? `<div class="mt-2 text-[12px] ${dark ? 'text-white/70' : 'text-neutral-500'} italic">"${escapeHtml(g.remarks)}"</div>` : ''}
+          ${sc ? scoreReportHTML(sc, dark) : ''}
+          ${g.certificate_issued ? `<button onclick="downloadCertificate('${g.id}')" class="mt-3 h-9 px-4 rounded-full ${dark ? 'bg-white text-black hover:bg-brand hover:text-white' : 'bg-black text-white hover:bg-brand'} text-[10.5px] font-bold transition inline-flex items-center gap-1.5">${ic('file','w-3 h-3')} Certificate PDF</button>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function scoreReportHTML(sc, dark) {
+  const ROWS = [['Attendance','attendance',10],['Character','character',20],['Kihon','kihon',20],
+                ['Kata','kata',20],['Kumite','kumite',20],['Fitness','fitness',10]];
+  const total = ROWS.reduce((s, [,k]) => s + (sc[k] || 0), 0);
+  return `
+  <div class="mt-3 rounded-[16px] ${dark ? 'bg-white/10 border border-white/10' : 'bg-neutral-50 border border-neutral-100'} p-4">
+    <div class="flex items-center justify-between mb-2.5">
+      <span class="text-[10px] font-extrabold tracking-[0.14em] ${dark ? 'text-white/50' : 'text-neutral-500'}">PERFORMANCE REPORT</span>
+      <span class="text-[15px] font-extrabold ${dark ? 'text-white' : total >= 50 ? 'text-emerald-600' : 'text-amber-600'}">${total}%</span>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-x-5 gap-y-2">
+      ${ROWS.map(([label, key, max]) => `
+      <div>
+        <div class="flex justify-between text-[10px] font-bold ${dark ? 'text-white/60' : 'text-neutral-500'}"><span>${label}</span><span>${sc[key] || 0}/${max}</span></div>
+        <div class="mt-0.5 h-[5px] rounded-full ${dark ? 'bg-white/15' : 'bg-neutral-200'} overflow-hidden">
+          <div class="h-full rounded-full bg-brand" style="width:${Math.round((sc[key] || 0) / max * 100)}%"></div>
+        </div>
       </div>`).join('')}
+    </div>
+    ${sc.notes ? `<div class="mt-3 text-[11px] ${dark ? 'text-white/60' : 'text-neutral-500'} italic">Examiner: "${escapeHtml(sc.notes)}"</div>` : ''}
+  </div>`;
+}
+
+/* ═══════════ ANNOUNCEMENTS — compact rows (template list style) ═══════════ */
+const ANN_STYLE = {
+  grading:       ['bg-brand/10 text-brand', 'bg-brand text-white', 'medal'],
+  event:         ['bg-neutral-900/5 text-neutral-700', 'bg-neutral-900 text-white', 'calendar'],
+  seminar:       ['bg-purple-50 text-purple-600', 'bg-purple-600 text-white', 'users'],
+  promotion:     ['bg-emerald-50 text-emerald-600', 'bg-emerald-600 text-white', 'check'],
+  announcement:  ['bg-blue-50 text-blue-600', 'bg-blue-600 text-white', 'mega'],
+  update:        ['bg-neutral-100 text-neutral-500', 'bg-neutral-500 text-white', 'mega'],
+};
+function annRowsHTML(list) {
+  const meta = a => [a.event_date ? fmtDate(a.event_date) : '',
+                     a.start_time ? a.start_time + (a.end_time ? '–' + a.end_time : '') : '',
+                     a.location || ''].filter(Boolean).join(' • ');
+  return `<div class="grid gap-2.5">
+    ${list.map(a => {
+      const [iconCls, chipCls, iconName] = ANN_STYLE[a.type] || ANN_STYLE.update;
+      return `
+      <div class="soft p-4 flex gap-3.5 ${a.is_pinned ? '!border-brand/40 !bg-brand-light/40' : ''}">
+        <div class="w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 ${iconCls}">${ic(iconName, 'w-[18px] h-[18px]')}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start justify-between gap-2">
+            <div class="text-[13px] font-extrabold leading-snug">${escapeHtml(a.title)}</div>
+            ${a.price ? `<div class="text-[12.5px] font-extrabold text-brand whitespace-nowrap">₦${Number(a.price).toLocaleString()}</div>` : ''}
+          </div>
+          ${a.body ? `<div class="mt-1 text-[11.5px] text-neutral-500 leading-[1.55] line-clamp-2">${escapeHtml(a.body)}</div>` : ''}
+          <div class="mt-2 flex items-center gap-2 flex-wrap text-[10px] font-bold">
+            <span class="px-2 py-0.5 rounded-full ${chipCls} uppercase tracking-[0.08em]">${escapeHtml(a.type)}</span>
+            ${a.is_pinned ? `<span class="px-2 py-0.5 rounded-full bg-brand-light border border-brand-border text-brand-text uppercase tracking-[0.08em] inline-flex items-center gap-1">${ic('pin','w-3 h-3')} Pinned</span>` : ''}
+            ${meta(a) ? `<span class="text-neutral-400 font-semibold inline-flex items-center gap-1">${ic('clock','w-3 h-3')} ${escapeHtml(meta(a))}</span>` : ''}
+          </div>
+          ${a.price_note ? `<div class="text-[10.5px] text-neutral-400 mt-1">${escapeHtml(a.price_note)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -1499,13 +1791,13 @@ function memberIdCardHTML(s) {
   const initial = (s.full_name || '?').trim()[0]?.toUpperCase() || '?';
   const stColor = active ? '#4ade80' : '#fbbf24';
   return `
-  <div class="rounded-[18px] border border-neutral-200 bg-neutral-50/60 p-4 md:p-5">
+  <div class="soft p-4 md:p-5">
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3.5">
       <div>
-        <div class="text-[12px] font-bold tracking-[0.14em]">MEMBER ID CARD</div>
+        <div class="text-[12px] font-extrabold tracking-[0.14em]">MEMBER ID CARD</div>
         <div class="text-[11px] text-neutral-500 mt-0.5">Your official CIFIKA member ID — print it, cut it out and bring it to the dojo.</div>
       </div>
-      <button onclick="printMemberIdCard()" class="h-9 px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('card','w-4 h-4')} Print ID Card</button>
+      <button onclick="printMemberIdCard()" class="h-9 px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-brand transition inline-flex items-center gap-1.5">${ic('card','w-4 h-4')} Print ID Card</button>
     </div>
     <div id="idCardFront">
       <div class="idc-card">
@@ -1573,12 +1865,14 @@ function printMemberIdCard() {
 }
 
 function profileTabHTML(s) {
-  return `${memberDetailsHTML(s)}${accountSettingsHTML(s)}`;
+  return `${memberIdCardHTML(s)}
+  <div class="card p-5 md:p-6">${memberDetailsRowsHTML(s)}</div>
+  <div class="card p-5 md:p-6">${accountSettingsHTML(s)}</div>`;
 }
 
-/* Personal details + printable member ID — used by the Account tab (personal accounts)
+/* Personal details — used by the Account tab (personal accounts)
    and the "ID & Details" tab of every linked member inside the guardian shell */
-function memberDetailsHTML(s) {
+function memberDetailsRowsHTML(s) {
   const ec = s.emergency_contact || {};
   const rows = [
     ['Full Name', s.full_name],
@@ -1599,8 +1893,8 @@ function memberDetailsHTML(s) {
     ['Emergency Contact', ec.name ? `${ec.name}${ec.relationship ? ' (' + ec.relationship + ')' : ''} — ${ec.primaryPhone || ''}` : null],
   ].filter(r => r[1]);
   return `
-    ${memberIdCardHTML(s)}
-    <div class="grid md:grid-cols-2 gap-x-8 mt-6">
+    <div class="text-[12px] font-extrabold tracking-[0.14em] mb-3">MEMBER DETAILS</div>
+    <div class="grid gap-x-8">
       ${rows.map(([k, v]) => `
         <div class="flex justify-between gap-4 py-2.5 border-b border-neutral-100">
           <span class="text-[12px] text-neutral-500 shrink-0">${k}</span>
@@ -1610,75 +1904,20 @@ function memberDetailsHTML(s) {
     <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>`;
 }
 
-function announcementsHTML(list, title, sub) {
-  if (!list || !list.length) return '';
-  const typeCls = { grading:'bg-brand text-white', event:'bg-black text-white', seminar:'bg-purple-600 text-white',
-                    promotion:'bg-emerald-600 text-white', announcement:'bg-blue-600 text-white', update:'bg-neutral-500 text-white' };
-  const meta = a => [a.event_date ? fmtDate(a.event_date) : '',
-                     a.start_time ? a.start_time + (a.end_time ? '–' + a.end_time : '') : '',
-                     a.location || ''].filter(Boolean).join(' • ');
-  return `
-  <div class="card p-6 md:p-7">
-    <div class="flex items-center justify-between mb-4">
-      <div class="text-[12px] font-bold tracking-[0.14em]">${escapeHtml(title || 'CLUB UPDATES')}</div>
-      <div class="text-[11px] text-neutral-400">${escapeHtml(sub || 'announcements • events • seminars')}</div>
-    </div>
-    <div class="grid sm:grid-cols-2 gap-3">
-      ${list.map(a => `
-      <div class="rounded-[16px] border ${a.is_pinned ? 'border-brand/40 bg-brand-light/40' : 'border-neutral-200 bg-neutral-50/60'} p-4">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="px-2.5 py-0.5 rounded-full text-[9.5px] font-bold tracking-[0.1em] uppercase ${typeCls[a.type] || typeCls.update}">${escapeHtml(a.type)}</span>
-          ${a.is_pinned ? `<span class="text-[9.5px] font-bold tracking-[0.1em] text-brand uppercase inline-flex items-center gap-1">${ic('pin','w-3 h-3')} Pinned</span>` : ''}
-          ${a.price ? `<span class="ml-auto text-[12.5px] font-extrabold text-brand">₦${Number(a.price).toLocaleString()}</span>` : ''}
-        </div>
-        <div class="mt-2 text-[13.5px] font-bold leading-snug">${escapeHtml(a.title)}</div>
-        ${a.body ? `<div class="mt-1 text-[12px] text-neutral-600 leading-[1.6]">${escapeHtml(a.body)}</div>` : ''}
-        ${meta(a) ? `<div class="mt-2 text-[11px] font-semibold text-neutral-500 inline-flex items-center gap-1.5">${ic('calendar','w-3.5 h-3.5')} ${escapeHtml(meta(a))}</div>` : ''}
-        ${a.price_note ? `<div class="text-[10.5px] text-neutral-400 mt-0.5">${escapeHtml(a.price_note)}</div>` : ''}
-      </div>`).join('')}
-    </div>
-  </div>`;
+/* Wrapper kept for compatibility — details + ID card together */
+function memberDetailsHTML(s) {
+  return `${memberIdCardHTML(s)}<div class="mt-4">${memberDetailsRowsHTML(s)}</div>`;
 }
 
-function gradingsTabHTML(grd, scoresById = {}) {
-  if (!grd.length) return emptyState('medal', 'No gradings yet', 'Your first grading will appear here with examiner, result, score report and certificate.');
-  const ROWS = [['Attendance','attendance',10],['Character','character',20],['Kihon','kihon',20],
-                ['Kata','kata',20],['Kumite','kumite',20],['Fitness','fitness',10]];
-  return `<div class="grid gap-3">
-    ${grd.map(g => {
-      const sc = scoresById[g.id];
-      const total = sc ? ROWS.reduce((s,[,k]) => s + (sc[k] || 0), 0) : null;
-      return `
-      <div class="rounded-[16px] border border-neutral-200 p-4">
-        <div class="flex flex-col md:flex-row md:items-center gap-3 justify-between">
-          <div class="flex flex-wrap items-center gap-2">
-            ${beltChipHTML(g.previous_belt)}<span class="text-neutral-400">→</span>${beltChipHTML(g.new_belt)}
-            <span class="text-[12px] text-neutral-500 md:ml-2">${fmtDate(g.grading_date)} • Examiner: ${escapeHtml(g.examiner_name || '—')}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            ${resultPill(g.result)}
-            ${g.certificate_issued ? `<button onclick="downloadCertificate('${g.id}')" class="h-8 px-4 rounded-full bg-black text-white text-[10.5px] font-bold hover:bg-neutral-800 transition inline-flex items-center gap-1.5">${ic('file','w-3 h-3')} Certificate PDF</button>` : ''}
-          </div>
-        </div>
-        ${g.remarks ? `<div class="mt-2 text-[12px] text-neutral-500 italic">"${escapeHtml(g.remarks)}"</div>` : ''}
-        ${sc ? `
-        <div class="mt-3 rounded-[12px] bg-neutral-50 border border-neutral-100 p-4">
-          <div class="flex items-center justify-between mb-2.5">
-            <span class="text-[10.5px] font-bold tracking-[0.12em] text-neutral-500">PERFORMANCE REPORT</span>
-            <span class="text-[16px] font-extrabold ${total >= 50 ? 'text-emerald-600' : 'text-amber-600'}">${total}%</span>
-          </div>
-          <div class="grid sm:grid-cols-2 gap-x-6 gap-y-2">
-            ${ROWS.map(([label, key, max]) => `
-            <div>
-              <div class="flex justify-between text-[10.5px] font-semibold text-neutral-600"><span>${label}</span><span>${sc[key] || 0}/${max}</span></div>
-              <div class="mt-0.5 h-[6px] rounded-full bg-neutral-200 overflow-hidden">
-                <div class="h-full rounded-full bg-brand" style="width:${Math.round((sc[key] || 0) / max * 100)}%"></div>
-              </div>
-            </div>`).join('')}
-          </div>
-          ${sc.notes ? `<div class="mt-3 text-[11.5px] text-neutral-500 italic">Examiner: "${escapeHtml(sc.notes)}"</div>` : ''}
-        </div>` : ''}
-      </div>`;}).join('')}
+function announcementsHTML(list, title, sub) {
+  if (!list || !list.length) return '';
+  return `
+  <div class="card p-5 md:p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-[12px] font-extrabold tracking-[0.14em]">${escapeHtml(title || 'CLUB UPDATES')}</div>
+      <div class="text-[11px] text-neutral-400">${escapeHtml(sub || 'announcements • events • seminars')}</div>
+    </div>
+    ${annRowsHTML(list)}
   </div>`;
 }
 
@@ -1751,10 +1990,10 @@ function excusedBannerHTML(s, today) {
     body = 'Your paid sessions have resumed counting. Remember: unused sessions expire — see you on the mat!';
   } else return '';
   return `
-  <div class="rounded-[18px] border border-sky-200 bg-sky-50 p-4 md:p-5 flex items-start gap-3">
+  <div class="rounded-[20px] border border-sky-200 bg-sky-50 p-4 flex items-start gap-3">
     <span class="text-sky-600 shrink-0 mt-0.5">${ic('alert','w-[18px] h-[18px]')}</span>
     <div>
-      <div class="text-[11px] font-bold tracking-[0.1em] uppercase text-sky-700">${head}</div>
+      <div class="text-[11px] font-extrabold tracking-[0.1em] uppercase text-sky-700">${head}</div>
       <p class="mt-1 text-[12.5px] leading-[1.6] text-neutral-700">${body}</p>
     </div>
   </div>`;
@@ -1774,36 +2013,39 @@ function absenceTabHTML(student) {
   const d = window._absData || { requests: [], notices: [] };
   const today = lagosTodayStr();
   return `
-    <div class="rounded-[14px] bg-neutral-50 border border-neutral-200 p-4 text-[12px] leading-[1.6] text-neutral-600">
+    <div class="soft p-4 text-[12px] leading-[1.6] text-neutral-600">
       <b>Can't make a class?</b> Submit the reason below. If the Sensei / front desk approves it, that class is marked <b>excused</b> and <b>no session is used</b>. Missing without an approved reason uses one of your paid sessions — and 3 consecutive absences trigger a subscription warning email.
     </div>
-    <div class="mt-4 grid gap-3 max-w-[560px]">
-      <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">CLASS DATE YOU WILL MISS / MISSED *</div>
+    <div class="card p-5 grid gap-3">
+      <label class="block"><div class="text-[10px] font-extrabold tracking-[0.12em] text-neutral-400 mb-1.5">CLASS DATE YOU WILL MISS / MISSED *</div>
         <input type="date" id="absDate" class="input" min="${addDaysStr(today, -30)}" max="${addDaysStr(today, 90)}"></label>
-      <label class="block"><div class="text-[10.5px] font-bold tracking-[0.1em] text-neutral-500 mb-1">REASON FOR ABSENCE *</div>
-        <textarea id="absReason" rows="3" class="w-full rounded-[14px] border-[1.5px] border-neutral-200 bg-white px-4 py-3 text-[13px] outline-none transition focus:border-black focus:ring-0" placeholder="e.g. School exam preparation, travelling with family, recovering from illness…"></textarea></label>
-      <button id="absBtn" onclick="submitAbsence()" class="h-[46px] rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition">Submit Request →</button>
+      <label class="block"><div class="text-[10px] font-extrabold tracking-[0.12em] text-neutral-400 mb-1.5">REASON FOR ABSENCE *</div>
+        <textarea id="absReason" rows="3" class="input" placeholder="e.g. School exam preparation, travelling with family, recovering from illness…"></textarea></label>
+      <button id="absBtn" onclick="submitAbsence()" class="h-[48px] rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition">Submit Request →</button>
     </div>
 
-    <div class="mt-6">
-      <div class="text-[11px] font-bold tracking-[0.14em] text-neutral-500 mb-2.5">MY ABSENCE REQUESTS</div>
-      ${d.requests.length ? `<div class="grid gap-2">${d.requests.map(r => `
-        <div class="px-4 py-3 rounded-[14px] border border-neutral-100 bg-neutral-50/60">
-          <div class="flex items-center justify-between gap-3 flex-wrap">
-            <div class="text-[12.5px] font-semibold">${fmtDate(r.class_date)}</div>
-            ${absStatusPill(r.status)}
+    <div class="mt-2">
+      <div class="text-[11px] font-extrabold tracking-[0.14em] text-neutral-400 mb-2.5 px-1">MY ABSENCE REQUESTS</div>
+      ${d.requests.length ? `<div class="tl grid gap-2.5">${d.requests.map(r => `
+        <div class="tl-item">
+          <span class="tl-dot" style="border-color:${r.status === 'approved' ? '#10b981' : r.status === 'declined' ? '#ef4444' : '#f59e0b'}"></span>
+          <div class="soft px-4 py-3">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="text-[12.5px] font-bold">${fmtDate(r.class_date)}</div>
+              ${absStatusPill(r.status)}
+            </div>
+            <div class="mt-1 text-[12px] text-neutral-600 leading-[1.55]">${escapeHtml(r.reason)}</div>
+            ${r.review_note ? `<div class="mt-1.5 text-[11.5px] text-neutral-500 italic">Club: "${escapeHtml(r.review_note)}"</div>` : ''}
+            <div class="mt-1 text-[10.5px] text-neutral-400">submitted ${fmtDate(String(r.created_at).slice(0, 10))}</div>
           </div>
-          <div class="mt-1 text-[12px] text-neutral-600 leading-[1.55]">${escapeHtml(r.reason)}</div>
-          ${r.review_note ? `<div class="mt-1.5 text-[11.5px] text-neutral-500 italic">Club: "${escapeHtml(r.review_note)}"</div>` : ''}
-          <div class="mt-1 text-[10.5px] text-neutral-400">submitted ${fmtDate(String(r.created_at).slice(0, 10))}</div>
         </div>`).join('')}</div>`
-      : `<div class="text-[12px] text-neutral-400 py-2">No absence requests yet — hope every class goes well!</div>`}
+      : `<div class="text-[12px] text-neutral-400 py-2 px-1">No absence requests yet — hope every class goes well!</div>`}
     </div>
 
-    <div class="mt-6">
-      <div class="text-[11px] font-bold tracking-[0.14em] text-neutral-500 mb-2.5">CLUB NOTICES <span class="text-neutral-400 font-medium">(copies of emails sent to you)</span></div>
-      ${d.notices.length ? `<div class="grid gap-2">${d.notices.map(n => `
-        <div class="px-4 py-3 rounded-[14px] border ${n.kind === 'absence_warning' ? 'border-red-200 bg-red-50/50' : n.kind === 'excused_ending' ? 'border-amber-200 bg-amber-50/50' : 'border-sky-200 bg-sky-50/50'}">
+    <div class="mt-4">
+      <div class="text-[11px] font-extrabold tracking-[0.14em] text-neutral-400 mb-2.5 px-1">CLUB NOTICES <span class="text-neutral-300 font-semibold">(copies of emails sent to you)</span></div>
+      ${d.notices.length ? `<div class="grid gap-2.5">${d.notices.map(n => `
+        <div class="rounded-[18px] border ${n.kind === 'absence_warning' ? 'border-red-200 bg-red-50/50' : n.kind === 'excused_ending' ? 'border-amber-200 bg-amber-50/50' : 'border-sky-200 bg-sky-50/50'} px-4 py-3">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div class="text-[12.5px] font-bold">${escapeHtml(n.subject)}</div>
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-neutral-200 bg-white text-neutral-500 inline-flex items-center gap-1">${n.status === 'sent' ? ic('mail','w-3 h-3') + ' emailed' : n.status === 'queued' ? ic('mail','w-3 h-3') + ' queued' : 'in-app copy'}</span>
@@ -1811,7 +2053,7 @@ function absenceTabHTML(student) {
           <div class="mt-1.5 text-[12px] text-neutral-600 leading-[1.6] whitespace-pre-line">${escapeHtml(n.body)}</div>
           <div class="mt-1 text-[10.5px] text-neutral-400">${fmtDate(String(n.created_at).slice(0, 10))}</div>
         </div>`).join('')}</div>`
-      : `<div class="text-[12px] text-neutral-400 py-2">No club notices.</div>`}
+      : `<div class="text-[12px] text-neutral-400 py-2 px-1">No club notices.</div>`}
     </div>`;
 }
 
@@ -1827,70 +2069,76 @@ async function submitAbsence() {
   if (error || !d || d.status !== 'ok') return toast('✗ ' + (d?.message || error?.message || 'Could not submit.'), true);
   toast('✓ ' + (d.message || 'Absence request submitted'));
   renderDashboard(s, window._lastOpts || {});
-  setTimeout(() => showPortalSection('absences'), 80);
+  setTimeout(() => showPortalSection(window._pview === 'member' ? 'm-abs' : 'absences'), 80);
 }
 
 /* ═══════════════ DOJO CODE (rules, etiquette & consent texts) ═══════════════ */
 function dojoCodeHTML() {
   return `
-    <div class="text-[12.5px] text-neutral-600 leading-[1.6] max-w-[70ch]">The rules, etiquette and code you agreed to when you registered — live by them on and off the mat.</div>
+    <div class="text-[12.5px] text-neutral-500 leading-[1.6]">The rules, etiquette and code you agreed to when you registered — live by them on and off the mat.</div>
 
-    <div class="mt-5 rounded-[16px] border border-neutral-200 overflow-hidden">
-      <div class="px-5 py-3 bg-neutral-50 border-b border-neutral-200 text-[11px] font-bold tracking-[0.14em]">SECTION I — CLUB RULES (12)</div>
-      <ol class="list-decimal list-inside px-5 py-4 text-[12.5px] leading-6 text-neutral-700 grid gap-1.5">
-        ${CLUB_RULES.map(r => `<li>${escapeHtml(r)}</li>`).join('')}
-      </ol>
+    <div class="card p-5">
+      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION I — CLUB RULES (12)</div>
+      <div class="mt-3 grid gap-2">
+        ${CLUB_RULES.map((r, i) => `
+        <div class="flex items-start gap-3 px-3.5 py-3 rounded-[16px] bg-neutral-50/80 border border-neutral-100">
+          <span class="w-6 h-6 rounded-full bg-[#111] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">${i + 1}</span>
+          <div class="text-[12.5px] leading-[1.6] text-neutral-700">${escapeHtml(r)}</div>
+        </div>`).join('')}
+      </div>
     </div>
 
-    <div class="mt-4 rounded-[16px] border border-neutral-200 p-5">
-      <div class="text-[11px] font-bold tracking-[0.14em]">SECTION J — DOJO KUN</div>
-      <div class="mt-3 grid gap-2.5">
+    <div class="card p-5">
+      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION J — DOJO KUN</div>
+      <div class="mt-3 grid gap-2">
         ${DOJO_KUN.map(([jp, en], i) => `
-        <div class="flex items-start gap-3 px-4 py-3 rounded-[14px] bg-neutral-50 border border-neutral-100">
-          <div class="w-7 h-7 rounded-full bg-black text-white flex items-center justify-center text-[11px] font-bold shrink-0">${i + 1}</div>
+        <div class="flex items-start gap-3 px-3.5 py-3 rounded-[16px] bg-[#101010] text-white">
+          <span class="w-6 h-6 rounded-full bg-brand text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">${i + 1}</span>
           <div>
-            <div class="text-[13px] font-bold tracking-wide">${escapeHtml(en)}</div>
-            <div class="text-[11.5px] text-neutral-500 mt-0.5">${escapeHtml(jp)}</div>
+            <div class="text-[12.5px] font-extrabold tracking-wide">${escapeHtml(en)}</div>
+            <div class="text-[11px] text-white/50 mt-0.5">${escapeHtml(jp)}</div>
           </div>
         </div>`).join('')}
       </div>
     </div>
 
-    <div class="mt-4 grid gap-2.5">
-      <div class="text-[11px] font-bold tracking-[0.14em]">SECTION K — CODE OF CONDUCT & PARTICIPATION</div>
-      <div class="px-4 py-3 rounded-[14px] border border-neutral-200 bg-white text-[12.5px] leading-[1.6] text-neutral-700"><b>Participation & safety:</b> karate is a contact martial art involving physical exertion and risk of injury. You participate voluntarily at your own risk, agree to follow safety instructions, and declare your health information is true and complete. Advise the club of any changes.</div>
-      <div class="px-4 py-3 rounded-[14px] border border-neutral-200 bg-white text-[12.5px] leading-[1.6] text-neutral-700"><b>Code of conduct:</b> respect, discipline, non-violence outside the dojo, and safeguarding of children. Misconduct may lead to suspension.</div>
-      <div class="px-4 py-3 rounded-[14px] border border-neutral-200 bg-white text-[12.5px] leading-[1.6] text-neutral-700"><b>Privacy & use of information:</b> City Fitness Karate Club & TTOSR collect member data for membership, grading, insurance, safety and communication. Data is stored securely and never sold.</div>
+    <div class="card p-5">
+      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION K — CODE OF CONDUCT & PARTICIPATION</div>
+      <div class="mt-3 grid gap-2">
+        <div class="px-4 py-3 rounded-[16px] border border-neutral-100 bg-neutral-50/80 text-[12.5px] leading-[1.6] text-neutral-700"><b>Participation & safety:</b> karate is a contact martial art involving physical exertion and risk of injury. You participate voluntarily at your own risk, agree to follow safety instructions, and declare your health information is true and complete. Advise the club of any changes.</div>
+        <div class="px-4 py-3 rounded-[16px] border border-neutral-100 bg-neutral-50/80 text-[12.5px] leading-[1.6] text-neutral-700"><b>Code of conduct:</b> respect, discipline, non-violence outside the dojo, and safeguarding of children. Misconduct may lead to suspension.</div>
+        <div class="px-4 py-3 rounded-[16px] border border-neutral-100 bg-neutral-50/80 text-[12.5px] leading-[1.6] text-neutral-700"><b>Privacy & use of information:</b> City Fitness Karate Club & TTOSR collect member data for membership, grading, insurance, safety and communication. Data is stored securely and never sold.</div>
+      </div>
     </div>
 
-    <div class="mt-4 text-[11px] text-neutral-400">You accepted these at registration — questions? Speak to Sensei.</div>`;
+    <div class="text-[11px] text-neutral-400 px-1">You accepted these at registration — questions? Speak to Sensei.</div>`;
 }
 
 /* ═══════════════ ONBOARDING · CONNECT ID · REGISTER FOR AN ID · ACCOUNT SETTINGS ═══════════════ */
 async function renderOnboarding(skipped) {
   const first = !skipped;
-  // sidebar stays hidden during onboarding — it's a focused full-screen flow
+  // the sidebar stays hidden during onboarding — it's a focused full-screen flow
   $('sidebar').classList.add('hidden');
   $('navToggle').classList.add('hidden');
   const pendingMsg = window._pendingConnectMsg;
   if (window._pendingConnectMsg) window._pendingConnectMsg = null;
   $('appMain').innerHTML = `
-  <div class="fade-in max-w-[560px] mx-auto grid gap-5">
+  <div class="fade-in max-w-[520px] mx-auto grid gap-4 pt-2">
     <div class="text-center pt-2">
       <div class="w-14 h-14 mx-auto rounded-full bg-brand-light border border-brand-border flex items-center justify-center">
         <svg viewBox="0 0 24 24" class="w-6 h-6 text-brand" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5 17.5 17.5M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/><path d="M12 8v8M8 12h8"/></svg>
       </div>
-      <h1 class="mt-4 text-[22px] md:text-[26px] font-extrabold tracking-tight">${first ? 'Welcome to CIFIKA' : 'Connect your account'}</h1>
+      <h1 class="mt-4 text-[24px] font-extrabold tracking-tight">${first ? 'Welcome to CIFIKA' : 'Connect your account'}</h1>
       <p class="mt-1.5 text-[13px] text-neutral-500 leading-[1.6]">${first
         ? 'One last step — connect your CIFIKA ID to see your training data. No ID yet? Register to get one.'
         : 'Your account is active but not linked to a member record yet. Connect your ID whenever you\u2019re ready.'}</p>
     </div>
 
-    ${pendingMsg ? `<div class="rounded-[16px] border border-[#FFD4A8] bg-[#FFF5EB] px-4 py-3 text-[12.5px] leading-[1.6] text-[#B34700]">${escapeHtml(pendingMsg)}</div>` : ''}
+    ${pendingMsg ? `<div class="rounded-[18px] border border-[#FFD4A8] bg-[#FFF5EB] px-4 py-3 text-[12.5px] leading-[1.6] text-[#B34700]">${escapeHtml(pendingMsg)}</div>` : ''}
 
-    <div class="card p-6 md:p-7">
+    <div class="card p-6">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
+        <div class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center shrink-0">
           ${ic('card','w-4 h-4')}
         </div>
         <div>
@@ -1900,15 +2148,15 @@ async function renderOnboarding(skipped) {
       </div>
       <div class="mt-4 flex flex-col sm:flex-row gap-2">
         <input id="obRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')connectOnboardRef()">
-        <button onclick="connectOnboardRef()" class="h-[44px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Connect ID</button>
+        <button onclick="connectOnboardRef()" class="h-[48px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Connect ID</button>
       </div>
       <p class="text-[11px] text-neutral-400 mt-2 px-1 leading-[1.5]">The email on this account must match the email (or guardian email) on the registration.</p>
       <div id="obMsg" class="hidden"></div>
     </div>
 
-    <div class="card p-6 md:p-7">
+    <div class="card p-6">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center shrink-0">
+        <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0">
           ${ic('file','w-4 h-4')}
         </div>
         <div>
@@ -1917,10 +2165,10 @@ async function renderOnboarding(skipped) {
         </div>
       </div>
       <p class="text-[12px] text-neutral-500 mt-3 leading-[1.6]">Your details (${escapeHtml(currentProfile.full_name || 'name')} • ${escapeHtml(currentProfile.email || 'email')}) are carried over to the registration form automatically. Once you submit, you land right back here — and your new ID connects to this account.</p>
-      <a href="${buildPortalRegUrl()}" class="mt-4 h-[44px] px-6 rounded-full bg-black text-white text-[13px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register to get an ID →</a>
+      <a href="${buildPortalRegUrl()}" class="mt-4 h-[48px] px-6 rounded-full bg-black text-white text-[13px] font-semibold hover:bg-brand transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register to get an ID →</a>
     </div>
 
-    <a href="instructor.html" class="card p-5 flex items-center gap-3 hover:border-black transition group">
+    <a href="instructor.html" class="soft p-4 flex items-center gap-3 hover:border-black transition group">
       <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0 text-neutral-600">
         ${ic('users','w-4 h-4')}
       </div>
@@ -1973,13 +2221,15 @@ async function runConnectRef(ref, msgEl) {
     return;
   }
   if (d.status === 'ok' || d.status === 'already') {
-    toast('✓ ' + (d.message || 'ID connected — loading your dojo data…'));
+    toast('✓ ' + (d.status === 'already'
+      ? 'This ID is already connected to your account — opening your portal…'
+      : (d.message || 'ID connected — loading your dojo data…')));
     setTimeout(() => location.reload(), 900);
     return;
   }
   if (d.status === 'need_parent_switch') {
     if (msgEl) {
-      msgEl.className = 'mt-2 text-[12px] leading-[1.6] px-4 py-3 rounded-[14px] border bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]';
+      msgEl.className = 'mt-2 text-[12px] leading-[1.6] px-4 py-3 rounded-[16px] border bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]';
       msgEl.innerHTML = `<b>Personal accounts hold one ID.</b> To link this additional member, switch to a Parent / Guardian account. <button onclick="switchAndLink('${escapeHtml(ref)}')" class="ml-1 underline font-semibold">Switch to Parent &amp; link →</button>`;
     }
     return;
@@ -2024,7 +2274,7 @@ function accountSettingsHTML(s) {
         <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. The account email must match the guardian email on their registration.</p>
         <div class="mt-3 flex flex-col sm:flex-row gap-2">
           <input id="setRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
-          <button onclick="connectFromSettings()" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Link member</button>
+          <button onclick="connectFromSettings()" class="h-[46px] px-5 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Link member</button>
         </div>
       </div>` : `
       <div>
@@ -2033,32 +2283,30 @@ function accountSettingsHTML(s) {
           <span class="px-2.5 py-1 rounded-full bg-black text-white text-[11px] font-bold tracking-wide">${escapeHtml(s.registration_ref || '—')}</span>
           <span class="text-[11px] text-neutral-400">Personal accounts hold exactly one ID.</span>
         </div>
-        <div class="mt-3 rounded-[12px] bg-neutral-50 border border-neutral-200 p-3.5">
+        <div class="mt-3 rounded-[16px] bg-neutral-50 border border-neutral-200 p-3.5">
           <div class="text-[12px] font-semibold">Linking your children too?</div>
           <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Switch to a Parent / Guardian account to link multiple members and manage them from one home screen.</div>
-          <button onclick="switchToParentAccount()" class="mt-2.5 h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Switch to Parent account</button>
+          <button onclick="switchToParentAccount()" class="mt-2.5 h-9 px-4 rounded-full border-[1.5px] border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Switch to Parent account</button>
         </div>
       </div>`;
 
   return `
-    <div class="mt-7 pt-5 border-t border-neutral-200 grid gap-4">
-      <div class="text-[12px] font-bold tracking-[0.14em]">ACCOUNT SETTINGS</div>
+    <div class="text-[12px] font-extrabold tracking-[0.14em]">ACCOUNT SETTINGS</div>
 
-      <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
-        <div class="text-[12.5px] font-bold">Membership status</div>
-        <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">View your current membership status here.</div>
-        <div class="mt-2.5">${statusBlock}</div>
-      </div>
+    <div class="soft p-4">
+      <div class="text-[12.5px] font-bold">Membership status</div>
+      <div class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">View your current membership status here.</div>
+      <div class="mt-2.5">${statusBlock}</div>
+    </div>
 
-      <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">${linkBlock}</div>
-      <div id="setRefMsg" class="hidden"></div>
+    <div class="soft p-4">${linkBlock}</div>
+    <div id="setRefMsg" class="hidden"></div>
 
-      <div class="rounded-[14px] border border-neutral-200 bg-neutral-50/60 p-4">
-        <div class="text-[12.5px] font-bold">Change password</div>
-        <div class="mt-2.5 flex flex-col sm:flex-row gap-2">
-          <input id="newPass" type="password" class="input flex-1" placeholder="New password (min. 6 characters)" autocomplete="new-password">
-          <button onclick="changeMyPassword()" class="h-[42px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-neutral-800 transition shrink-0">Update password</button>
-        </div>
+    <div class="soft p-4">
+      <div class="text-[12.5px] font-bold">Change password</div>
+      <div class="mt-2.5 flex flex-col sm:flex-row gap-2">
+        <input id="newPass" type="password" class="input flex-1" placeholder="New password (min. 6 characters)" autocomplete="new-password">
+        <button onclick="changeMyPassword()" class="h-[46px] px-5 rounded-full bg-black text-white text-[12.5px] font-semibold hover:bg-brand transition shrink-0">Update password</button>
       </div>
     </div>`;
 }
@@ -2113,6 +2361,7 @@ function fmtDate(d) {
   return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function fmtDay(d) { return d ? new Date(d + 'T00:00:00').getDate() : '—'; }
+function fmtMon(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { month: 'short' }) : '—'; }
 function calcAge(dob) {
   if (!dob) return null;
   const d = new Date(dob), t = new Date();
@@ -2122,10 +2371,10 @@ function calcAge(dob) {
   return a;
 }
 function emptyState(iconName, title, text) {
-  return `<div class="text-center py-10">
-    <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic(iconName, 'w-6 h-6')}</div>
-    <div class="mt-2 text-[14px] font-bold">${title}</div>
-    <div class="mt-1 text-[12.5px] text-neutral-500 max-w-[40ch] mx-auto leading-[1.6]">${text}</div>
+  return `<div class="text-center py-10 px-4">
+    <div class="w-12 h-12 mx-auto rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-400">${ic(iconName, 'w-5 h-5')}</div>
+    <div class="mt-3 text-[14px] font-extrabold">${title}</div>
+    <div class="mt-1.5 text-[12.5px] text-neutral-500 max-w-[42ch] mx-auto leading-[1.6]">${text}</div>
   </div>`;
 }
 let toastTimer;
@@ -2139,13 +2388,17 @@ function toast(msg) {
 function gradingEntryHTML(nextBelt) {
   const gw = window._gw || { open: [], entered: new Set() };
   if (!gw.open.length) {
-    return `<div class="rounded-[12px] bg-white/10 border border-neutral-700 p-3 text-[11.5px] text-neutral-300 leading-[1.55]">Grading windows open when Sensei announces one — watch <b>Club Updates</b>. Members can't request a grading directly.</div>`;
+    return `<div class="rounded-[14px] bg-white/10 border border-white/15 p-3.5 text-[11.5px] text-white/60 leading-[1.55]">Grading windows open when Sensei announces one — watch <b class="text-white/85">Club Updates</b>. Members can't request a grading directly.</div>`;
   }
   const w = gw.open[0];
   if (gw.entered.has(w.id)) {
-    return `<div class="rounded-[12px] bg-emerald-500/15 border border-emerald-500/40 p-3 text-[11.5px] text-emerald-300 leading-[1.55]"><b>✓ You're entered:</b> ${escapeHtml(w.title)}${w.grading_date ? ' — ' + fmtDate(w.grading_date) : ''}. Speak to Sensei about your preparation.</div>`;
+    return `<div class="rounded-[14px] bg-emerald-500/15 border border-emerald-500/40 p-3.5 text-[11.5px] text-emerald-300 leading-[1.55]"><b>✓ You're entered:</b> ${escapeHtml(w.title)}${w.grading_date ? ' — ' + fmtDate(w.grading_date) : ''}. Speak to Sensei about your preparation.</div>`;
   }
-  return `<button onclick="enterGradingWindow('${w.id}','${escapeHtml(nextBelt.belt_name)}')" class="h-10 px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('medal','w-4 h-4')} Enter Grading — ${escapeHtml(w.title)} →</button>`;
+  return `<button onclick="enterGradingWindow('${w.id}','${escapeHtml(nextBelt.belt_name)}')" class="w-full h-11 pl-4 pr-3 rounded-full bg-brand text-white text-[12px] font-bold hover:bg-brand-dark transition flex items-center gap-2">
+    ${ic('medal','w-4 h-4 shrink-0')}
+    <span class="flex-1 text-left truncate">Enter Grading — ${escapeHtml(w.title)}</span>
+    ${ic('arrow','w-4 h-4 shrink-0')}
+  </button>`;
 }
 
 async function enterGradingWindow(windowId, targetBelt) {
