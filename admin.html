@@ -419,6 +419,7 @@ function showDashboard() {
           </div>
           <div class="flex gap-2 shrink-0">
             <button onclick="setMemberStatus('${m.id}','active')" class="h-9 px-4 rounded-full bg-emerald-600 text-white text-[11.5px] font-semibold hover:bg-emerald-700 transition inline-flex items-center gap-1.5">${ic('check','w-3.5 h-3.5')} Activate</button>
+            ${m.registration_pdf_path ? `<button onclick="downloadApplicationPDF('${m.id}')" class="h-9 px-4 rounded-full border border-amber-300 bg-white text-amber-700 text-[11.5px] font-semibold hover:border-amber-500 transition inline-flex items-center gap-1.5">${ic('download','w-3.5 h-3.5')} PDF</button>` : ''}
             <button onclick="openMember('${m.id}')" class="h-9 px-4 rounded-full border border-neutral-200 bg-white text-[11.5px] font-semibold hover:border-black transition">Details</button>
           </div>
         </div>`).join('')}</div>`
@@ -523,6 +524,19 @@ function openMember(id) {
       </div>
 
       <div class="rounded-[14px] border border-neutral-200 p-4">
+        <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-500 mb-2.5">APPLICATION PDF</div>
+        ${m.registration_pdf_path
+          ? `<div class="flex items-center gap-3 flex-wrap">
+               <div class="min-w-0 flex-1">
+                 <div class="text-[12.5px] font-semibold truncate">${escapeHtml('CIFIKA_' + (m.registration_ref || 'member') + '.pdf')}</div>
+                 <div class="text-[10.5px] text-neutral-400 mt-0.5">Submitted by the member from the registration form — includes passport photo.</div>
+               </div>
+               <button onclick="downloadApplicationPDF('${m.id}')" class="h-10 px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2 shrink-0">${ic('download','w-4 h-4')} Download PDF</button>
+             </div>`
+          : `<div class="text-[12px] text-neutral-400">No application PDF on file — registrations submitted before this feature (or via staff) have no stored PDF.</div>`}
+      </div>
+
+      <div class="rounded-[14px] border border-neutral-200 p-4">
         <div class="text-[11px] font-bold tracking-[0.12em] text-neutral-500 mb-2.5">MEMBERSHIP STATUS</div>
         <div class="flex flex-wrap gap-2">
           ${['pending','active','inactive','suspended'].map(s =>
@@ -566,6 +580,19 @@ function openMember(id) {
   $('modalWrap').classList.remove('hidden');
 }
 function closeModal() { $('modalWrap').classList.add('hidden'); currentMemberId = null; }
+
+/* Application PDF — stored in Supabase Storage (bucket registration_docs) at submit time.
+   Signed URL keeps member documents private: only signed-in staff can read them. */
+async function downloadApplicationPDF(id) {
+  const m = membersList.find(x => x.id === id);
+  if (!m) return;
+  if (!m.registration_pdf_path) return toast('No application PDF on file for this member.', true);
+  toast('Preparing download…');
+  const { data, error } = await sb.storage.from('registration_docs').createSignedUrl(m.registration_pdf_path, 300);
+  if (error || !data?.signedUrl) return toast('✗ ' + (error?.message || 'Could not create the download link.'), true);
+  window.open(data.signedUrl, '_blank');
+  toast('Opening the application PDF…');
+}
 
 async function setMemberStatus(id, status) {
   const { error } = await sb.from('students').update({ membership_status: status }).eq('id', id);

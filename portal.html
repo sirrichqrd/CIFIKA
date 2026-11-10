@@ -993,7 +993,7 @@ async function renderParentHome() {
              <div class="mt-3 text-[14px] font-extrabold">No children linked yet</div>
              <div class="mt-1.5 text-[12.5px] text-neutral-500 max-w-[46ch] mx-auto leading-[1.6]">
                Register your child via the registration form, then use Link Child to connect their CIFIKA ID.
-               Your account email must match the guardian email on the registration.
+               Children connect to a parent account automatically — no email matching needed.
              </div>
              <div class="mt-4 flex flex-wrap justify-center gap-2">
                <button onclick="goParent('link')" class="h-[40px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5">${ic('link','w-3.5 h-3.5')} Link a child</button>
@@ -1055,7 +1055,7 @@ function renderLinkChildTab() {
         <input id="linkRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
         <button onclick="linkChild()" class="h-[48px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Link Child</button>
       </div>
-      <p class="text-[11px] text-neutral-400 mt-2 leading-[1.55]">The account email must match the guardian email on the registration.</p>
+      <p class="text-[11px] text-neutral-400 mt-2 leading-[1.55]">Children and wards connect without email matching — the club only checks the ID isn't already linked to another account.</p>
       <p id="linkMsg" class="hidden mt-2 text-[12px]"></p>
     </div>
 
@@ -1167,7 +1167,7 @@ function renderParentSettings() {
     <div class="soft p-5">
       <div>
         <div class="text-[13px] font-extrabold">Link another member</div>
-        <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. The account email must match the guardian email on their registration.</p>
+        <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. Children link automatically; for adult members the account email must match their registration email.</p>
       </div>
       <div class="mt-3 flex flex-col sm:flex-row gap-2">
         <input id="setRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
@@ -2150,7 +2150,7 @@ async function renderOnboarding(skipped) {
         <input id="obRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase" onkeydown="if(event.key==='Enter')connectOnboardRef()">
         <button onclick="connectOnboardRef()" class="h-[48px] px-6 rounded-full bg-brand text-white text-[13px] font-semibold hover:bg-brand-dark transition shrink-0">Connect ID</button>
       </div>
-      <p class="text-[11px] text-neutral-400 mt-2 px-1 leading-[1.5]">The email on this account must match the email (or guardian email) on the registration.</p>
+      <p class="text-[11px] text-neutral-400 mt-2 px-1 leading-[1.5]">Children link without email matching. For your own adult registration, sign in with the email on that registration.</p>
       <div id="obMsg" class="hidden"></div>
     </div>
 
@@ -2227,6 +2227,13 @@ async function runConnectRef(ref, msgEl) {
     setTimeout(() => location.reload(), 900);
     return;
   }
+  if (d.status === 'taken' || d.status === 'not_found') {
+    if (msgEl) {
+      msgEl.className = 'mt-2 text-[12px] leading-[1.6] px-4 py-3 rounded-[16px] border bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]';
+      msgEl.textContent = d.message || (d.status === 'taken' ? 'This ID is already linked to an account.' : 'ID not found.');
+    }
+    return;
+  }
   if (d.status === 'need_parent_switch') {
     if (msgEl) {
       msgEl.className = 'mt-2 text-[12px] leading-[1.6] px-4 py-3 rounded-[16px] border bg-[#FFF5EB] border-[#FFD4A8] text-[#B34700]';
@@ -2271,7 +2278,7 @@ function accountSettingsHTML(s) {
   const linkBlock = isParent ? `
       <div>
         <div class="text-[12.5px] font-bold">Link another member</div>
-        <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. The account email must match the guardian email on their registration.</p>
+        <p class="text-[11.5px] text-neutral-500 mt-0.5 leading-[1.5]">Parent accounts can link multiple members — enter each child's CFK-xxxxx. Children link automatically; for adult members the account email must match their registration email.</p>
         <div class="mt-3 flex flex-col sm:flex-row gap-2">
           <input id="setRef" class="input flex-1" placeholder="CFK-xxxxx" style="text-transform:uppercase">
           <button onclick="connectFromSettings()" class="h-[46px] px-5 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition shrink-0">Link member</button>

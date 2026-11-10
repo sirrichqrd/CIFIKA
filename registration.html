@@ -625,6 +625,24 @@
               <div class="text-neutral-900 break-words" id="rvConsents">—</div>
             </div>
           </div>
+          <!-- PASSPORT PHOTO — part of the form now: upload → submit → portal -->
+          <div id="passportDrop" class="dropzone rounded-[16px] border-2 border-dashed border-neutral-300 p-5 text-center transition cursor-pointer hover:border-brand">
+            <input type="file" id="passportInput" accept="image/*" class="hidden">
+            <div id="passportEmpty">
+              <div class="w-11 h-11 mx-auto rounded-full bg-neutral-100 flex items-center justify-center text-[18px]">📷</div>
+              <div class="mt-2 text-[13px] font-semibold">Attach Passport Photograph</div>
+              <div class="text-[11px] text-neutral-500 mt-1 leading-[1.5]">Click or drop an image. It is embedded in your application PDF, which goes straight to the club dashboard.</div>
+              <span class="inline-block mt-3 h-9 px-5 rounded-full bg-black text-white text-[12px] font-medium leading-[36px]">Upload Passport</span>
+            </div>
+            <div id="passportPreviewWrap" class="hidden flex items-center gap-4 text-left">
+              <img id="passportPreview" class="w-[72px] h-[96px] object-cover rounded-[10px] border border-neutral-200" alt="Passport preview">
+              <div class="flex-1">
+                <div class="text-[13px] font-semibold text-emerald-600 flex items-center gap-1.5"><span>✓</span> Passport attached</div>
+                <div class="text-[11px] text-neutral-500 mt-0.5">Included in your application PDF sent to the club.</div>
+                <button type="button" onclick="removePassport(event)" class="mt-2 text-[11px] text-red-500 hover:text-red-600 font-medium">Remove photo</button>
+              </div>
+            </div>
+          </div>
           <div class="rounded-[16px] bg-black text-white p-5">
             <div class="text-[12px] font-semibold tracking-[0.12em]">DECLARATION</div>
             <p class="text-[12px] text-neutral-300 mt-2 leading-[1.6]">By submitting, I declare all information is true and I agree to Club Rules, Dojo Kun, participation risks, media choice and privacy as marked. For child/ward, I sign as parent/guardian with authority to consent.</p>
@@ -719,60 +737,24 @@
       <div class="rounded-[16px] border border-neutral-200 p-5">
         <div class="text-[13px] font-semibold">What happens next?</div>
         <ol class="mt-3 text-[13px] leading-6 text-neutral-600 list-decimal list-inside space-y-1">
-          <li>Send us your PDF on WhatsApp (steps below) — or print & submit at the dojo.</li>
+          <li>Your application PDF (with passport) goes straight to the club dashboard — no WhatsApp needed.</li>
+          <li>The Sensei reviews it and activates your membership.</li>
           <li>Complete payment if you haven't at the City Fitness front desk.</li>
           <li>Attend your first assessment class in full gi or athletic/sport/gym wear.</li>
-          <li>The Sensei will review your experience and health declaration.</li>
         </ol>
-      </div>
-
-      <!-- PASSPORT UPLOAD -->
-      <div id="passportDrop" class="dropzone rounded-[16px] border-2 border-dashed border-neutral-300 p-5 text-center transition cursor-pointer hover:border-brand">
-        <input type="file" id="passportInput" accept="image/*" class="hidden">
-        <div id="passportEmpty">
-          <div class="w-11 h-11 mx-auto rounded-full bg-neutral-100 flex items-center justify-center text-[18px]">📷</div>
-          <div class="mt-2 text-[13px] font-semibold">Attach Passport Photograph</div>
-          <div class="text-[11px] text-neutral-500 mt-1 leading-[1.5]">Click or drop an image. It will be embedded in your PDF and the copy shared with the club.</div>
-          <span class="inline-block mt-3 h-9 px-5 rounded-full bg-black text-white text-[12px] font-medium leading-[36px]">Upload Passport</span>
-        </div>
-        <div id="passportPreviewWrap" class="hidden flex items-center gap-4 text-left">
-          <img id="passportPreview" class="w-[72px] h-[96px] object-cover rounded-[10px] border border-neutral-200" alt="Passport preview">
-          <div class="flex-1">
-            <div class="text-[13px] font-semibold text-emerald-600 flex items-center gap-1.5"><span>✓</span> Passport attached</div>
-            <div class="text-[11px] text-neutral-500 mt-0.5">Included in your PDF & WhatsApp share.</div>
-            <button type="button" onclick="removePassport(event)" class="mt-2 text-[11px] text-red-500 hover:text-red-600 font-medium">Remove photo</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- HOW TO SEND — CLEAR INSTRUCTIONS -->
-      <div class="grid gap-3">
-        <div class="rounded-[16px] border-2 border-wa/40 bg-[#f2fbf5] p-4">
-          <div class="text-[12px] font-bold flex items-center gap-2 text-neutral-900">📲 Send via WhatsApp — 4 easy steps</div>
-          <ol class="mt-2.5 text-[12px] leading-[1.6] text-neutral-700 list-decimal list-inside space-y-1">
-            <li>Tap the green <b>Share on WhatsApp</b> button below — your application PDF (<span id="pdfFileNameHint" class="font-semibold">CIFIKA_CFK-xxxxx.pdf</span>) downloads automatically and the club chat opens.</li>
-            <li>In the WhatsApp chat, tap the <b>📎 attach icon</b> <span class="text-neutral-500">(bottom-right on iPhone • bottom-left on Android — next to the camera icon)</span>.</li>
-            <li>Choose <b>Document</b> <span class="text-neutral-500">(not "Photos & Videos")</span>, then select the downloaded file <b id="pdfFileNameHint2" class="font-semibold">CIFIKA_CFK-xxxxx.pdf</b>.</li>
-            <li>Press <b>send</b> ✅ — done! The club receives your full application with your passport embedded.</li>
-          </ol>
-        </div>
-        <div class="rounded-[16px] border border-neutral-200 bg-neutral-50 p-4">
-          <div class="text-[12px] font-bold flex items-center gap-2 text-neutral-900">🏢 Prefer to submit in person?</div>
-          <p class="mt-1.5 text-[12px] leading-[1.6] text-neutral-600">Tap <b>Save / Print PDF</b>, print the form, <b>attach a passport photograph</b> to it, and submit it at the <b>City Fitness Karate Club dojo front desk</b>.</p>
-        </div>
       </div>
 
       <!-- ACTION BUTTONS -->
       <div class="grid gap-3">
-        <button type="button" onclick="shareWhatsApp()" class="h-[52px] rounded-full bg-wa text-white font-semibold text-[14px] flex items-center justify-center gap-2.5 hover:bg-[#1eb85a] transition">
-          <svg viewBox="0 0 448 512" class="w-5 h-5" fill="currentColor" aria-hidden="true"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
-          Share on WhatsApp
+        <button type="button" id="goPortalBtn" onclick="goPortal()" class="h-[52px] rounded-full bg-brand text-white font-semibold text-[14px] flex items-center justify-center gap-2.5 hover:bg-brand-dark transition">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+          Continue to the Member Portal →
         </button>
-        <button type="button" onclick="handlePDF()" class="h-[52px] rounded-full bg-black text-white font-semibold text-[14px] flex items-center justify-center gap-2.5 hover:bg-neutral-800 transition">
+        <p id="portalCountdown" class="hidden text-[11px] text-center text-neutral-500 leading-[1.5]">Taking you to the portal in <b id="portalCountdownNum">8</b>s — <button type="button" onclick="cancelPortalCountdown()" class="underline font-semibold">stay here</button></p>
+        <button type="button" onclick="handlePDF()" class="h-[48px] rounded-full border-[1.5px] border-neutral-200 bg-white text-black font-semibold text-[13px] flex items-center justify-center gap-2.5 hover:border-black transition">
           <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-          Save / Print PDF
+          Save a copy of your PDF
         </button>
-        <p id="shareHint" class="hidden text-[11px] text-center text-emerald-700 font-medium leading-[1.5]">✓ PDF downloaded! Now open WhatsApp and tap the 📎 attach icon → Document → select the file → send.</p>
       </div>
 
       <!-- REGISTER ANOTHER MEMBER -->
@@ -786,42 +768,12 @@
         </button>
         <p class="text-[11px] text-neutral-500 leading-[1.5]">Guardian details are pre-filled automatically — you only complete the new member's information.</p>
       </div>
-
-      <!-- was: onclick="leaveConfirmation()" -->
-    <button type="button" onclick="openPortalPrompt()" class="h-[48px] rounded-full bg-brand text-white font-semibold text-[14px] hover:bg-brand-dark transition flex items-center justify-center gap-2">
-      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
-      Continue to the Member Portal →
-    </button>
     </div>
 
     <div class="mt-6 pt-5 border-t border-neutral-200 flex justify-between text-[11px] text-neutral-400">
       <span>Powered by TTOSR</span>
       <span>CITY FITNESS KARATE CLUB</span>
     </div>
-  </div>
-</div>
-
-<!-- PORTAL PROMPT -->
-<div id="portalPrompt" class="hidden fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="modal-enter bg-white rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.15)] border border-neutral-200 max-w-[460px] w-full p-7 text-center relative">
-    <button type="button" onclick="closePortalPrompt()" title="Close" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-500">
-      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button>
-    <div class="w-14 h-14 mx-auto rounded-full bg-brand/10 flex items-center justify-center">
-      <svg viewBox="0 0 24 24" class="w-7 h-7 text-brand" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    </div>
-    <h2 class="mt-4 text-[22px] font-extrabold tracking-tight leading-tight">Set up your Member Portal</h2>
-    <p class="mt-2 text-[13px] text-neutral-500 leading-[1.6]">
-      Registration ID <b class="text-neutral-900" id="ppRef">CFK-?????</b> is ready to link.
-      Sign up with: <b class="text-neutral-900" id="ppEmail">—</b>
-    </p>
-    <button onclick="goPortal()" class="mt-5 h-[48px] w-full rounded-full bg-brand text-white font-semibold text-[14px] hover:bg-brand-dark transition">Open the Portal →</button>
-    <div id="ppConvert" class="hidden mt-3 pt-3 border-t border-neutral-100">
-      <p class="text-[11.5px] text-neutral-500 leading-[1.5]">Registered yourself earlier? Turn that account into a parent account:</p>
-      <button onclick="goPortalConvert()" class="mt-2 h-[44px] w-full rounded-full border-[1.5px] border-black bg-white text-black font-semibold text-[13px] hover:bg-neutral-50 transition">Use my member account (<span id="ppSelfEmail"></span>)</button>
-      <p class="mt-1.5 text-[10.5px] text-neutral-400">It becomes a parent account, manages this child — and your own training stays visible.</p>
-    </div>
-    <button onclick="closePortalPrompt()" class="mt-3 h-[42px] w-full rounded-full border border-neutral-200 bg-white text-neutral-600 text-[13px] font-medium hover:border-black transition">Maybe later</button>
   </div>
 </div>
 
@@ -837,7 +789,6 @@
      CONFIG
      ============================================================ */
   const SHEETDB_API_URL = 'https://sheetdb.io/api/v1/7vsj9vxphbe0x';
-  const WHATSAPP_NUMBER = '2348074001613';
   const STORE_KEY = 'cifika_store_v2';
   const LOGO_CANDIDATES = [
     'assets/logo/cifika-w-logo.png',
@@ -1578,10 +1529,10 @@
     return 'adult';
   }
 
-  async function syncStudentToSupabase(ref, d) {
+  async function syncStudentToSupabase(ref, d, submittedAt) {
     try {
       const client = supaClient();
-      if (!client) { console.warn('Supabase SDK not loaded — student not synced.'); return; }
+      if (!client) { toast('Saved to the club sheet — but the portal database could not be reached (Supabase SDK not loaded). Tell the club so they can check.'); console.warn('Supabase SDK not loaded — student not synced.'); return; }
       const dash = v => (v && v !== '—') ? v : null;
       const row = {
         registration_ref: ref,
@@ -1594,6 +1545,7 @@
         email: d.Email || d.GuardianEmail || null,   // member email first, guardian as fallback
         address: d.Address || null,
         city_state: d.CityState || null,
+        registration_date: submittedAt ? String(submittedAt).slice(0, 10) : null,
         training_category: memberTrainingCategory(d),
         karate_style: dash(d.KarateStyle),
         previous_rank: dash(d.KarateRank) || dash(d.MartialRank),
@@ -1607,7 +1559,9 @@
           primaryPhone: d.EmergencyPhone || '',
           altPhone: d.EmergencyAlt || ''
         },
-        membership_status: 'pending'
+        membership_status: 'pending',
+        guardian_name: d.GuardianName || null,
+        guardian_email: d.GuardianEmail || null
       };
       // manual upsert by Ref — works with or without a unique constraint on registration_ref
       const { data: existing, error: selErr } = await client.from('students').select('id').eq('registration_ref', ref).limit(1);
@@ -1775,10 +1729,6 @@
     $('statusText').textContent =
       result === 'updated' ? 'Updated ✓ (same Ref)' :
       result === 'created' ? 'Received' : 'Received • sync pending';
-    $('shareHint').classList.add('hidden');
-    const fname = pdfFileName();
-    $('pdfFileNameHint').textContent = fname;
-    $('pdfFileNameHint2').textContent = fname;
     $('btnAddChild').textContent = registration.for === 'child' ? '＋ Add Another Child / Ward' : '＋ Add Child / Ward';
     $('btnAddSelf').classList.toggle('hidden', registration.for !== 'child');
 
@@ -1786,19 +1736,21 @@
     $('successModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Arrived from the portal ("Register to get an ID") → send them straight back
-    if (typeof PORTAL_MODE !== 'undefined' && PORTAL_MODE) setTimeout(openPortalPrompt, 700);
+    // Submit → continue to the portal (passport & PDF already travel with the application)
+    if (typeof STAFF_MODE === 'undefined' || !STAFF_MODE) startPortalCountdown();
 
     btn.disabled = false;
     btn.textContent = 'Submit Registration →';
     toast(isResubmit && result === 'updated'
       ? `Your existing record was updated — Ref unchanged: ${ref}`
       : 'Application submitted. Ref: ' + ref);
-    await syncStudentToSupabase(ref, d);   // upsert into Supabase `students`, keyed by Ref — no drift, no duplicates
+    await syncStudentToSupabase(ref, d, app.submittedAt);   // upsert into Supabase `students`, keyed by Ref — no drift, no duplicates
+    uploadApplicationPDF(ref);                              // application PDF → club dashboard (best effort, non-blocking)
   }
 
   // ===== Add another member from the confirmation screen =====
   function addAnotherChild() {
+    cancelPortalCountdown();
     $('successModal').classList.add('hidden');
     document.body.style.overflow = '';
     newApp('child');
@@ -1806,6 +1758,7 @@
   }
 
   function addSelfFromParent() {
+    cancelPortalCountdown();
     $('successModal').classList.add('hidden');
     document.body.style.overflow = '';
     newApp('self', { type: 'parent', prefillContact: true });
@@ -1814,13 +1767,14 @@
 
   // ===== Leave confirmation → index.html =====
   function leaveConfirmation() {
+    cancelPortalCountdown();
     saveDraft();
     window.location.href = 'index.html';
   }
   $('successModal').addEventListener('click', e => { if (e.target === $('successModal')) leaveConfirmation(); });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      if (!$('successModal').classList.contains('hidden')) leaveConfirmation();
+      if (!$('successModal').classList.contains('hidden')) { cancelPortalCountdown(); leaveConfirmation(); }
       else closeParentModal();
     }
   });
@@ -2060,48 +2014,39 @@
     return doc;
   }
 
+  // Application PDF → Supabase Storage so the admin dashboard can download it
+  // (runs right after submit; best effort — never blocks the confirmation screen)
+  async function uploadApplicationPDF(ref) {
+    try {
+      const client = supaClient();
+      if (!client || !ref) return;
+      const doc = await buildPDF();
+      const blob = doc.output('blob');
+      const path = 'applications/' + ref + '.pdf';
+      const { error } = await client.storage.from('registration_docs').upload(path, blob, { contentType: 'application/pdf', upsert: true });
+      if (error) { console.warn('Application PDF upload failed:', error.message); return; }
+      const { error: upErr } = await client.from('students').update({ registration_pdf_path: path }).eq('registration_ref', ref);
+      if (upErr) console.warn('PDF path not saved to member row:', upErr.message);
+      else console.info('Application PDF delivered to the club dashboard for ' + ref);
+    } catch (e) {
+      console.warn('Application PDF upload error:', e);
+    }
+  }
+
   // PDF button → open in viewer tab (user can print or save there); fallback to download
   async function handlePDF() {
+    cancelPortalCountdown();
     toast('Preparing your PDF…');
     try {
       const doc = await buildPDF();
       const url = String(doc.output('bloburl'));
       let w = null;
       try { w = window.open(url, '_blank'); } catch (e) {}
-      if (w) toast('PDF ready — print it, attach a passport photo, and submit at the dojo.');
-      else { doc.save(pdfFileName()); toast('PDF downloaded — print it, attach a passport, and submit at the dojo.'); }
+      if (w) toast('PDF ready — a copy is also on its way to the club dashboard.');
+      else { doc.save(pdfFileName()); toast('PDF downloaded — a copy is also on its way to the club dashboard.'); }
     } catch (e) {
       console.error(e);
       toast('Could not generate the PDF. Please try again.');
-    }
-  }
-
-  // WhatsApp share → generate PDF (with passport embedded), download it, open chat
-  async function shareWhatsApp() {
-    try {
-      toast('Generating your application PDF…');
-      const doc = await buildPDF();
-      doc.save(pdfFileName());
-
-      const d = collectAllData();
-      const app = currentApp();
-      const msg =
-        '🥋 CITY FITNESS KARATE CLUB — MEMBERSHIP APPLICATION\n\n' +
-        `Ref: ${(app && app.ref) || '—'}\n` +
-        `Name: ${d.FullName || '—'}\n` +
-        `Nationality: ${d.Nationality || '—'}\n` +
-        `Phone: ${d.Phone || (d.GuardianPhone ? d.GuardianPhone + ' (guardian)' : '—')}\n` + (d.RegisteredFor === 'Child / Ward' && !d.Phone ? `Guardian Phone: ${d.GuardianPhone || '—'}\n` : '') +
-        `Status: Received\n\n` +
-        `Hello! I have just submitted my membership registration. My application PDF` +
-        (d.PassportAttached === 'Yes' ? ' (with my passport photograph embedded)' : '') +
-        ` — ${pdfFileName()} — is attached to this chat. Thank you!`;
-
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
-      $('shareHint').classList.remove('hidden');
-      toast('PDF downloaded — in WhatsApp, tap 📎 → Document → select the file → send.');
-    } catch (e) {
-      console.error(e);
-      toast('Could not prepare the share. Please try again.');
     }
   }
 
@@ -2198,7 +2143,31 @@ if (PORTAL_MODE) {
   }
 }
 
-/* ---- PORTAL PROMPT ---- */
+/* ---- CONTINUE-TO-PORTAL countdown (submit → portal, cancelable) ---- */
+let _portalTimer = null;
+function startPortalCountdown(seconds) {
+  const el = $('portalCountdown'), num = $('portalCountdownNum');
+  if (!el || !num) return;
+  cancelPortalCountdown();
+  let left = seconds || 8;
+  num.textContent = left;
+  el.classList.remove('hidden');
+  _portalTimer = setInterval(() => {
+    left -= 1;
+    if (left <= 0) { cancelPortalCountdown(); goPortal(); return; }
+    num.textContent = left;
+  }, 1000);
+}
+function cancelPortalCountdown() {
+  if (_portalTimer) { clearInterval(_portalTimer); _portalTimer = null; }
+  const el = document.getElementById('portalCountdown');
+  if (el) el.classList.add('hidden');
+}
+function goPortal() {
+  const { ref, role, email } = getRegContext();
+  const p = new URLSearchParams({ ref, role, email, connect: '1' });
+  location.href = 'portal.html?' + p.toString();
+}
 function getRegContext() {
   const m = document.getElementById('refNum')?.textContent.match(/CFK-\d{3,}/i);
   const ref = m && !/^CFK-0+$/.test(m[0]) ? m[0].toUpperCase() : '';
@@ -2208,32 +2177,6 @@ function getRegContext() {
   const email = memberEmail || guardianEmail;   // YOUR RULE: member email first, guardian as fallback
   const role  = memberEmail ? 'student' : (hasGuardian ? 'parent' : 'student');
   return { ref, email, role, hasGuardian };
-}
-function openPortalPrompt() {
-  const ctx = getRegContext();
-  // remember self-registrations this session (for the convert option)
-  if (!ctx.hasGuardian && ctx.email) sessionStorage.setItem('cifika_self_email', ctx.email);
-
-  document.getElementById('ppRef').textContent   = ctx.ref || 'CFK-?????';
-  document.getElementById('ppEmail').textContent = ctx.email || 'your registration email';
-
-  const selfEmail = sessionStorage.getItem('cifika_self_email');
-  const showConvert = ctx.hasGuardian && !!selfEmail;
-  document.getElementById('ppConvert').classList.toggle('hidden', !showConvert);
-  if (showConvert) document.getElementById('ppSelfEmail').textContent = selfEmail;
-
-  document.getElementById('portalPrompt').classList.remove('hidden');
-}
-function closePortalPrompt() { document.getElementById('portalPrompt').classList.add('hidden'); }
-function goPortal() {
-  const { ref, role, email } = getRegContext();
-  const p = new URLSearchParams({ ref, role, email, connect: '1' });
-  location.href = 'portal.html?' + p.toString();
-}
-function goPortalConvert() {
-  const { ref } = getRegContext();
-  const selfEmail = sessionStorage.getItem('cifika_self_email') || '';
-  location.href = 'portal.html?ref=' + encodeURIComponent(ref) + '&convert=1&email=' + encodeURIComponent(selfEmail);
 }
 </script>
 </body>
