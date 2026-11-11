@@ -129,7 +129,7 @@
   .idc-top { display:flex; align-items:center; gap:10px; position:relative; z-index:1; }
   .idc-logo { width:38px; height:38px; border-radius:9px; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.16); object-fit:contain; padding:3px; }
   .idc-logo-fallback { display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; color:#FF6B00; padding:0; }
-  .idc-club { font-size:11px; font-weight:800; letter-spacing:.13em; min-width:0; }
+  .idc-club { font-size:11px; font-weight:800; letter-spacing:.13em; min-width:0; height: 34px;}
   .idc-club small { display:block; font-size:8px; font-weight:700; color:#FF6B00; letter-spacing:.3em; margin-top:2.5px; }
   .idc-badge { margin-left:auto; font-size:8px; font-weight:800; letter-spacing:.18em; color:#FF6B00;
                border:1px solid rgba(255,107,0,.45); background:rgba(255,107,0,.12); padding:3.5px 9px; border-radius:999px; white-space:nowrap; }
@@ -1799,8 +1799,8 @@ function memberIdCardHTML(s) {
     <div id="idCardFront">
       <div class="idc-card">
         <div class="idc-top">
-          <img class="idc-logo" src="assets/logo/cifika-w-logo.png" alt="CIFIKA logo" onerror="this.outerHTML='<div class=&quot;idc-logo idc-logo-fallback&quot;>空</div>'">
-          <div class="idc-club">CITY FITNESS KARATE CLUB<small>CIFIKA · KARATE DOJO</small></div>
+          <img class="idc-club" src="assets/logo/cifika-w-logo.png" alt="CIFIKA logo" onerror="this.outerHTML='<div class=&quot;idc-logo idc-logo-fallback&quot;>空</div>'">
+          
           <div class="idc-badge">MEMBER ID</div>
         </div>
         <div class="idc-mid">
