@@ -1755,6 +1755,15 @@
     refreshPassportUI();
     $('successModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    // Tell the portal what was just completed so its alert changes accordingly:
+    // "registered self" → next step "add a kid"; a child registration → confirm
+    // + add another. "Continue registration" only ever appears in the portal
+    // when there is a genuinely pending (unfinished) submission — never after
+    // a successful one.
+    try {
+      sessionStorage.setItem('cifika_just_reg', registration.for === 'child' ? 'child' : 'self');
+      sessionStorage.setItem('cifika_just_reg_ref', ref);
+    } catch (e) {}
     // The portal is reached only through the "Continue to the Member Portal"
     // button above — no automatic redirect. The user decides when to move on.
 
@@ -2043,12 +2052,28 @@
       const blob = doc.output('blob');
       const path = 'applications/' + ref + '.pdf';
       const { error } = await client.storage.from('registration_docs').upload(path, blob, { contentType: 'application/pdf', upsert: true });
-      if (error) { console.warn('Application PDF upload failed:', error.message); return; }
-      const { error: upErr } = await client.from('students').update({ registration_pdf_path: path }).eq('registration_ref', ref);
-      if (upErr) console.warn('PDF path not saved to member row:', upErr.message);
+      if (error) {
+        console.warn('Application PDF upload failed:', error.message);
+        toast('The application PDF could not be delivered to the club dashboard (' + error.message + '). Your registration itself is saved — ask the club to re-attach the PDF.');
+        return;
+      }
+      // Save the storage path on the member row so the admin console lists it.
+      // Retried: if the browser connects the ID to the portal account a moment
+      // earlier, the row briefly becomes invisible to this anonymous client —
+      // the retry usually wins the race. Even if it never lands, the admin and
+      // portal fall back to the deterministic path applications/<REF>.pdf.
+      let upErr = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const r = await client.from('students').update({ registration_pdf_path: path }).eq('registration_ref', ref);
+        upErr = r.error || null;
+        if (!upErr) break;
+        await new Promise(res => setTimeout(res, 1200 * attempt));
+      }
+      if (upErr) console.warn('PDF path not saved on the member row (the dashboard still finds the file at ' + path + '):', upErr.message);
       else console.info('Application PDF delivered to the club dashboard for ' + ref);
     } catch (e) {
       console.warn('Application PDF upload error:', e);
+      toast('The application PDF could not be generated for delivery. Your registration itself is saved — ask the club to re-attach the PDF.');
     }
   }
 

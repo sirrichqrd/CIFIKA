@@ -65,6 +65,9 @@
   .soft { background:#fff; border:1px solid #EFECE6; border-radius:20px; box-shadow:0 2px 12px rgba(30,24,16,.05); }
   .fade-in { animation: fadeIn .35s ease-out; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  /* club-updates slideshow — fixed frame, every update slides inside the same size */
+  #updStage { transition: opacity .14s ease, transform .14s ease; }
+  #updStage.upd-fade { opacity: 0; transform: translateY(4px); }
   .role-btn { transition: all .15s ease; }
   .role-btn.active { background:#111; color:#fff; border-color:#111; }
   .ring-pulse { animation: ringPulse 1.6s ease-out infinite; }
@@ -469,6 +472,7 @@ function heroHTML(sub, chips) {
    desktop (68px), persisted in localStorage. The Sandhill skin stays:        */
 const NAV_ITEMS = [                    // personal student account
   ['home',       'dashboard', 'Home'],
+  ['updates',    'mega',      'Club Updates'],
   ['attendance', 'calendar',  'Attendance'],
   ['gradings',   'medal',     'Gradings'],
   ['absences',   'ban',       'Absences'],
@@ -479,14 +483,15 @@ const PARENT_NAV = [                   // parent / guardian account shell
   ['home',      'dashboard', 'Home'],          // general info + kids overview + announcements preview
   ['kids',      'users',     'My Kids'],       // manage every linked child
   ['link',      'link',      'Link Child'],
-  ['ann',       'mega',      'Announcements'],
+  ['ann',       'mega',      'Club Updates'],
   ['dojo',      'book',      'Dojo Code'],
   ['profile',   'user',      'Profile'],       // the parent's own account details
   ['settings',  'gear',      'Settings'],      // owner settings — parent manages everything here
 ];
 const MEMBER_NAV = [                   // a linked child (or the parent's own training) inside the parent portal
-  ['m-home',   'dashboard', 'Home'],
-  ['m-att',    'calendar',  'Attendance'],
+  ['m-home',    'dashboard', 'Home'],
+  ['m-updates', 'mega',      'Club Updates'],
+  ['m-att',     'calendar',  'Attendance'],
   ['m-grd',    'medal',     'Gradings'],
   ['m-abs',    'ban',       'Absences'],
   ['m-idcard', 'id',        'ID & Details'],   // personal details + printable CIFIKA member ID
@@ -681,7 +686,8 @@ function sectionCard(title, sub, bodyHTML) {
 function renderPortalSection(id) {
   const d = window._dash;
   if (!d) { renderStudentHome(); return; }
-  if (id === 'attendance') $('appMain').innerHTML = sectionCard('Attendance', '80% required for grading eligibility', attendanceTabHTML(d.att, d.rate));
+  if (id === 'updates') renderAnnouncementsTab();
+  else if (id === 'attendance') $('appMain').innerHTML = sectionCard('Attendance', '80% required for grading eligibility', attendanceTabHTML(d.att, d.rate));
   else if (id === 'gradings') $('appMain').innerHTML = sectionCard('Gradings', `${d.grd.length} recorded`, gradingsSectionHTML(d));
   else if (id === 'absences') $('appMain').innerHTML = sectionCard('Absences', 'request an excusal', absenceTabHTML(d.student));
   else if (id === 'dojo') $('appMain').innerHTML = sectionCard('Dojo Code', 'club rules & dojo kun', dojoCodeHTML());
@@ -694,7 +700,8 @@ function renderMemberSection(id) {
   const d = window._dash;
   if (!d) { goParent('home'); return; }
   const who = (d.student.full_name || 'Member').split(' ')[0];
-  if (id === 'm-att') $('appMain').innerHTML = sectionCard('Attendance', `${who} — 80% required for grading`, attendanceTabHTML(d.att, d.rate));
+  if (id === 'm-updates') renderAnnouncementsTab();
+  else if (id === 'm-att') $('appMain').innerHTML = sectionCard('Attendance', `${who} — 80% required for grading`, attendanceTabHTML(d.att, d.rate));
   else if (id === 'm-grd') $('appMain').innerHTML = sectionCard('Gradings', `${who} — ${d.grd.length} recorded`, gradingsSectionHTML(d));
   else if (id === 'm-abs') $('appMain').innerHTML = sectionCard('Absences', 'request an excusal', absenceTabHTML(d.student));
   else if (id === 'm-idcard') $('appMain').innerHTML = sectionCard('ID & Details', `${who}'s CIFIKA ID — printable`, memberDetailsHTML(d.student));
@@ -1003,15 +1010,9 @@ async function renderParentHome() {
            </div>`}
     </div>
 
-    <div class="mt-7">
-      <div class="flex items-end justify-between gap-3 mb-3">
-        <h2 class="text-[20px] font-extrabold tracking-tight">Club updates</h2>
-        ${(anns || []).length ? `<button onclick="goParent('ann')" class="text-[12px] font-bold text-neutral-400 hover:text-black transition shrink-0">View all →</button>` : ''}
-      </div>
-      ${(anns || []).length ? annRowsHTML(anns.slice(0, 4)) : emptyState('mega', 'No announcements yet', 'Club updates, events and grading windows will appear here as soon as the club publishes them.')}
-    </div>
+    ${parentNextStepHTML(!!mine, parentChildren.length)}
   </div>`;
-  mountDashboardDraftBanner();
+  mountHomeTopBanners(anns);
 }
 
 /* Parent shell router — Home · My Kids · Link Child · Announcements · Dojo Code · Profile · Settings */
@@ -1078,11 +1079,11 @@ function renderLinkChildTab() {
 
 /* ANNOUNCEMENTS — the full club updates list (the parent home shows a preview) */
 async function renderAnnouncementsTab() {
-  $('appMain').innerHTML = `<div class="fade-in">${sectionCard('Announcements', 'loading club updates…', `<div class="soft p-5 text-[11.5px] text-neutral-400">Loading club updates…</div>`)}</div>`;
+  $('appMain').innerHTML = `<div class="fade-in">${sectionCard('Club Updates', 'loading…', `<div class="soft p-5 text-[11.5px] text-neutral-400">Loading club updates…</div>`)}</div>`;
   const anns = await fetchParentAnnouncements(30);
   $('appMain').innerHTML = `
   <div class="fade-in">
-    ${sectionCard('Announcements', 'Everything the club publishes — grading windows, events, seminars and updates.',
+    ${sectionCard('Club Updates', 'Everything the club publishes — grading windows, events, seminars and updates.',
       anns.length
         ? annRowsHTML(anns)
         : emptyState('mega', 'No announcements yet', 'Club updates, events and grading windows will appear here as soon as the club publishes them.'))}
@@ -1314,13 +1315,13 @@ async function renderDashboard(student, opts = {}) {
     renderMemberNav();
     markNav('m-home');
     renderDashboardHome();
-    mountDashboardDraftBanner();
+    mountHomeTopBanners(window._dash.anns);
   } else {
     portalSection = 'home';
     renderNav();
     markNav('home');
     renderDashboardHome();
-    mountDashboardDraftBanner();
+    mountHomeTopBanners(window._dash.anns);
   }
 }
 
@@ -1515,15 +1516,7 @@ function renderDashboardHome() {
       </div>
     </div>
 
-    <!-- CLUB UPDATES -->
-    ${!memberCtx && (anns || []).length ? `
-    <div class="mt-7">
-      <div class="flex items-end justify-between gap-3 mb-3">
-        <h2 class="text-[20px] font-extrabold tracking-tight">Club updates</h2>
-        <span class="text-[11.5px] text-neutral-400 font-semibold">${anns.length} published</span>
-      </div>
-      ${annRowsHTML(anns.slice(0, 5))}
-    </div>` : ''}
+    <!-- CLUB UPDATES moved to the top-of-page slideshow (mountHomeTopBanners) -->
   </div>`;
 }
 
@@ -1896,16 +1889,128 @@ function memberDetailsRowsHTML(s) {
     ['Injuries', s.injuries],
     ['Emergency Contact', ec.name ? `${ec.name}${ec.relationship ? ' (' + ec.relationship + ')' : ''} — ${ec.primaryPhone || ''}` : null],
   ].filter(r => r[1]);
+  const pdfBtn = s.registration_ref ? `<button onclick="downloadApplicationPDF('${escapeHtml(s.registration_ref)}','${escapeHtml(s.registration_pdf_path || '')}')" class="h-8 px-3.5 rounded-full border-[1.5px] border-neutral-200 bg-white text-neutral-600 text-[10.5px] font-bold hover:border-brand hover:text-brand transition inline-flex items-center gap-1.5" title="The application PDF you submitted — download it any time">${ic('file','w-3 h-3')} Application PDF</button>` : '';
   return `
-    <div class="text-[12px] font-extrabold tracking-[0.14em] mb-3">MEMBER DETAILS</div>
-    <div class="grid gap-x-8">
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+      <div class="text-[12px] font-extrabold tracking-[0.14em]">MEMBER DETAILS</div>
+      <div class="flex items-center gap-2">
+        ${pdfBtn}
+        <button onclick="toggleMemberEdit(true)" class="h-8 px-3.5 rounded-full bg-black text-white text-[10.5px] font-bold hover:bg-brand transition inline-flex items-center gap-1.5">${ic('user','w-3 h-3')} Edit details</button>
+      </div>
+    </div>
+    <div id="memberDetailsView" class="grid gap-x-8">
       ${rows.map(([k, v]) => `
         <div class="flex justify-between gap-4 py-2.5 border-b border-neutral-100">
           <span class="text-[12px] text-neutral-500 shrink-0">${k}</span>
           <span class="text-[12.5px] font-medium text-right break-words">${escapeHtml(String(v))}</span>
         </div>`).join('')}
     </div>
-    <div class="mt-4 text-[11px] text-neutral-400">Need to correct something? Speak to Sensei or the club admin — profile edits are controlled to keep records accurate.</div>`;
+    <div id="memberEditForm" class="hidden">${memberEditFormHTML(s)}</div>
+    <div class="mt-4 text-[11px] text-neutral-400">Basic details can be edited here — membership status, belts and payments stay with the club. Changes save to your member record instantly.</div>`;
+}
+
+/* ═══════════ MEMBER SELF-SERVICE — download application PDF · edit basic info ═══════════
+   Members edit their own record, parents edit their children's records (the
+   "members: edit own basics" RLS policy + club-column guard trigger in
+   fix_linking_and_policies.sql enforce this server-side).              */
+async function downloadApplicationPDF(ref, storedPath) {
+  if (!ref) return toast('No CIFIKA ID on this record yet.', true);
+  const path = storedPath || ('applications/' + ref + '.pdf');
+  toast('Fetching the application PDF…');
+  try {
+    const { data, error } = await sb.storage.from('registration_docs').createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      return toast('No application PDF on file for ' + ref + ' yet — PDFs attach automatically when a registration is submitted through the online form. Ask the front desk for a copy.', true);
+    }
+    window.open(data.signedUrl, '_blank');
+    toast('Opening the application PDF…');
+  } catch (e) {
+    toast('Could not reach the club document vault. Try again in a moment.', true);
+  }
+}
+
+function toggleMemberEdit(show) {
+  const view = document.getElementById('memberDetailsView');
+  const form = document.getElementById('memberEditForm');
+  if (!view || !form) return;
+  view.classList.toggle('hidden', show);
+  form.classList.toggle('hidden', !show);
+  if (show) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function memberEditFormHTML(s) {
+  const ec = s.emergency_contact || {};
+  const v = x => escapeHtml(String(x ?? ''));
+  const gen = g => (s.gender || '') === g ? ' selected' : '';
+  return `
+    <div class="text-[12px] font-extrabold tracking-[0.14em] mb-3">EDIT BASIC DETAILS</div>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Full name *</span><input id="edFullName" class="input" value="${v(s.full_name)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Preferred name</span><input id="edPreferredName" class="input" value="${v(s.preferred_name)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Date of birth</span><input type="date" id="edDob" class="input" value="${v(s.date_of_birth)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Gender</span><select id="edGender" class="input"><option value="">—</option><option value="Male"${gen('Male')}>Male</option><option value="Female"${gen('Female')}>Female</option></select></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Nationality</span><input id="edNationality" class="input" value="${v(s.nationality)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Phone</span><input id="edPhone" class="input" value="${v(s.phone)}"></label>
+      <label class="grid gap-1 sm:col-span-2"><span class="text-[10.5px] font-bold text-neutral-500">Email</span><input type="email" id="edEmail" class="input" value="${v(s.email)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Address</span><input id="edAddress" class="input" value="${v(s.address)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">City / State</span><input id="edCityState" class="input" value="${v(s.city_state)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Emergency — name</span><input id="edEcName" class="input" value="${v(ec.name)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Emergency — relationship</span><input id="edEcRel" class="input" value="${v(ec.relationship)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Emergency — primary phone</span><input id="edEcPhone" class="input" value="${v(ec.primaryPhone)}"></label>
+      <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Emergency — alternative phone</span><input id="edEcAlt" class="input" value="${v(ec.altPhone)}"></label>
+      <label class="flex items-start gap-2.5 sm:col-span-2 px-1"><input type="checkbox" id="edMedia" class="mt-0.5" ${s.media_consent ? 'checked' : ''}><span class="text-[11.5px] text-neutral-600 leading-[1.5]">Media / photography consent — the club may use photos of me / my child in club media.</span></label>
+    </div>
+    <div class="mt-4 flex gap-2 flex-wrap">
+      <button onclick="saveMemberEdits('${s.id}')" class="h-[44px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition">Save changes</button>
+      <button onclick="toggleMemberEdit(false)" class="h-[44px] px-5 rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold hover:border-black transition">Cancel</button>
+    </div>`;
+}
+
+async function saveMemberEdits(sid) {
+  const g = id => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+  const patch = {
+    full_name: g('edFullName') || null,
+    preferred_name: g('edPreferredName') || null,
+    date_of_birth: g('edDob') || null,
+    gender: g('edGender') || null,
+    nationality: g('edNationality') || null,
+    phone: g('edPhone') || null,
+    email: g('edEmail') || null,
+    address: g('edAddress') || null,
+    city_state: g('edCityState') || null,
+    media_consent: document.getElementById('edMedia')?.checked === true,
+    emergency_contact: {
+      name: g('edEcName'), relationship: g('edEcRel'),
+      primaryPhone: g('edEcPhone'), altPhone: g('edEcAlt')
+    },
+  };
+  if (!patch.full_name) return toast('Full name is required.', true);
+  if (patch.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patch.email)) return toast('That email address does not look right.', true);
+  const { data, error } = await sb.from('students').update(patch).eq('id', sid).select('id').limit(1);
+  if (error) return toast('✗ Could not save: ' + (error.message || 'update refused.'), true);
+  if (!data || !data.length) return toast('✗ This record is managed by the club — ask the front desk to change it.', true);
+  toast('✓ Details updated');
+  await refreshAfterMemberEdit(sid);
+}
+
+async function refreshAfterMemberEdit(sid) {
+  const { data: fresh } = await sb.from('students').select('*').eq('id', sid).limit(1);
+  const row = fresh && fresh[0];
+  if (row) {
+    if (window._dash && window._dash.student && window._dash.student.id === sid) window._dash.student = row;
+    if (window.mineStudent && window.mineStudent.id === sid) window.mineStudent = row;
+    const idx = parentChildren.findIndex(c => c && c.id === sid);
+    if (idx > -1) parentChildren[idx] = row;
+  }
+  if (window._pview === 'member') {
+    await openMember(window._memberSel ?? 'me');
+    showPortalSection('m-idcard');
+  } else if (window._pview === 'parent') {
+    renderParentProfile();
+  } else {
+    await renderStudentHome();
+    showPortalSection('account');
+  }
 }
 
 /* Wrapper kept for compatibility — details + ID card together */
@@ -2076,24 +2181,55 @@ async function submitAbsence() {
   setTimeout(() => showPortalSection(window._pview === 'member' ? 'm-abs' : 'absences'), 80);
 }
 
-/* ═══════════════ DOJO CODE (rules, etiquette & consent texts) ═══════════════ */
+/* Same just-registered feedback as a card — used on the onboarding screen
+   (accounts that have no linked member record yet). The alert a parent sees
+   depends on what they just completed: registered self → "add a kid" is the
+   next step; registered a child → confirm + add another / register myself. */
+function justRegisteredOnboardCardHTML(j) {
+  const isChild = j.kind === 'child';
+  const ref = j.ref ? `<b>${escapeHtml(j.ref)}</b> · ` : '';
+  if (isChild) return `
+    <div class="card p-6 !border-emerald-200 !bg-emerald-50/40">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">${ic('check','w-4 h-4')}</div>
+        <div>
+          <div class="text-[14px] font-extrabold">Child registration received ✓</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">${ref}their ID connects to this account automatically.</div>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="${buildPortalRegUrl('child')}" class="h-[42px] px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-brand transition inline-flex items-center gap-2">${ic('plus','w-3.5 h-3.5')} Add another child / ward</a>
+        <a href="${buildPortalRegUrl('self')}" class="h-[42px] px-5 rounded-full border-[1.5px] border-neutral-200 bg-white text-[12px] font-semibold hover:border-black transition inline-flex items-center gap-2">${ic('user','w-3.5 h-3.5')} Register myself too</a>
+      </div>
+    </div>`;
+  return `
+    <div class="card p-6 !border-emerald-200 !bg-emerald-50/40">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">${ic('check','w-4 h-4')}</div>
+        <div>
+          <div class="text-[14px] font-extrabold">You're registered ✓</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">${ref}your membership is pending club activation.</div>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="${buildPortalRegUrl('child')}" class="h-[42px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-2">${ic('plus','w-3.5 h-3.5')} Add a kid / ward</a>
+      </div>
+    </div>`;
+}
+
+/* ═══════════════ DOJO CODE (rules, etiquette & consent texts) ═══════════════
+   The 5 DOJO CODES come FIRST — members memorize them, and parents have their
+   children memorize them too. Club rules and the code of conduct follow.  */
 function dojoCodeHTML() {
   return `
-    <div class="text-[12.5px] text-neutral-500 leading-[1.6]">The rules, etiquette and code you agreed to when you registered — live by them on and off the mat.</div>
+    <div class="text-[12.5px] text-neutral-500 leading-[1.6]">The codes, rules and etiquette you agreed to when you registered — live by them on and off the mat.</div>
 
     <div class="card p-5">
-      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION I — CLUB RULES (12)</div>
-      <div class="mt-3 grid gap-2">
-        ${CLUB_RULES.map((r, i) => `
-        <div class="flex items-start gap-3 px-3.5 py-3 rounded-[16px] bg-neutral-50/80 border border-neutral-100">
-          <span class="w-6 h-6 rounded-full bg-[#111] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">${i + 1}</span>
-          <div class="text-[12.5px] leading-[1.6] text-neutral-700">${escapeHtml(r)}</div>
-        </div>`).join('')}
+      <div class="rounded-[16px] bg-brand-light border border-brand-border px-4 py-3 flex items-start gap-3">
+        <span class="text-brand shrink-0 mt-0.5">${ic('book','w-[18px] h-[18px]')}</span>
+        <div class="text-[12px] leading-[1.6] text-brand-text"><b>MEMORIZE THE 5 DOJO CODES.</b> Members: know them by heart — Sensei may call on you at any session. Parents: have your children memorize these five codes too.</div>
       </div>
-    </div>
-
-    <div class="card p-5">
-      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION J — DOJO KUN</div>
+      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400 mt-4">SECTION A — THE 5 DOJO CODES (DOJO KUN)</div>
       <div class="mt-3 grid gap-2">
         ${DOJO_KUN.map(([jp, en], i) => `
         <div class="flex items-start gap-3 px-3.5 py-3 rounded-[16px] bg-[#101010] text-white">
@@ -2107,7 +2243,18 @@ function dojoCodeHTML() {
     </div>
 
     <div class="card p-5">
-      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION K — CODE OF CONDUCT & PARTICIPATION</div>
+      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION B — CLUB RULES (12)</div>
+      <div class="mt-3 grid gap-2">
+        ${CLUB_RULES.map((r, i) => `
+        <div class="flex items-start gap-3 px-3.5 py-3 rounded-[16px] bg-neutral-50/80 border border-neutral-100">
+          <span class="w-6 h-6 rounded-full bg-[#111] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">${i + 1}</span>
+          <div class="text-[12.5px] leading-[1.6] text-neutral-700">${escapeHtml(r)}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card p-5">
+      <div class="text-[10.5px] font-extrabold tracking-[0.16em] text-neutral-400">SECTION C — CODE OF CONDUCT & PARTICIPATION</div>
       <div class="mt-3 grid gap-2">
         <div class="px-4 py-3 rounded-[16px] border border-neutral-100 bg-neutral-50/80 text-[12.5px] leading-[1.6] text-neutral-700"><b>Participation & safety:</b> karate is a contact martial art involving physical exertion and risk of injury. You participate voluntarily at your own risk, agree to follow safety instructions, and declare your health information is true and complete. Advise the club of any changes.</div>
         <div class="px-4 py-3 rounded-[16px] border border-neutral-100 bg-neutral-50/80 text-[12.5px] leading-[1.6] text-neutral-700"><b>Code of conduct:</b> respect, discipline, non-violence outside the dojo, and safeguarding of children. Misconduct may lead to suspension.</div>
@@ -2123,6 +2270,7 @@ async function renderOnboarding(skipped) {
   const first = !skipped;
   window._onboardSkipped = skipped;
   const _drafts = portalDrafts();
+  const _justReg = takeJustRegistered();
   // the sidebar stays hidden during onboarding — it's a focused full-screen flow
   $('sidebar').classList.add('hidden');
   $('navToggle').classList.add('hidden');
@@ -2160,7 +2308,8 @@ async function renderOnboarding(skipped) {
       <div id="obMsg" class="hidden"></div>
     </div>
 
-    ${_drafts.length ? draftResumeCardHTML(_drafts, 'rerenderOnboarding') : `
+    ${_drafts.length ? draftResumeCardHTML(_drafts, 'rerenderOnboarding')
+      : _justReg ? justRegisteredOnboardCardHTML(_justReg) : `
     <div class="card p-6">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0">
@@ -2314,6 +2463,167 @@ function mountDashboardDraftBanner() {
 function dismissDraftBanner() {
   sessionStorage.setItem('cifika_draft_banner_dismissed', '1');
   document.getElementById('draftResumeBanner')?.remove();
+}
+
+/* ═══════════ CLUB UPDATES SLIDESHOW — preview pinned to the top of the page ═══════════
+   Every new update gets one slide inside the SAME fixed frame (constant height no
+   matter how long the text is), auto-rotating like the continue-registration
+   prompt. Prev/next arrows, clickable dots, pauses on hover. The full list lives
+   in the sidebar "Club Updates" tab. */
+let _updTimer = null, _updIdx = 0, _updItems = [];
+function updTargetTab() {
+  return window._pview === 'member' ? 'm-updates' : window._pview === 'parent' ? 'ann' : 'updates';
+}
+function stopUpdatesSlideshow() {
+  if (_updTimer) { clearInterval(_updTimer); _updTimer = null; }
+}
+function updSlideHTML(a) {
+  const [iconCls, chipCls, iconName] = ANN_STYLE[a.type] || ANN_STYLE.update;
+  const meta = [a.event_date ? fmtDate(a.event_date) : '', a.start_time ? a.start_time + (a.end_time ? '–' + a.end_time : '') : '', a.location || ''].filter(Boolean).join(' • ');
+  return `
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 ${iconCls}">${ic(iconName, 'w-[18px] h-[18px]')}</div>
+      <div class="flex-1 min-w-0 h-[58px] flex flex-col justify-center">
+        <div class="flex items-center gap-2 min-w-0">
+          ${a.is_pinned ? `<span class="text-brand shrink-0" title="Pinned">${ic('pin','w-3 h-3')}</span>` : ''}
+          <div class="text-[13px] font-extrabold truncate">${escapeHtml(a.title)}</div>
+          <span class="px-2 py-0.5 rounded-full ${chipCls} text-[9px] font-bold uppercase tracking-[0.08em] shrink-0">${escapeHtml(a.type)}</span>
+        </div>
+        ${a.body
+          ? `<div class="text-[11.5px] text-neutral-500 leading-[1.45] line-clamp-2 mt-0.5">${escapeHtml(a.body)}</div>`
+          : `<div class="text-[11.5px] text-neutral-400 mt-0.5">${escapeHtml(meta || 'Open the Club Updates tab for details.')}</div>`}
+      </div>
+    </div>`;
+}
+function updRender() {
+  const stage = document.getElementById('updStage');
+  if (!stage) { stopUpdatesSlideshow(); return; }
+  const a = _updItems[_updIdx];
+  if (!a) return;
+  stage.classList.add('upd-fade');
+  setTimeout(() => {
+    if (document.getElementById('updStage') !== stage) return;
+    stage.innerHTML = updSlideHTML(a);
+    stage.classList.remove('upd-fade');
+  }, 140);
+  document.querySelectorAll('#updatesSlideshow [data-upd-dot]').forEach(d => {
+    d.style.background = Number(d.dataset.updDot) === _updIdx ? '#FF6B00' : '#E5E5E5';
+  });
+  const cnt = document.getElementById('updCount');
+  if (cnt) cnt.textContent = (_updIdx + 1) + '/' + _updItems.length;
+}
+function updGo(step) {
+  if (!_updItems.length) return;
+  _updIdx = (_updIdx + step + _updItems.length) % _updItems.length;
+  updRender();
+}
+function updJump(i) { _updIdx = i; updRender(); }
+function updStartTimer() {
+  stopUpdatesSlideshow();
+  _updTimer = setInterval(() => {
+    if (!document.getElementById('updStage')) { stopUpdatesSlideshow(); return; }
+    updGo(1);
+  }, 6000);
+}
+function mountUpdatesSlideshow(anns) {
+  stopUpdatesSlideshow();
+  if (!anns || !anns.length) return;
+  const host = document.getElementById('appMain');
+  if (!host) return;
+  host.querySelector('#updatesSlideshow')?.remove();
+  _updItems = anns.slice(0, 12);
+  _updIdx = 0;
+  const el = document.createElement('div');
+  el.id = 'updatesSlideshow';
+  el.className = 'fade-in mb-4 rounded-[18px] border border-neutral-200 bg-white px-4 py-3 shadow-[0_10px_28px_rgba(25,18,10,0.07)]';
+  el.innerHTML = `
+    <div class="flex items-center justify-between gap-3 mb-1">
+      <span class="text-[9.5px] font-extrabold tracking-[0.14em] text-neutral-400 uppercase inline-flex items-center gap-1.5">${ic('mega','w-3 h-3')} Club updates — what's new</span>
+      <button onclick="showPortalSection('${updTargetTab()}')" class="text-[10.5px] font-bold text-neutral-400 hover:text-brand transition shrink-0">View all →</button>
+    </div>
+    <div id="updStage" class="min-h-[58px]"></div>
+    <div class="flex items-center justify-between gap-3 mt-2">
+      <div class="flex items-center gap-1.5">
+        ${_updItems.map((_, i) => `<span data-upd-dot="${i}" onclick="updJump(${i})" style="width:6px;height:6px;border-radius:9999px;background:${i === 0 ? '#FF6B00' : '#E5E5E5'};display:inline-block;cursor:pointer"></span>`).join('')}
+        <span id="updCount" class="text-[9.5px] font-bold text-neutral-300 ml-1">1/${_updItems.length}</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="updGo(-1)" class="w-7 h-7 rounded-full border border-neutral-200 bg-white text-neutral-500 hover:border-black hover:text-black transition flex items-center justify-center" aria-label="Previous update">${ic('arrow','w-3.5 h-3.5 rotate-180')}</button>
+        <button onclick="updGo(1)" class="w-7 h-7 rounded-full border border-neutral-200 bg-white text-neutral-500 hover:border-black hover:text-black transition flex items-center justify-center" aria-label="Next update">${ic('arrow','w-3.5 h-3.5')}</button>
+      </div>
+    </div>`;
+  el.addEventListener('mouseenter', () => stopUpdatesSlideshow());
+  el.addEventListener('mouseleave', () => updStartTimer());
+  host.prepend(el);
+  updRender();
+  updStartTimer();
+}
+
+/* ═══════════ JUST REGISTERED — the alert reflects what was just completed ═══════════
+   registration.html sets cifika_just_reg when a submission succeeds. The portal
+   alert then changes accordingly:
+     • registered SELF   → "You're registered ✓" and the next step is ADD A KID.
+     • registered a CHILD→ "Child registration received ✓" + add another / register self.
+   "Continue registration" now appears ONLY when there is a genuinely pending
+   (unfinished) submission — i.e. a saved draft that was never submitted.       */
+function takeJustRegistered() {
+  try {
+    const kind = sessionStorage.getItem('cifika_just_reg');
+    if (!kind) return null;
+    const ref = sessionStorage.getItem('cifika_just_reg_ref') || '';
+    sessionStorage.removeItem('cifika_just_reg');
+    sessionStorage.removeItem('cifika_just_reg_ref');
+    return { kind, ref };
+  } catch (e) { return null; }
+}
+function mountJustRegisteredBanner() {
+  const j = takeJustRegistered();
+  if (!j) return;
+  const host = document.getElementById('appMain');
+  if (!host) return;
+  const isChild = j.kind === 'child';
+  const isParent = (currentProfile?.role === 'parent') || signupRole === 'parent';
+  const el = document.createElement('div');
+  el.id = 'justRegisteredBanner';
+  el.className = 'fade-in mb-4 rounded-[18px] border border-emerald-200 bg-emerald-50/60 px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2';
+  el.innerHTML = `
+    <span class="text-[12.5px] leading-[1.5] text-emerald-800 flex-1 min-w-[220px]">
+      <b>${isChild ? 'Child registration received ✓' : 'You\u2019re registered ✓'}</b>
+      ${j.ref ? '— ID <b>' + escapeHtml(j.ref) + '</b>' : ''}.
+      ${isChild
+        ? 'Their ID connects to this account automatically — add another child whenever you\u2019re ready.'
+        : (isParent
+            ? 'Your membership is pending club activation — next step: add your kid(s) under this same account.'
+            : 'Your membership is pending club activation — your dojo data is unlocked below.')}
+    </span>
+    ${isParent ? `<a href="${buildPortalRegUrl(isChild ? 'child' : 'self')}" class="h-[36px] px-4 rounded-full ${isChild ? 'bg-black' : 'bg-brand'} text-white text-[11.5px] font-semibold hover:bg-brand-dark transition inline-flex items-center shrink-0">${isChild ? '＋ Add another child' : '＋ Add a kid / ward'}</a>` : ''}`;
+  host.prepend(el);
+}
+
+/* Parent home next-step prompt — flips between the two parent states:
+   registered-self-but-no-kids → "add a kid", and kids-but-not-registered-self
+   → "register myself". Shows nothing once both are done. */
+function parentNextStepHTML(hasSelf, kidCount) {
+  if (hasSelf && kidCount === 0) return `
+    <div class="mt-6 rounded-[18px] border border-brand-border bg-brand-light px-4 py-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <span class="text-[12.5px] leading-[1.5] text-brand-text flex-1 min-w-[220px]"><b>You're registered as a member ✓</b> — next step: add your kid(s) so they train under this same account.</span>
+      <a href="${buildPortalRegUrl('child')}" class="h-[36px] px-4 rounded-full bg-brand text-white text-[11.5px] font-semibold hover:bg-brand-dark transition inline-flex items-center shrink-0">＋ Register a child / ward</a>
+    </div>`;
+  if (!hasSelf && kidCount > 0) return `
+    <div class="mt-6 rounded-[18px] border border-neutral-200 bg-white px-4 py-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <span class="text-[12.5px] leading-[1.5] text-neutral-600 flex-1 min-w-[220px]"><b>Your children are linked ✓</b> — want to train too? Parents can register themselves as members and get their own CIFIKA ID.</span>
+      <a href="${buildPortalRegUrl('self')}" class="h-[36px] px-4 rounded-full bg-black text-white text-[11.5px] font-semibold hover:bg-brand transition inline-flex items-center shrink-0">Register myself →</a>
+    </div>`;
+  return '';
+}
+
+/* One mount point for every home screen's top banners. Order top→bottom:
+   just-registered confirmation → club updates slideshow → continue-registration
+   (drafts) banner. */
+function mountHomeTopBanners(anns) {
+  mountDashboardDraftBanner();
+  mountUpdatesSlideshow(anns);
+  mountJustRegisteredBanner();
 }
 
 /* Signed-out signup view: if this browser already holds a draft, the small
