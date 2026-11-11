@@ -26,6 +26,7 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <!-- Favicons & Manifest -->
@@ -528,7 +529,7 @@ function openMember(id) {
         <div class="flex items-center gap-3 flex-wrap">
           <div class="min-w-0 flex-1">
             <div class="text-[12.5px] font-semibold truncate">${escapeHtml('CIFIKA_' + (m.registration_ref || 'member') + '.pdf')}</div>
-            <div class="text-[10.5px] text-neutral-400 mt-0.5">${m.registration_pdf_path ? 'Submitted by the member from the registration form — includes passport photo.' : 'Path not stored on the record — download tries applications/' + escapeHtml(m.registration_ref || '') + '.pdf directly. Registrations from before this feature (or via staff) have no stored PDF.'}</div>
+            <div class="text-[10.5px] text-neutral-400 mt-0.5">${m.registration_pdf_path ? 'Submitted by the member from the registration form — includes passport photo.' : 'No stored PDF — download generates it fresh from the member record (passport included when one is on file).'}</div>
           </div>
           <button onclick="downloadApplicationPDF('${m.id}')" class="h-10 px-5 rounded-full bg-black text-white text-[12px] font-semibold hover:bg-neutral-800 transition inline-flex items-center gap-2 shrink-0">${ic('download','w-4 h-4')} Download PDF</button>
         </div>
@@ -583,19 +584,290 @@ function closeModal() { $('modalWrap').classList.add('hidden'); currentMemberId 
    Signed URL keeps member documents private: staff read them here, and members
    read their own from the portal. If the stored path is missing the download
    falls back to the deterministic path applications/<REF>.pdf — the registration
-   page always uploads to that exact location. */
+   page always uploads to that exact location.
+
+   Registrations from before the PDF feature (or staff-assisted entries) have no
+   stored PDF. In that case the PDF is GENERATED here on the fly from the member
+   record — details from the students table, passport photograph from
+   passport_photo_url — so every member has a downloadable application PDF. */
+
+function _cifYN(v) {
+  if (v === true || v === 'yes' || v === 'Yes') return 'Yes';
+  if (v === false || v === 'no' || v === 'No') return 'No';
+  return (v === undefined || v === null || v === '') ? '—' : String(v);
+}
+function _cifDate(v) {
+  if (!v) return '—';
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function _cifAge(dob) {
+  if (!dob) return '';
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  let a = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
+  return a + ' yrs';
+}
+function applicationDataFromRow(s) {
+  const ec = s.emergency_contact && typeof s.emergency_contact === 'object' ? s.emergency_contact : {};
+  const pma = s.prior_martial_arts && typeof s.prior_martial_arts === 'object' ? s.prior_martial_arts : {};
+  const kar = pma.karate && typeof pma.karate === 'object' ? pma.karate : {};
+  const cons = s.consents && typeof s.consents === 'object' ? s.consents : {};
+  const cat = String(s.training_category || '').toLowerCase();
+  return {
+    Ref: s.registration_ref || '—',
+    SubmittedAt: s.registration_date || (s.created_at ? String(s.created_at).slice(0, 10) : ''),
+    Status: (s.membership_status || '—') + (s.current_belt ? ' • ' + s.current_belt + ' belt' : ''),
+    RegType: cat === 'child' ? 'Child' : 'Adult',
+    RegisteredFor: cat === 'child' ? 'registered by parent / guardian' : 'self',
+    Passport: s.passport_photo_url || '',
+    FullName: s.full_name, PreferredName: s.preferred_name,
+    DOB: _cifDate(s.date_of_birth) + (s.date_of_birth && _cifAge(s.date_of_birth) ? ' (' + _cifAge(s.date_of_birth) + ')' : ''),
+    Nationality: s.nationality, Gender: s.gender,
+    Phone: s.phone, Email: s.email, Address: s.address, CityState: s.city_state,
+    Guardian: cat === 'child',
+    GuardianName: s.guardian_name, GuardianRelationship: 'Parent / Guardian',
+    GuardianPhone: s.guardian_phone, GuardianEmail: s.guardian_email,
+    GuardianAddress: [s.address, s.city_state].filter(Boolean).join(', '),
+    EmergencyName: ec.name, EmergencyRelationship: ec.relationship,
+    EmergencyPhone: ec.primaryPhone, EmergencyAlt: ec.altPhone,
+    HasTrained: _cifYN(pma.hasTrained),
+    Arts: Array.isArray(pma.arts) ? pma.arts.join(', ') : (pma.arts || ''),
+    MartialStyle: pma.style, MartialClub: pma.club, MartialInstructor: pma.instructor,
+    MartialRank: pma.rank, MartialYears: pma.years, MartialLastActive: pma.lastActive, MartialOther: pma.other,
+    KarateStyle: kar.style, KarateClub: kar.club, KarateInstructor: kar.instructor, KarateAssoc: kar.assoc,
+    KarateRank: kar.rank, KarateYears: kar.years, KarateLastActive: kar.lastActive,
+    Medical: s.medical_conditions ? 'Yes' : 'No', MedicalDesc: s.medical_conditions || '',
+    Injury: s.injuries ? 'Yes' : 'No', InjuryDesc: s.injuries || '',
+    Objectives: Array.isArray(cons.training_objectives) ? cons.training_objectives.join(', ') : (cons.training_objectives || ''),
+    RulesAgreed: _cifYN(s.club_rules_accepted),
+    DojoKunAck: _cifYN(s.dojo_kun_acknowledged),
+    ParticipationConsent: _cifYN(cons.participation),
+    ConductConsent: _cifYN(cons.code_of_conduct),
+    MediaConsent: _cifYN(s.media_consent),
+    PrivacyConsent: _cifYN(cons.privacy),
+    GuardianResponsible: cat === 'child' ? _cifYN(cons.guardian_responsibility) : '—',
+    Signature: cons.signature || '',
+    SigDate: cons.signed_at || s.registration_date || ''
+  };
+}
+
+const CIF_LOGO_CANDIDATES = ['assets/logo/cifika-w-logo.png', 'assets/logo/cifika-b-logo.png', 'assets/logo/logo.png', 'assets/logo/cifika-logo.png'];
+function _cifLoadLogo() {
+  return new Promise(resolve => {
+    let i = 0;
+    const next = () => {
+      if (i >= CIF_LOGO_CANDIDATES.length) return resolve(null);
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => { i++; next(); };
+      img.src = CIF_LOGO_CANDIDATES[i];
+    };
+    next();
+  });
+}
+
+async function buildApplicationPDFFromRow(s) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const W = 595.28, H = 841.89, M = 40;
+  const d = applicationDataFromRow(s);
+  const logo = await _cifLoadLogo();
+  let y = 0;
+
+  const ensure = n => { if (y + n > H - 56) { y = 64; doc.addPage(); } };
+
+  doc.setFillColor(17, 17, 17); doc.rect(0, 0, W, 96, 'F');
+  if (logo) {
+    const lh = 52, lw = Math.min(240, lh * (logo.width / logo.height));
+    try { doc.addImage(logo, 'PNG', M, (96 - lh) / 2, lw, lh); }
+    catch (e) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+      doc.setTextColor(255, 107, 0); doc.text('CITY FITNESS', M, 46);
+      doc.setTextColor(255, 255, 255); doc.text('| KARATE CLUB', M + 118, 46);
+    }
+  } else {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+    doc.setTextColor(255, 107, 0); doc.text('CITY FITNESS', M, 46);
+    doc.setTextColor(255, 255, 255); doc.text('| KARATE CLUB', M + 118, 46);
+  }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(255);
+  doc.text('MEMBERSHIP APPLICATION', W - M, 40, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(150);
+  doc.text('Powered by TTOSR', W - M, 56, { align: 'right' });
+  doc.setFillColor(255, 107, 0); doc.rect(0, 96, W, 4, 'F');
+
+  const bx = W - M - 92, by = 118, bw = 92, bh = 122;
+  let passportDrawn = false;
+  if (d.Passport) {
+    try {
+      const fmt = d.Passport.indexOf('data:image/png') === 0 ? 'PNG' : 'JPEG';
+      doc.addImage(d.Passport, fmt, bx, by, bw, bh);
+      doc.setDrawColor(220); doc.rect(bx, by, bw, bh);
+      passportDrawn = true;
+    } catch (e) { passportDrawn = false; }
+  }
+  if (!passportDrawn) {
+    doc.setDrawColor(200); doc.setLineDashPattern([3, 3], 0); doc.rect(bx, by, bw, bh);
+    doc.setFontSize(8); doc.setTextColor(170);
+    doc.text('PASSPORT', bx + bw / 2, by + bh / 2 - 4, { align: 'center' });
+    doc.text('PHOTO', bx + bw / 2, by + bh / 2 + 8, { align: 'center' });
+    doc.setLineDashPattern([], 0);
+  }
+  y = 122;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(20);
+  doc.text('Registration Received', M, y); y += 20;
+  const metaRows = [
+    ['Reference', d.Ref],
+    ['Submitted', _cifDate(d.SubmittedAt)],
+    ['Status', d.Status],
+    ['Registering as', `${d.RegType} • ${d.RegisteredFor}`]
+  ];
+  metaRows.forEach(([l, v]) => {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(120);
+    doc.text(l + ':', M, y);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(30);
+    doc.text(String(v), M + 90, y);
+    y += 15;
+  });
+  y = by + bh + 30;
+
+  const section = t => {
+    ensure(40);
+    doc.setFillColor(255, 107, 0); doc.rect(M, y - 9, 3, 12, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(20);
+    doc.text(t.toUpperCase(), M + 10, y);
+    y += 10;
+    doc.setDrawColor(235); doc.line(M, y, W - M, y);
+    y += 16;
+  };
+  const row = (l, v) => {
+    const val = (v === undefined || v === null || v === '') ? '—' : String(v);
+    const lines = doc.splitTextToSize(val, W - M * 2 - 150);
+    ensure(16 + lines.length * 12);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(130);
+    doc.text(l, M + 2, y);
+    doc.setTextColor(30);
+    doc.text(lines, M + 150, y);
+    y += 13 * lines.length + 5;
+  };
+
+  section('Member Information');
+  row('Full Name', d.FullName); row('Preferred Name', d.PreferredName);
+  row('Date of Birth', d.DOB); row('Nationality', d.Nationality); row('Gender', d.Gender);
+  row('Phone', d.Phone); row('Email', d.Email);
+  row('Residential Address', d.Address); row('City / State', d.CityState);
+
+  if (d.Guardian) {
+    y += 8;
+    section('Parent / Guardian Information');
+    row('Full Name', d.GuardianName); row('Relationship', d.GuardianRelationship);
+    row('Phone', d.GuardianPhone); row('Email', d.GuardianEmail);
+    row('Address', d.GuardianAddress); row('Responsible declaration', d.GuardianResponsible);
+  }
+
+  y += 8;
+  section('Emergency Contact');
+  row('Name', d.EmergencyName); row('Relationship', d.EmergencyRelationship);
+  row('Primary Phone', d.EmergencyPhone); row('Alternative Phone', d.EmergencyAlt);
+
+  y += 8;
+  section('Martial Arts Experience');
+  row('Previously Trained', d.HasTrained);
+  if (d.HasTrained === 'Yes') {
+    row('Arts', d.Arts);
+    row('Style / Association', d.MartialStyle); row('Previous Club / Dojo', d.MartialClub);
+    row('Previous Instructor', d.MartialInstructor); row('Current / Last Rank', d.MartialRank);
+    row('Years Trained', d.MartialYears); row('Last Active', d.MartialLastActive);
+    row('Other Experience', d.MartialOther);
+    if (String(d.Arts).toLowerCase().indexOf('karate') > -1) {
+      row('Karate Style', d.KarateStyle); row('Karate Club / Dojo', d.KarateClub);
+      row('Karate Instructor', d.KarateInstructor); row('Association', d.KarateAssoc);
+      row('Karate Rank', d.KarateRank); row('Years of Karate', d.KarateYears);
+      row('Karate Last Active', d.KarateLastActive);
+    }
+  }
+
+  y += 8;
+  section('Health & Safety');
+  row('Medical Condition', d.Medical);
+  if (d.Medical === 'Yes') row('Details', d.MedicalDesc);
+  row('Injury / Surgery Recovery', d.Injury);
+  if (d.Injury === 'Yes') row('Injury Details', d.InjuryDesc);
+  row('Training Objectives', d.Objectives);
+
+  y += 8;
+  section('Consents & Declaration');
+  row('Club Rules agreed', d.RulesAgreed);
+  row('Dojo Kun acknowledged', d.DojoKunAck);
+  row('Participation consent', d.ParticipationConsent);
+  row('Code of Conduct', d.ConductConsent);
+  row('Media / Photography', d.MediaConsent);
+  row('Privacy consent', d.PrivacyConsent);
+
+  ensure(90);
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(130);
+  const decl = doc.splitTextToSize('Declaration: I declare all information provided is true and complete. I agree to the Club Rules, Dojo Kun, participation risks, media choice and privacy terms as marked above. For child/ward registrations, I sign as parent/guardian with authority to consent.', W - M * 2);
+  doc.text(decl, M, y);
+  y += decl.length * 11 + 18;
+
+  ensure(60);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20);
+  doc.text(d.Signature || '—', M, y);
+  doc.setDrawColor(180); doc.setLineWidth(0.8); doc.line(M, y + 6, M + 220, y + 6);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(130);
+  doc.text('Member / Guardian Signature', M, y + 19);
+  doc.setFontSize(10); doc.setTextColor(30);
+  doc.text(d.SigDate ? 'Date: ' + _cifDate(d.SigDate) : 'Date: —', M + 250, y);
+  doc.setLineWidth(1);
+
+  const pages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    if (i > 1) {
+      doc.setFillColor(17, 17, 17); doc.rect(0, 0, W, 24, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 107, 0);
+      doc.text('CIFIKA — MEMBERSHIP APPLICATION', M, 15);
+      doc.setTextColor(160); doc.setFont('helvetica', 'normal');
+      doc.text('Ref: ' + d.Ref, W - M, 15, { align: 'right' });
+    }
+    doc.setFillColor(255, 107, 0); doc.rect(0, H - 30, W, 2, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150);
+    doc.text('CITY FITNESS KARATE CLUB • POWERED BY TTOSR', M, H - 14);
+    doc.text(`Page ${i} of ${pages}`, W - M, H - 14, { align: 'right' });
+  }
+  return doc;
+}
+
 async function downloadApplicationPDF(id) {
   const m = membersList.find(x => x.id === id);
   if (!m) return;
   if (!m.registration_ref) return toast('No application PDF on file for this member (no CIFIKA ID).', true);
   const path = m.registration_pdf_path || ('applications/' + m.registration_ref + '.pdf');
   toast('Preparing download…');
-  const { data, error } = await sb.storage.from('registration_docs').createSignedUrl(path, 300);
-  if (error || !data?.signedUrl) {
-    return toast('No application PDF on file for ' + m.registration_ref + ' — registrations from before this feature (or via staff-assisted entries) have no stored PDF.', true);
+  try {
+    const { data, error } = await sb.storage.from('registration_docs').createSignedUrl(path, 300);
+    if (!error && data?.signedUrl) {
+      window.open(data.signedUrl, '_blank');
+      toast('Opening the application PDF…');
+      return;
+    }
+  } catch (e) { /* fall through to on-the-fly generation */ }
+  // No stored PDF — generate it from the member record (legacy / staff-assisted entries).
+  if (!m.passport_photo_url) {
+    return toast('No stored PDF and no passport photo on file for ' + m.registration_ref + ' — ask the member to attach a passport in their portal (Edit details → Attach passport), then download again.', true);
   }
-  window.open(data.signedUrl, '_blank');
-  toast('Opening the application PDF…');
+  toast('No stored PDF — generating it from the member record…');
+  try {
+    const doc = await buildApplicationPDFFromRow(m);
+    doc.save('CIFIKA_' + m.registration_ref + '.pdf');
+    toast('✓ Application PDF generated and downloaded');
+  } catch (e) {
+    toast('Could not build the PDF: ' + ((e && e.message) || 'unknown error'), true);
+  }
 }
 
 async function setMemberStatus(id, status) {

@@ -1889,11 +1889,13 @@ function memberDetailsRowsHTML(s) {
     ['Injuries', s.injuries],
     ['Emergency Contact', ec.name ? `${ec.name}${ec.relationship ? ' (' + ec.relationship + ')' : ''} — ${ec.primaryPhone || ''}` : null],
   ].filter(r => r[1]);
-  const pdfBtn = s.registration_ref ? `<button onclick="downloadApplicationPDF('${escapeHtml(s.registration_ref)}','${escapeHtml(s.registration_pdf_path || '')}')" class="h-8 px-3.5 rounded-full border-[1.5px] border-neutral-200 bg-white text-neutral-600 text-[10.5px] font-bold hover:border-brand hover:text-brand transition inline-flex items-center gap-1.5" title="The application PDF you submitted — download it any time">${ic('file','w-3 h-3')} Application PDF</button>` : '';
+  const pdfBtn = s.registration_ref ? `<button onclick="downloadApplicationPDF('${escapeHtml(s.registration_ref)}','${escapeHtml(s.registration_pdf_path || '')}','${escapeHtml(s.id)}')" class="h-8 px-3.5 rounded-full border-[1.5px] border-neutral-200 bg-white text-neutral-600 text-[10.5px] font-bold hover:border-brand hover:text-brand transition inline-flex items-center gap-1.5" title="Your application PDF — downloads the stored copy, or builds it from this member record">${ic('file','w-3 h-3')} Application PDF</button>` : '';
+  const passBtn = s.registration_ref && !s.passport_photo_url ? `<button onclick="openPassportModalForId('${escapeHtml(s.id)}')" class="h-8 px-3.5 rounded-full border-[1.5px] border-amber-300 bg-amber-50 text-amber-700 text-[10.5px] font-bold hover:border-amber-500 transition inline-flex items-center gap-1.5" title="Attach a passport photograph — the application PDF needs it">${ic('id','w-3 h-3')} Attach passport</button>` : '';
   return `
     <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
       <div class="text-[12px] font-extrabold tracking-[0.14em]">MEMBER DETAILS</div>
       <div class="flex items-center gap-2">
+        ${passBtn}
         ${pdfBtn}
         <button onclick="toggleMemberEdit(true)" class="h-8 px-3.5 rounded-full bg-black text-white text-[10.5px] font-bold hover:bg-brand transition inline-flex items-center gap-1.5">${ic('user','w-3 h-3')} Edit details</button>
       </div>
@@ -1906,27 +1908,456 @@ function memberDetailsRowsHTML(s) {
         </div>`).join('')}
     </div>
     <div id="memberEditForm" class="hidden">${memberEditFormHTML(s)}</div>
-    <div class="mt-4 text-[11px] text-neutral-400">Basic details can be edited here — membership status, belts and payments stay with the club. Changes save to your member record instantly.</div>`;
+    <div class="mt-4 text-[11px] text-neutral-400">Basic details can be edited here — membership status, belts and payments stay with the club. Application PDF downloads the stored copy, or builds one from this record — attach a passport photograph if none is on file.</div>`;
+}
+
+/* ═══════════ APPLICATION PDF — generated on demand from the member record ═══════════
+   Members who registered before the PDF feature (or via staff-assisted entries)
+   have no stored PDF in the vault. This recreates the exact branded application
+   PDF from the member row: details come from the students table, the passport
+   photograph from passport_photo_url. The same builder also runs in the admin
+   console, so staff can download a PDF for every member, old or new. */
+
+function _cifYN(v) {
+  if (v === true || v === 'yes' || v === 'Yes') return 'Yes';
+  if (v === false || v === 'no' || v === 'No') return 'No';
+  return (v === undefined || v === null || v === '') ? '—' : String(v);
+}
+function _cifDate(v) {
+  if (!v) return '—';
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function _cifAge(dob) {
+  if (!dob) return '';
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  let a = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
+  return a + ' yrs';
+}
+function applicationDataFromRow(s) {
+  const ec = s.emergency_contact && typeof s.emergency_contact === 'object' ? s.emergency_contact : {};
+  const pma = s.prior_martial_arts && typeof s.prior_martial_arts === 'object' ? s.prior_martial_arts : {};
+  const kar = pma.karate && typeof pma.karate === 'object' ? pma.karate : {};
+  const cons = s.consents && typeof s.consents === 'object' ? s.consents : {};
+  const cat = String(s.training_category || '').toLowerCase();
+  return {
+    Ref: s.registration_ref || '—',
+    SubmittedAt: s.registration_date || (s.created_at ? String(s.created_at).slice(0, 10) : ''),
+    Status: (s.membership_status || '—') + (s.current_belt ? ' • ' + s.current_belt + ' belt' : ''),
+    RegType: cat === 'child' ? 'Child' : 'Adult',
+    RegisteredFor: cat === 'child' ? 'registered by parent / guardian' : 'self',
+    Passport: s.passport_photo_url || '',
+    FullName: s.full_name, PreferredName: s.preferred_name,
+    DOB: _cifDate(s.date_of_birth) + (s.date_of_birth && _cifAge(s.date_of_birth) ? ' (' + _cifAge(s.date_of_birth) + ')' : ''),
+    Nationality: s.nationality, Gender: s.gender,
+    Phone: s.phone, Email: s.email, Address: s.address, CityState: s.city_state,
+    Guardian: cat === 'child',
+    GuardianName: s.guardian_name, GuardianRelationship: 'Parent / Guardian',
+    GuardianPhone: s.guardian_phone, GuardianEmail: s.guardian_email,
+    GuardianAddress: [s.address, s.city_state].filter(Boolean).join(', '),
+    EmergencyName: ec.name, EmergencyRelationship: ec.relationship,
+    EmergencyPhone: ec.primaryPhone, EmergencyAlt: ec.altPhone,
+    HasTrained: _cifYN(pma.hasTrained),
+    Arts: Array.isArray(pma.arts) ? pma.arts.join(', ') : (pma.arts || ''),
+    MartialStyle: pma.style, MartialClub: pma.club, MartialInstructor: pma.instructor,
+    MartialRank: pma.rank, MartialYears: pma.years, MartialLastActive: pma.lastActive, MartialOther: pma.other,
+    KarateStyle: kar.style, KarateClub: kar.club, KarateInstructor: kar.instructor, KarateAssoc: kar.assoc,
+    KarateRank: kar.rank, KarateYears: kar.years, KarateLastActive: kar.lastActive,
+    Medical: s.medical_conditions ? 'Yes' : 'No', MedicalDesc: s.medical_conditions || '',
+    Injury: s.injuries ? 'Yes' : 'No', InjuryDesc: s.injuries || '',
+    Objectives: Array.isArray(cons.training_objectives) ? cons.training_objectives.join(', ') : (cons.training_objectives || ''),
+    RulesAgreed: _cifYN(s.club_rules_accepted),
+    DojoKunAck: _cifYN(s.dojo_kun_acknowledged),
+    ParticipationConsent: _cifYN(cons.participation),
+    ConductConsent: _cifYN(cons.code_of_conduct),
+    MediaConsent: _cifYN(s.media_consent),
+    PrivacyConsent: _cifYN(cons.privacy),
+    GuardianResponsible: cat === 'child' ? _cifYN(cons.guardian_responsibility) : '—',
+    Signature: cons.signature || '',
+    SigDate: cons.signed_at || s.registration_date || ''
+  };
+}
+
+const CIF_LOGO_CANDIDATES = ['assets/logo/cifika-w-logo.png', 'assets/logo/cifika-b-logo.png', 'assets/logo/logo.png', 'assets/logo/cifika-logo.png'];
+function _cifLoadLogo() {
+  return new Promise(resolve => {
+    let i = 0;
+    const next = () => {
+      if (i >= CIF_LOGO_CANDIDATES.length) return resolve(null);
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => { i++; next(); };
+      img.src = CIF_LOGO_CANDIDATES[i];
+    };
+    next();
+  });
+}
+
+async function buildApplicationPDFFromRow(s) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const W = 595.28, H = 841.89, M = 40;
+  const d = applicationDataFromRow(s);
+  const logo = await _cifLoadLogo();
+  let y = 0;
+
+  const ensure = n => { if (y + n > H - 56) { y = 64; doc.addPage(); } };
+
+  // --- Header (page 1) ---
+  doc.setFillColor(17, 17, 17); doc.rect(0, 0, W, 96, 'F');
+  if (logo) {
+    const lh = 52, lw = Math.min(240, lh * (logo.width / logo.height));
+    try { doc.addImage(logo, 'PNG', M, (96 - lh) / 2, lw, lh); }
+    catch (e) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+      doc.setTextColor(255, 107, 0); doc.text('CITY FITNESS', M, 46);
+      doc.setTextColor(255, 255, 255); doc.text('| KARATE CLUB', M + 118, 46);
+    }
+  } else {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+    doc.setTextColor(255, 107, 0); doc.text('CITY FITNESS', M, 46);
+    doc.setTextColor(255, 255, 255); doc.text('| KARATE CLUB', M + 118, 46);
+  }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(255);
+  doc.text('MEMBERSHIP APPLICATION', W - M, 40, { align: 'right' });
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(150);
+  doc.text('Powered by TTOSR', W - M, 56, { align: 'right' });
+  doc.setFillColor(255, 107, 0); doc.rect(0, 96, W, 4, 'F');
+
+  // --- Passport box (right) + meta (left) ---
+  const bx = W - M - 92, by = 118, bw = 92, bh = 122;
+  let passportDrawn = false;
+  if (d.Passport) {
+    try {
+      const fmt = d.Passport.indexOf('data:image/png') === 0 ? 'PNG' : 'JPEG';
+      doc.addImage(d.Passport, fmt, bx, by, bw, bh);
+      doc.setDrawColor(220); doc.rect(bx, by, bw, bh);
+      passportDrawn = true;
+    } catch (e) { passportDrawn = false; }
+  }
+  if (!passportDrawn) {
+    doc.setDrawColor(200); doc.setLineDashPattern([3, 3], 0); doc.rect(bx, by, bw, bh);
+    doc.setFontSize(8); doc.setTextColor(170);
+    doc.text('PASSPORT', bx + bw / 2, by + bh / 2 - 4, { align: 'center' });
+    doc.text('PHOTO', bx + bw / 2, by + bh / 2 + 8, { align: 'center' });
+    doc.setLineDashPattern([], 0);
+  }
+  y = 122;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(20);
+  doc.text('Registration Received', M, y); y += 20;
+  const metaRows = [
+    ['Reference', d.Ref],
+    ['Submitted', _cifDate(d.SubmittedAt)],
+    ['Status', d.Status],
+    ['Registering as', `${d.RegType} • ${d.RegisteredFor}`]
+  ];
+  metaRows.forEach(([l, v]) => {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(120);
+    doc.text(l + ':', M, y);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(30);
+    doc.text(String(v), M + 90, y);
+    y += 15;
+  });
+  y = by + bh + 30;
+
+  // --- Section helpers ---
+  const section = t => {
+    ensure(40);
+    doc.setFillColor(255, 107, 0); doc.rect(M, y - 9, 3, 12, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(20);
+    doc.text(t.toUpperCase(), M + 10, y);
+    y += 10;
+    doc.setDrawColor(235); doc.line(M, y, W - M, y);
+    y += 16;
+  };
+  const row = (l, v) => {
+    const val = (v === undefined || v === null || v === '') ? '—' : String(v);
+    const lines = doc.splitTextToSize(val, W - M * 2 - 150);
+    ensure(16 + lines.length * 12);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(130);
+    doc.text(l, M + 2, y);
+    doc.setTextColor(30);
+    doc.text(lines, M + 150, y);
+    y += 13 * lines.length + 5;
+  };
+
+  // --- Content ---
+  section('Member Information');
+  row('Full Name', d.FullName); row('Preferred Name', d.PreferredName);
+  row('Date of Birth', d.DOB); row('Nationality', d.Nationality); row('Gender', d.Gender);
+  row('Phone', d.Phone); row('Email', d.Email);
+  row('Residential Address', d.Address); row('City / State', d.CityState);
+
+  if (d.Guardian) {
+    y += 8;
+    section('Parent / Guardian Information');
+    row('Full Name', d.GuardianName); row('Relationship', d.GuardianRelationship);
+    row('Phone', d.GuardianPhone); row('Email', d.GuardianEmail);
+    row('Address', d.GuardianAddress); row('Responsible declaration', d.GuardianResponsible);
+  }
+
+  y += 8;
+  section('Emergency Contact');
+  row('Name', d.EmergencyName); row('Relationship', d.EmergencyRelationship);
+  row('Primary Phone', d.EmergencyPhone); row('Alternative Phone', d.EmergencyAlt);
+
+  y += 8;
+  section('Martial Arts Experience');
+  row('Previously Trained', d.HasTrained);
+  if (d.HasTrained === 'Yes') {
+    row('Arts', d.Arts);
+    row('Style / Association', d.MartialStyle); row('Previous Club / Dojo', d.MartialClub);
+    row('Previous Instructor', d.MartialInstructor); row('Current / Last Rank', d.MartialRank);
+    row('Years Trained', d.MartialYears); row('Last Active', d.MartialLastActive);
+    row('Other Experience', d.MartialOther);
+    if (String(d.Arts).toLowerCase().indexOf('karate') > -1) {
+      row('Karate Style', d.KarateStyle); row('Karate Club / Dojo', d.KarateClub);
+      row('Karate Instructor', d.KarateInstructor); row('Association', d.KarateAssoc);
+      row('Karate Rank', d.KarateRank); row('Years of Karate', d.KarateYears);
+      row('Karate Last Active', d.KarateLastActive);
+    }
+  }
+
+  y += 8;
+  section('Health & Safety');
+  row('Medical Condition', d.Medical);
+  if (d.Medical === 'Yes') row('Details', d.MedicalDesc);
+  row('Injury / Surgery Recovery', d.Injury);
+  if (d.Injury === 'Yes') row('Injury Details', d.InjuryDesc);
+  row('Training Objectives', d.Objectives);
+
+  y += 8;
+  section('Consents & Declaration');
+  row('Club Rules agreed', d.RulesAgreed);
+  row('Dojo Kun acknowledged', d.DojoKunAck);
+  row('Participation consent', d.ParticipationConsent);
+  row('Code of Conduct', d.ConductConsent);
+  row('Media / Photography', d.MediaConsent);
+  row('Privacy consent', d.PrivacyConsent);
+
+  ensure(90);
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(130);
+  const decl = doc.splitTextToSize('Declaration: I declare all information provided is true and complete. I agree to the Club Rules, Dojo Kun, participation risks, media choice and privacy terms as marked above. For child/ward registrations, I sign as parent/guardian with authority to consent.', W - M * 2);
+  doc.text(decl, M, y);
+  y += decl.length * 11 + 18;
+
+  ensure(60);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20);
+  doc.text(d.Signature || '—', M, y);
+  doc.setDrawColor(180); doc.setLineWidth(0.8); doc.line(M, y + 6, M + 220, y + 6);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(130);
+  doc.text('Member / Guardian Signature', M, y + 19);
+  doc.setFontSize(10); doc.setTextColor(30);
+  doc.text(d.SigDate ? 'Date: ' + _cifDate(d.SigDate) : 'Date: —', M + 250, y);
+  doc.setLineWidth(1);
+
+  // --- Footers on all pages ---
+  const pages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    if (i > 1) {
+      doc.setFillColor(17, 17, 17); doc.rect(0, 0, W, 24, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 107, 0);
+      doc.text('CIFIKA — MEMBERSHIP APPLICATION', M, 15);
+      doc.setTextColor(160); doc.setFont('helvetica', 'normal');
+      doc.text('Ref: ' + d.Ref, W - M, 15, { align: 'right' });
+    }
+    doc.setFillColor(255, 107, 0); doc.rect(0, H - 30, W, 2, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(150);
+    doc.text('CITY FITNESS KARATE CLUB • POWERED BY TTOSR', M, H - 14);
+    doc.text(`Page ${i} of ${pages}`, W - M, H - 14, { align: 'right' });
+  }
+  return doc;
 }
 
 /* ═══════════ MEMBER SELF-SERVICE — download application PDF · edit basic info ═══════════
    Members edit their own record, parents edit their children's records (the
    "members: edit own basics" RLS policy + club-column guard trigger in
-   fix_linking_and_policies.sql enforce this server-side).              */
-async function downloadApplicationPDF(ref, storedPath) {
+   fix_linking_and_policies.sql enforce this server-side).
+
+   PDF download order:
+   1. the stored PDF in the vault (registration_pdf_path, or the deterministic
+      applications/<REF>.pdf the registration form always uploads to);
+   2. if none is stored — the PDF is generated right here from the member
+      record, so even members who registered before this feature (and
+      staff-assisted entries) always get their PDF;
+   3. if the record has no passport photograph yet, the portal asks for one
+      first (saved to passport_photo_url), then builds the PDF.              */
+async function downloadApplicationPDF(ref, storedPath, sid) {
   if (!ref) return toast('No CIFIKA ID on this record yet.', true);
   const path = storedPath || ('applications/' + ref + '.pdf');
-  toast('Fetching the application PDF…');
   try {
     const { data, error } = await sb.storage.from('registration_docs').createSignedUrl(path, 300);
-    if (error || !data?.signedUrl) {
-      return toast('No application PDF on file for ' + ref + ' yet — PDFs attach automatically when a registration is submitted through the online form. Ask the front desk for a copy.', true);
+    if (!error && data?.signedUrl) {
+      window.open(data.signedUrl, '_blank');
+      toast('Opening the application PDF…');
+      return;
     }
-    window.open(data.signedUrl, '_blank');
-    toast('Opening the application PDF…');
-  } catch (e) {
-    toast('Could not reach the club document vault. Try again in a moment.', true);
+  } catch (e) { /* vault unreachable — fall through to on-the-fly generation */ }
+  await generateApplicationPDF({ ref, sid });
+}
+
+async function loadMemberRowForPdf(sid, ref) {
+  if (sid) {
+    try {
+      const { data } = await sb.from('students').select('*').eq('id', sid).limit(1);
+      if (data && data[0]) return data[0];
+    } catch (e) { /* fall through to ref lookup */ }
   }
+  try {
+    const { data } = await sb.from('students').select('*').eq('registration_ref', ref).limit(1);
+    if (data && data[0]) return data[0];
+  } catch (e) { /* ignored */ }
+  return null;
+}
+
+async function generateApplicationPDF(opts) {
+  const ref = opts && opts.ref;
+  const sid = opts && opts.sid;
+  let row = (opts && opts.row) || null;
+  if (!row) row = await loadMemberRowForPdf(sid, ref);
+  if (!row) return toast('Could not load the member record for ' + (ref || 'this member') + '. Try again in a moment.', true);
+  if (!row.passport_photo_url) {
+    openPassportModalForRow(row, true);
+    return;
+  }
+  toast('Generating the application PDF from the member record…');
+  try {
+    const doc = await buildApplicationPDFFromRow(row);
+    doc.save('CIFIKA_' + (row.registration_ref || 'APPLICATION') + '.pdf');
+    toast('✓ Application PDF downloaded');
+    deliverGeneratedPdf(row, doc);
+  } catch (e) {
+    toast('Could not build the PDF: ' + ((e && e.message) || 'unknown error'), true);
+  }
+}
+
+/* Best effort: file the freshly generated PDF in the vault so the admin
+   console (and future downloads) get the stored copy too. Never blocks —
+   the member already has their downloaded copy at this point. */
+async function deliverGeneratedPdf(row, doc) {
+  try {
+    if (!row || !row.id || !row.registration_ref) return;
+    const path = 'applications/' + row.registration_ref + '.pdf';
+    const blob = doc.output('blob');
+    const up = await sb.storage.from('registration_docs').upload(path, blob, { contentType: 'application/pdf', upsert: true });
+    if (!up.error) await sb.from('students').update({ registration_pdf_path: path }).eq('id', row.id);
+  } catch (e) { /* best effort only */ }
+}
+
+/* ── Passport modal: attach / replace the passport photograph ──
+   Opens on its own from the member card and the edit form, and
+   automatically after a PDF download when no passport is on file. */
+let _ppCtx = null;
+
+function openPassportModalForRow(row, autoDownload) {
+  if (!row) return;
+  _ppCtx = { row, dataUrl: row.passport_photo_url || '', autoDownload: !!autoDownload, changed: false };
+  $('ppWho').textContent = (row.full_name || 'Member') + (row.registration_ref ? ' • ' + row.registration_ref : ' • no CIFIKA ID yet');
+  $('ppSaveLabel').textContent = _ppCtx.autoDownload ? 'Save & download PDF' : (row.passport_photo_url ? 'Save photo' : 'Save passport');
+  refreshPassportModalUI();
+  $('passportModal').classList.remove('hidden');
+}
+
+async function openPassportModalForId(sid) {
+  let row = null;
+  if (window.mineStudent && window.mineStudent.id === sid) row = window.mineStudent;
+  if (!row) { const c = parentChildren.find(x => x && x.id === sid); if (c) row = c; }
+  if (!row && window._dash && window._dash.student && window._dash.student.id === sid) row = window._dash.student;
+  if (!row) {
+    try {
+      const { data } = await sb.from('students').select('*').eq('id', sid).limit(1);
+      if (data && data[0]) row = data[0];
+    } catch (e) { /* ignored */ }
+  }
+  if (!row) return toast('Could not load this member record.', true);
+  openPassportModalForRow(row, false);
+}
+
+function closePassportModal() {
+  $('passportModal').classList.add('hidden');
+  _ppCtx = null;
+}
+
+function refreshPassportModalUI() {
+  if (!_ppCtx) return;
+  const has = !!_ppCtx.dataUrl;
+  $('ppEmpty').classList.toggle('hidden', has);
+  $('ppPrevWrap').classList.toggle('hidden', !has);
+  $('ppPrevWrap').classList.toggle('flex', has);
+  if (has) $('ppPrev').src = _ppCtx.dataUrl;
+  $('ppSaveLabel').textContent = _ppCtx.autoDownload ? 'Save & download PDF' : (_ppCtx.row.passport_photo_url ? 'Save photo' : 'Save passport');
+}
+
+function clearPassportModalPhoto() {
+  if (!_ppCtx) return;
+  _ppCtx.dataUrl = '';
+  refreshPassportModalUI();
+}
+
+function _cifProcessPassportImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type || !file.type.startsWith('image/')) return reject(new Error('Not an image'));
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const target = 3 / 4;
+        let sw = img.width, sh = img.height, sx = 0, sy = 0;
+        if (sw / sh > target) { sw = sh * target; sx = (img.width - sw) / 2; }
+        else { sh = sw / target; sy = (img.height - sh) / 2; }
+        const scale = Math.min(1, 600 / sw, 800 / sh);
+        const c = document.createElement('canvas');
+        c.width = Math.round(sw * scale);
+        c.height = Math.round(sh * scale);
+        c.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function onPassportModalFile(file) {
+  if (!_ppCtx || !file) return;
+  if (!file.type.startsWith('image/')) return toast('Please choose an image file — JPG or PNG.', true);
+  if (file.size > 15 * 1024 * 1024) return toast('That image is too large — please use one under 15 MB.', true);
+  try {
+    _ppCtx.dataUrl = await _cifProcessPassportImage(file);
+    _ppCtx.changed = true;
+    refreshPassportModalUI();
+  } catch (e) {
+    toast('Could not read that image — please try another photo.', true);
+  }
+}
+
+async function savePassportFromModal() {
+  if (!_ppCtx) return;
+  if (!_ppCtx.changed) {
+    if (_ppCtx.dataUrl) { closePassportModal(); return; }
+    return toast('Choose a passport photograph first.', true);
+  }
+  const btn = $('ppSaveBtn');
+  btn.disabled = true;
+  const ctx = _ppCtx;
+  const { data, error } = await sb.from('students')
+    .update({ passport_photo_url: ctx.dataUrl }).eq('id', ctx.row.id).select('id').limit(1);
+  btn.disabled = false;
+  if (error) return toast('✗ Could not save the passport: ' + (error.message || 'update refused.'), true);
+  if (!data || !data.length) return toast('✗ This record is managed by the club — ask the front desk to attach the passport.', true);
+  toast('✓ Passport photograph saved');
+  const row = Object.assign({}, ctx.row, { passport_photo_url: ctx.dataUrl });
+  const auto = ctx.autoDownload;
+  closePassportModal();
+  refreshAfterMemberEdit(row.id);
+  if (auto) await generateApplicationPDF({ ref: row.registration_ref, sid: row.id, row });
 }
 
 function toggleMemberEdit(show) {
@@ -1945,6 +2376,16 @@ function memberEditFormHTML(s) {
   return `
     <div class="text-[12px] font-extrabold tracking-[0.14em] mb-3">EDIT BASIC DETAILS</div>
     <div class="grid sm:grid-cols-2 gap-3">
+      <div class="sm:col-span-2 flex items-center gap-3 rounded-[14px] border ${s.passport_photo_url ? 'border-neutral-200' : 'border-amber-300 bg-amber-50/70'} p-3">
+        ${s.passport_photo_url
+          ? `<img src="${v(s.passport_photo_url)}" alt="Passport" class="w-[42px] h-[56px] object-cover rounded-[8px] border border-neutral-200 shrink-0">`
+          : `<div class="w-[42px] h-[56px] rounded-[8px] border-2 border-dashed border-amber-400 grid place-items-center text-[7.5px] font-extrabold text-amber-500 text-center leading-tight shrink-0">NO<br>PHOTO</div>`}
+        <div class="min-w-0">
+          <div class="text-[11.5px] font-extrabold">Passport photograph</div>
+          <div class="text-[10.5px] mt-0.5 leading-[1.5] ${s.passport_photo_url ? 'text-neutral-400' : 'text-amber-600 font-semibold'}">${s.passport_photo_url ? 'On file — included in the application PDF.' : 'Not on file — please attach one. Your application PDF is built from this record and needs the passport.'}</div>
+        </div>
+        <button type="button" onclick="openPassportModalForId('${escapeHtml(s.id)}')" class="ml-auto shrink-0 h-8 px-3.5 rounded-full ${s.passport_photo_url ? 'border-[1.5px] border-neutral-200 bg-white text-neutral-600 hover:border-brand hover:text-brand' : 'bg-amber-500 text-white hover:bg-amber-600'} text-[10.5px] font-bold transition inline-flex items-center gap-1.5">${ic('id','w-3 h-3')} ${s.passport_photo_url ? 'Replace' : 'Attach passport'}</button>
+      </div>
       <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Full name *</span><input id="edFullName" class="input" value="${v(s.full_name)}"></label>
       <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Preferred name</span><input id="edPreferredName" class="input" value="${v(s.preferred_name)}"></label>
       <label class="grid gap-1"><span class="text-[10.5px] font-bold text-neutral-500">Date of birth</span><input type="date" id="edDob" class="input" value="${v(s.date_of_birth)}"></label>
@@ -2891,6 +3332,52 @@ function startOfWeekLagos() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
 }
+</script>
+
+<!-- ═══════════ PASSPORT MODAL — attach / replace the passport photograph ═══════════ -->
+<div id="passportModal" class="hidden fixed inset-0 z-[90]">
+  <div class="absolute inset-0 bg-black/60" onclick="closePassportModal()"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(94vw,460px)] card p-5 md:p-6 max-h-[92vh] overflow-y-auto">
+    <div class="flex items-center justify-between gap-3 mb-1.5">
+      <div class="text-[12px] font-extrabold tracking-[0.14em]">PASSPORT PHOTOGRAPH</div>
+      <button onclick="closePassportModal()" class="h-8 w-8 grid place-items-center rounded-full border border-neutral-200 bg-white text-neutral-500 hover:border-black transition" aria-label="Close">
+        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="ppWho" class="text-[11px] font-bold text-neutral-400 mb-2.5"></div>
+    <p class="text-[11.5px] text-neutral-500 leading-[1.55] mb-3.5">Your application PDF is built from the member record and needs a passport photograph — plain background, face clearly visible. It is saved to the member record for the club.</p>
+    <div id="ppDrop" class="rounded-[16px] border-2 border-dashed border-neutral-300 p-5 text-center transition cursor-pointer hover:border-brand">
+      <input type="file" id="ppInput" accept="image/*" class="hidden">
+      <div id="ppEmpty">
+        <div class="text-[12px] font-extrabold text-neutral-600">Choose a passport photo</div>
+        <div class="text-[10.5px] text-neutral-400 mt-1">Tap to browse, or drag an image here — JPG or PNG, up to 15 MB.</div>
+      </div>
+      <div id="ppPrevWrap" class="hidden items-center gap-4 text-left">
+        <img id="ppPrev" class="w-[72px] h-[96px] object-cover rounded-[10px] border border-neutral-200" alt="Passport preview">
+        <div class="min-w-0">
+          <div class="text-[12px] font-extrabold text-neutral-700">Photo ready</div>
+          <div class="text-[10.5px] text-neutral-400 mt-0.5">Looks good? Save it to the member record.</div>
+          <button type="button" onclick="clearPassportModalPhoto()" class="mt-1.5 text-[10.5px] font-bold text-neutral-500 hover:text-brand underline">Choose a different photo</button>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 flex gap-2 flex-wrap">
+      <button id="ppSaveBtn" onclick="savePassportFromModal()" class="h-[44px] px-6 rounded-full bg-brand text-white text-[12.5px] font-semibold hover:bg-brand-dark transition disabled:opacity-50 disabled:cursor-not-allowed"><span id="ppSaveLabel">Save passport</span></button>
+      <button onclick="closePassportModal()" class="h-[44px] px-5 rounded-full border-[1.5px] border-neutral-200 bg-white text-[12.5px] font-semibold hover:border-black transition">Cancel</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const drop = document.getElementById('ppDrop');
+  const input = document.getElementById('ppInput');
+  if (!drop || !input) return;
+  input.addEventListener('change', e => { if (typeof onPassportModalFile === 'function') onPassportModalFile(e.target.files[0]); input.value = ''; });
+  drop.addEventListener('click', e => { if (!e.target.closest('button')) input.click(); });
+  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('dragover'); }));
+  drop.addEventListener('drop', e => { if (typeof onPassportModalFile === 'function') onPassportModalFile(e.dataTransfer.files[0]); });
+})();
 </script>
 </body>
 </html>
