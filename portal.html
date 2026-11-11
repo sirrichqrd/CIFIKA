@@ -702,6 +702,7 @@ function renderMemberSection(id) {
 }
 
 /* ═══════════════ BOOT ═══════════════ */
+window.addEventListener('DOMContentLoaded', decorateSignupRegisterLink);
 window.addEventListener('DOMContentLoaded', boot);
 
 async function boot() {
@@ -1010,6 +1011,7 @@ async function renderParentHome() {
       ${(anns || []).length ? annRowsHTML(anns.slice(0, 4)) : emptyState('mega', 'No announcements yet', 'Club updates, events and grading windows will appear here as soon as the club publishes them.')}
     </div>
   </div>`;
+  mountDashboardDraftBanner();
 }
 
 /* Parent shell router — Home · My Kids · Link Child · Announcements · Dojo Code · Profile · Settings */
@@ -1312,11 +1314,13 @@ async function renderDashboard(student, opts = {}) {
     renderMemberNav();
     markNav('m-home');
     renderDashboardHome();
+    mountDashboardDraftBanner();
   } else {
     portalSection = 'home';
     renderNav();
     markNav('home');
     renderDashboardHome();
+    mountDashboardDraftBanner();
   }
 }
 
@@ -2117,6 +2121,8 @@ function dojoCodeHTML() {
 /* ═══════════════ ONBOARDING · CONNECT ID · REGISTER FOR AN ID · ACCOUNT SETTINGS ═══════════════ */
 async function renderOnboarding(skipped) {
   const first = !skipped;
+  window._onboardSkipped = skipped;
+  const _drafts = portalDrafts();
   // the sidebar stays hidden during onboarding — it's a focused full-screen flow
   $('sidebar').classList.add('hidden');
   $('navToggle').classList.add('hidden');
@@ -2154,6 +2160,7 @@ async function renderOnboarding(skipped) {
       <div id="obMsg" class="hidden"></div>
     </div>
 
+    ${_drafts.length ? draftResumeCardHTML(_drafts, 'rerenderOnboarding') : `
     <div class="card p-6">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center shrink-0">
@@ -2164,9 +2171,9 @@ async function renderOnboarding(skipped) {
           <div class="text-[11.5px] text-neutral-500 mt-0.5">No CFK-xxxxx yet? Complete the club registration form.</div>
         </div>
       </div>
-      <p class="text-[12px] text-neutral-500 mt-3 leading-[1.6]">Your details (${escapeHtml(currentProfile.full_name || 'name')} • ${escapeHtml(currentProfile.email || 'email')}) are carried over to the registration form automatically. Once you submit, you land right back here — and your new ID connects to this account.</p>
+      <p class="text-[12px] text-neutral-500 mt-3 leading-[1.6]">Your details (${escapeHtml(currentProfile.full_name || 'name')} • ${escapeHtml(currentProfile.email || 'email')}) are carried over to the registration form automatically. If you stop halfway, your progress is saved — the portal will bring you straight back to it. Once you submit, you land right back here — and your new ID connects to this account.</p>
       <a href="${buildPortalRegUrl()}" class="mt-4 h-[48px] px-6 rounded-full bg-black text-white text-[13px] font-semibold hover:bg-brand transition inline-flex items-center gap-2">${ic('arrow','w-4 h-4')} Register to get an ID →</a>
-    </div>
+    </div>`}
 
     <a href="instructor.html" class="soft p-4 flex items-center gap-3 hover:border-black transition group">
       <div class="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0 text-neutral-600">
@@ -2197,6 +2204,124 @@ function buildPortalRegUrl(mode) {
     name, email,
   });
   return 'registration.html?' + p.toString();
+}
+
+/* ═══════════════ REGISTRATION IN PROGRESS — resume where they stopped ═══════════════
+   The registration form autosaves every field to localStorage (cifika_store_v2,
+   same origin as this portal). When a member stops halfway and comes back, the
+   portal now shows the saved draft and "Continue" drops them on the exact step
+   they left (registration.html?from=portal resumes instead of restarting).     */
+function portalDrafts() {
+  try {
+    const raw = localStorage.getItem('cifika_store_v2');
+    if (!raw) return [];
+    const store = JSON.parse(raw);
+    return (store.apps || [])
+      .filter(a => a && !a.submitted && a.fields &&
+        (a.fields.fullName || a.fields.dob || a.fields.phone || a.fields.email ||
+         a.fields.pFullName || a.fields.eName || a.fields.signature))
+      .sort((x, y) => String(y.savedAt || '').localeCompare(String(x.savedAt || '')));
+  } catch (e) { return []; }
+}
+function portalDraftLabel(a) {
+  const who  = a.for === 'child' ? 'A child / ward' : 'Your own membership';
+  const name = (a.fields && (a.fields.fullName || a.fields.preferredName || a.fields.pFullName)) || '';
+  const total = a.for === 'child' ? 6 : 5;
+  const step  = Math.min(Math.max(a.step || 1, 1), total);
+  let when = '';
+  if (a.savedAt) {
+    const d = new Date(a.savedAt);
+    when = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' +
+           d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+  return { who, name, step, total, when };
+}
+function continueRegUrl(draft) { return buildPortalRegUrl(draft.for === 'child' ? 'child' : 'self'); }
+function discardPortalDraft(id, rerender) {
+  try {
+    const raw = localStorage.getItem('cifika_store_v2');
+    if (raw) {
+      const store = JSON.parse(raw);
+      store.apps = (store.apps || []).filter(a => a.id !== id);
+      if (store.activeId === id) {
+        // re-point at the newest unfinished draft that actually has content —
+        // never at a blank shell (registration.html prunes those anyway)
+        const withContent = (store.apps || []).filter(a => !a.submitted && a.fields &&
+            (a.fields.fullName || a.fields.dob || a.fields.phone || a.fields.email ||
+             a.fields.pFullName || a.fields.eName || a.fields.signature))
+          .sort((x, y) => String(y.savedAt || '').localeCompare(String(x.savedAt || '')));
+        store.activeId = withContent[0]?.id || null;
+      }
+      localStorage.setItem('cifika_store_v2', JSON.stringify(store));
+    }
+  } catch (e) {}
+  if (rerender) rerender();
+}
+function draftResumeCardHTML(drafts, rerender) {
+  const rows = drafts.slice(0, 3).map(d => {
+    const L = portalDraftLabel(d);
+    return `
+      <div class="mt-3 rounded-[16px] border border-neutral-200 bg-white p-4 flex flex-wrap items-center gap-3">
+        <div class="flex-1 min-w-[180px]">
+          <div class="text-[13px] font-bold">${escapeHtml(L.who)}${L.name ? ' · ' + escapeHtml(L.name) : ''}</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">Step ${L.step} of ${L.total}${L.when ? ' · saved ' + escapeHtml(L.when) : ''}</div>
+        </div>
+        <button onclick="discardPortalDraft('${d.id}', ${rerender})" class="h-[38px] px-4 rounded-full border-[1.5px] border-neutral-200 bg-white text-neutral-500 text-[11.5px] font-semibold hover:border-red-300 hover:text-red-600 transition shrink-0">Discard</button>
+        <a href="${continueRegUrl(d)}" class="h-[38px] px-5 rounded-full bg-brand text-white text-[12px] font-semibold hover:bg-brand-dark transition inline-flex items-center gap-1.5 shrink-0">Continue where you stopped →</a>
+      </div>`;
+  }).join('');
+  return `
+    <div class="card p-6" id="draftResumeCard">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-brand/10 text-brand border border-brand-border flex items-center justify-center shrink-0">${ic('file','w-4 h-4')}</div>
+        <div>
+          <div class="text-[14px] font-extrabold">Registration in progress</div>
+          <div class="text-[11.5px] text-neutral-500 mt-0.5">Your answers are saved — pick up right where you stopped.</div>
+        </div>
+      </div>
+      ${rows}
+      ${drafts.length > 3 ? `<div class="text-[11px] text-neutral-400 mt-2">+ ${drafts.length - 3} more saved draft(s) on this device</div>` : ''}
+      <a href="${buildPortalRegUrl()}&fresh=1" class="mt-4 inline-flex text-[11.5px] text-neutral-400 hover:text-neutral-700 transition">Start a brand-new registration instead →</a>
+    </div>`;
+}
+
+/* Onboarding: track the current state so "Discard" can re-render the view */
+function rerenderOnboarding() { renderOnboarding(window._onboardSkipped ?? false); }
+
+/* Dashboard: slim amber banner for members who already have an ID but left a
+   registration unfinished (e.g. a parent adding another child). Dismissible
+   for the rest of the browser session. */
+function mountDashboardDraftBanner() {
+  if (sessionStorage.getItem('cifika_draft_banner_dismissed')) return;
+  const drafts = portalDrafts();
+  if (!drafts.length) return;
+  const host = document.getElementById('appMain');
+  if (!host || host.querySelector('#draftResumeBanner')) return;
+  const d = drafts[0];
+  const L = portalDraftLabel(d);
+  const el = document.createElement('div');
+  el.id = 'draftResumeBanner';
+  el.className = 'fade-in mb-4 rounded-[18px] border border-[#FFD4A8] bg-[#FFF5EB] px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2';
+  el.innerHTML = `
+    <span class="text-[12.5px] leading-[1.5] text-[#B34700] flex-1 min-w-[220px]">
+      <b>Registration in progress</b> — ${escapeHtml(L.who)}${L.name ? ' (' + escapeHtml(L.name) + ')' : ''}, saved at step ${L.step}/${L.total}${L.when ? ' on ' + escapeHtml(L.when) : ''}.
+      ${drafts.length > 1 ? ' Plus ' + (drafts.length - 1) + ' other unfinished draft(s).' : ''}
+    </span>
+    <a href="${continueRegUrl(d)}" class="h-[36px] px-4 rounded-full bg-[#B34700] text-white text-[11.5px] font-semibold hover:bg-[#8f3800] transition inline-flex items-center shrink-0">Continue where you stopped →</a>
+    <button onclick="dismissDraftBanner()" class="h-[36px] px-3 rounded-full border border-[#E8C9A8] bg-white/60 text-[11px] font-semibold text-[#B34700] hover:bg-white transition shrink-0">Dismiss</button>`;
+  host.prepend(el);
+}
+function dismissDraftBanner() {
+  sessionStorage.setItem('cifika_draft_banner_dismissed', '1');
+  document.getElementById('draftResumeBanner')?.remove();
+}
+
+/* Signed-out signup view: if this browser already holds a draft, the small
+   "Register to get an ID" link becomes a resume link. */
+function decorateSignupRegisterLink() {
+  const a = document.getElementById('registerLink');
+  if (!a || !portalDrafts().length) return;
+  a.innerHTML = a.innerHTML.replace('Register to get an ID →', 'Continue your registration →');
 }
 
 async function connectOnboardRef() {

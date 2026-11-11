@@ -750,7 +750,6 @@
           <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
           Continue to the Member Portal →
         </button>
-        <p id="portalCountdown" class="hidden text-[11px] text-center text-neutral-500 leading-[1.5]">Taking you to the portal in <b id="portalCountdownNum">8</b>s — <button type="button" onclick="cancelPortalCountdown()" class="underline font-semibold">stay here</button></p>
         <button type="button" onclick="handlePDF()" class="h-[48px] rounded-full border-[1.5px] border-neutral-200 bg-white text-black font-semibold text-[13px] flex items-center justify-center gap-2.5 hover:border-black transition">
           <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
           Save a copy of your PDF
@@ -1516,7 +1515,17 @@
   const SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
   let _supaClient = null;
   function supaClient() {
-    if (!_supaClient && window.supabase) _supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    /* persistSession:false is CRITICAL. This page always talks to Supabase as
+       the anonymous (anon) role — the RLS policies grant anon exactly the
+       access a registration needs (unlinked rows only). If someone has just
+       created a portal account in the same browser, supabase-js would pick up
+       that saved session and send the request as "authenticated", a role with
+       NO insert policy → "new row violates row-level security policy for
+       table students". Disabling session persistence keeps this client anon,
+       no matter what is signed in elsewhere on the site. */
+    if (!_supaClient && window.supabase) _supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
     return _supaClient;
   }
 
@@ -1563,30 +1572,41 @@
         guardian_name: d.GuardianName || null,
         guardian_email: d.GuardianEmail || null
       };
-      // manual upsert by Ref — works with or without a unique constraint on registration_ref
-      const { data: existing, error: selErr } = await client.from('students').select('id').eq('registration_ref', ref).limit(1);
-      if (selErr) console.warn('Supabase lookup by Ref failed:', selErr.message);
+      // True upsert on registration_ref (unique index lives in the SQL file).
+      // One round-trip, and a Ref can never grow a second row — even if the
+      // row became invisible to anon in the meantime (e.g. it was linked to a
+      // portal account after the member first registered).
       let error;
-      if (existing && existing.length) {
-        ({ error } = await client.from('students').update(row).eq('id', existing[0].id));
-      } else {
-        ({ error } = await client.from('students').insert(row));
+      try {
+        ({ error } = await client.from('students').upsert(row, { onConflict: 'registration_ref' }));
+      } catch (e) { error = e; }
+      if (error && /no unique or exclusion constraint|42P10/i.test(error.message || '')) {
+        // unique index not installed yet → fall back to the old manual upsert
+        const { data: existing, error: selErr } = await client.from('students').select('id').eq('registration_ref', ref).limit(1);
+        if (selErr) console.warn('Supabase lookup by Ref failed:', selErr.message);
+        if (existing && existing.length) {
+          ({ error } = await client.from('students').update(row).eq('id', existing[0].id));
+        } else {
+          ({ error } = await client.from('students').insert(row));
+        }
       }
       if (error) {
+        if (/row-level security/i.test(error.message || '')) {
+          // The only way an anon write is refused: this Ref already belongs to
+          // a portal account (linked rows are deliberately untouchable publicly).
+          console.warn('Ref ' + ref + ' is linked to a portal account — portal copy left untouched.');
+          toast('Saved to the club sheet. ID ' + ref + ' is already connected to a portal account, so its portal copy was left unchanged — manage your details from the portal, or ask the club front desk for help.');
+          return;
+        }
         console.error('Supabase student sync failed:', error.message);
         toast('Saved to the club sheet, but the portal database sync failed: ' + error.message);
         return;
       }
       // passport photo (large data URL) — best-effort second pass, never blocks the main sync
       if (passportData) {
-        const pid = existing && existing.length ? existing[0].id : null;
-        if (pid) {
-          await client.from('students').update({ passport_photo_url: passportData }).eq('id', pid);
-        } else {
-          const { data: justInserted } = await client.from('students').select('id').eq('registration_ref', ref).limit(1);
-          if (justInserted && justInserted.length)
-            await client.from('students').update({ passport_photo_url: passportData }).eq('id', justInserted[0].id);
-        }
+        const { data: saved } = await client.from('students').select('id').eq('registration_ref', ref).limit(1);
+        if (saved && saved.length)
+          await client.from('students').update({ passport_photo_url: passportData }).eq('id', saved[0].id);
       }
       console.info('Supabase: member synced for ' + ref);
     } catch (e) {
@@ -1735,9 +1755,8 @@
     refreshPassportUI();
     $('successModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-
-    // Submit → continue to the portal (passport & PDF already travel with the application)
-    if (typeof STAFF_MODE === 'undefined' || !STAFF_MODE) startPortalCountdown();
+    // The portal is reached only through the "Continue to the Member Portal"
+    // button above — no automatic redirect. The user decides when to move on.
 
     btn.disabled = false;
     btn.textContent = 'Submit Registration →';
@@ -2099,14 +2118,18 @@ if (PORTAL_MODE) {
      visit, wiping the member's progress. Now: if an unfinished draft for this
      person already exists (matching contact email, or a blank shell draft),
      resume it at the exact step where they stopped — only top up empty
-     pre-filled fields. A new application is created only when nothing matches. */
+     pre-filled fields. A new application is created only when nothing matches,
+     or when the portal explicitly asks for a clean sheet (?from=portal&fresh=1
+     — the "Start a brand-new registration instead" link). */
+  const wantFresh = PORTAL_PARAMS.get('fresh') === '1';
   const matchesPerson = (a) => {
     const f = a.fields || {};
     if (a.for !== (wantChild ? 'child' : 'self')) return false;
     if (wantChild) return !f.pFullName || String(f.pEmail || '').trim().toLowerCase() === pEmail;
     return !f.fullName || String(f.email || '').trim().toLowerCase() === pEmail;
   };
-  let app = [...store.apps].reverse().find(a => !a.submitted && matchesPerson(a) && (wantChild ? a.fields.pFullName : a.fields.fullName))
+  let app = wantFresh ? null
+        : [...store.apps].reverse().find(a => !a.submitted && matchesPerson(a) && (wantChild ? a.fields.pFullName : a.fields.fullName))
         ||  [...store.apps].reverse().find(a => !a.submitted && matchesPerson(a));
 
   if (app) {
@@ -2143,26 +2166,12 @@ if (PORTAL_MODE) {
   }
 }
 
-/* ---- CONTINUE-TO-PORTAL countdown (submit → portal, cancelable) ---- */
-let _portalTimer = null;
-function startPortalCountdown(seconds) {
-  const el = $('portalCountdown'), num = $('portalCountdownNum');
-  if (!el || !num) return;
-  cancelPortalCountdown();
-  let left = seconds || 8;
-  num.textContent = left;
-  el.classList.remove('hidden');
-  _portalTimer = setInterval(() => {
-    left -= 1;
-    if (left <= 0) { cancelPortalCountdown(); goPortal(); return; }
-    num.textContent = left;
-  }, 1000);
-}
-function cancelPortalCountdown() {
-  if (_portalTimer) { clearInterval(_portalTimer); _portalTimer = null; }
-  const el = document.getElementById('portalCountdown');
-  if (el) el.classList.add('hidden');
-}
+/* ---- CONTINUE-TO-PORTAL (manual only — the auto countdown was removed) ----
+   The user clicks "Continue to the Member Portal" when they are ready.
+   cancelPortalCountdown is kept as a no-op so the existing calls in
+   addAnotherChild / addSelfFromParent / handlePDF / leaveConfirmation
+   stay valid. */
+function cancelPortalCountdown() { /* nothing to cancel anymore */ }
 function goPortal() {
   const { ref, role, email } = getRegContext();
   const p = new URLSearchParams({ ref, role, email, connect: '1' });
