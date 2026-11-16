@@ -390,6 +390,23 @@
   .pc-foot-dot { width: 6px; height: 6px; border-radius: 999px; background: #FF6A00; }
   .pc-foot-right { color: rgba(255,255,255,.45); }
 
+  /* ---- Club updates banner (top of the home page — admin toggles items on) ---- */
+  #landingUpdates .lu-stage { position: relative; overflow: hidden; background: #111; }
+  #landingUpdates .lu-poster { height: 200px; }
+  #landingUpdates .lu-slim { height: 104px; }
+  @media (max-width: 640px) {
+    #landingUpdates .lu-poster { height: 150px; }
+    #landingUpdates .lu-slim { height: 112px; }
+  }
+  #landingUpdates .lu-anim { transition: opacity .35s ease, transform .35s ease; }
+  #landingUpdates .lu-out { opacity: 0; transform: translateY(6px); }
+  #landingUpdates .lu-slide-img { position: absolute; inset: 0; }
+  #landingUpdates .lu-slide-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #landingUpdates .lu-slide-text { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 22px; }
+  #landingUpdates .lu-arrow { width: 28px; height: 28px; border-radius: 9999px; border: 1px solid rgba(17,17,17,.12); display: inline-flex; align-items: center; justify-content: center; color: rgba(17,17,17,.55); transition: all .15s ease; }
+  #landingUpdates .lu-arrow:hover { border-color: #111; color: #111; }
+  #landingUpdates .lu-dot { width: 6px; height: 6px; border-radius: 9999px; background: rgba(17,17,17,.14); display: inline-block; cursor: pointer; transition: background .15s ease; }
+
   /* Print fallback: browser print dialog prints ONLY the pricing card */
   @media print {
     @page { size: A4 portrait; margin: 0; }
@@ -440,6 +457,9 @@
   <!-- PAGE 1 — HOME                                  -->
   <!-- ============================================================ -->
   <section id="page-home" class="page flex-1 flex flex-col">
+
+    <!-- CLUB UPDATES — published items the admin flags "Landing" slide here at the very top -->
+    <div id="landingUpdates" class="hidden px-6 sm:px-10 lg:px-14 pt-5 lg:pt-7" aria-live="polite"></div>
 
     <div class="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-0">
 
@@ -1619,6 +1639,164 @@ document.addEventListener('DOMContentLoaded', () => {
       function (err) { console.warn('PDF export failed — falling back to print dialog', err); setBusy(false); printFallback(); }
     );
   });
+})();
+</script>
+
+<script>
+/* CLUB UPDATES ON THE PUBLIC LANDING PAGE — published announcements whose
+   "Landing" switch is ON in the Admin Console slide through a fixed banner at
+   the very top of the home page. Flyer slides fill the band edge-to-edge (the
+   admin crops them to one fixed banner shape before posting), text slides
+   share the same frame so the height never jumps. Hides itself completely
+   when there is nothing to show or the fetch fails. */
+(function () {
+  var SUPABASE_URL      = 'https://mvwmxcqzvmiagkinxqyg.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_rkQwgjabWvkiLcAsvdRTMg_oVgwHKZa';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function fmtDay(iso) {
+    if (!iso) return '';
+    var d = new Date(iso + 'T00:00:00');
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+
+  function slideMeta(a) {
+    var bits = [];
+    if (a.event_date) bits.push(fmtDay(a.event_date));
+    if (a.start_time) bits.push(a.start_time + (a.end_time ? '\u2013' + a.end_time : ''));
+    if (a.location) bits.push(a.location);
+    return bits.join(' \u2022 ');
+  }
+
+  function fetchItems(cb) {
+    if (!window.supabase || typeof window.supabase.createClient !== 'function') { cb(null); return; }
+    var sbc = window.__cifika_sb || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    var q = sbc.from('announcements')
+      .select('id,type,title,body,event_date,start_time,end_time,location,price,image_url,is_pinned,audience')
+      .eq('status', 'published')
+      .eq('show_on_landing', true)
+      .in('audience', ['all', 'adult', 'child'])
+      .order('is_pinned', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(10);
+    q.then(function (res) {
+      if (res.error && /image_url|column|schema cache|PGRST204/i.test(res.error.message || '')) {
+        /* image_url column not added yet — still show the text updates */
+        sbc.from('announcements')
+          .select('id,type,title,body,event_date,start_time,end_time,location,price,is_pinned,audience')
+          .eq('status', 'published')
+          .eq('show_on_landing', true)
+          .in('audience', ['all', 'adult', 'child'])
+          .order('is_pinned', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(10)
+          .then(function (res2) { cb(res2.error ? null : (res2.data || [])); });
+        return;
+      }
+      cb(res.error ? null : (res.data || []));
+    }).catch(function () { cb(null); });
+  }
+
+  function mount(items) {
+    var host = document.getElementById('landingUpdates');
+    if (!host || !items.length) return;
+    var poster = items.some(function (a) { return a.image_url; });
+    var idx = 0, timer = null;
+
+    host.classList.remove('hidden');
+    host.innerHTML =
+      '<div class="rounded-[20px] border border-[#111]/10 bg-white shadow-[0_14px_36px_-22px_rgba(0,0,0,0.3)] overflow-hidden">' +
+        '<div class="flex items-center justify-between gap-3 px-4 sm:px-6 pt-3.5 pb-2.5">' +
+          '<div class="flex items-center gap-2.5 min-w-0">' +
+            '<span class="w-2 h-2 rounded-full bg-[#FF6A00] shrink-0"></span>' +
+            '<span class="text-[10px] font-black tracking-[0.22em] uppercase text-[#111]/50">Club updates</span>' +
+            '<span class="hidden sm:inline text-[9.5px] font-bold tracking-[0.16em] uppercase text-[#111]/25">Live from the dojo</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-1.5 shrink-0">' +
+            '<button type="button" data-lu="prev" class="lu-arrow" aria-label="Previous update" style="transform:scaleX(-1)"><svg class="ic w-3.5 h-3.5"><use href="#i-arrow"/></svg></button>' +
+            '<button type="button" data-lu="next" class="lu-arrow" aria-label="Next update"><svg class="ic w-3.5 h-3.5"><use href="#i-arrow"/></svg></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="lu-stage ' + (poster ? 'lu-poster' : 'lu-slim') + '" id="luStage"></div>' +
+        '<div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 border-t border-[#111]/[0.06]">' +
+          '<div class="flex items-center gap-1.5" id="luDots">' +
+            items.map(function (_, i) { return '<span class="lu-dot" data-dot="' + i + '" role="button" aria-label="Go to update ' + (i + 1) + '"></span>'; }).join('') +
+          '</div>' +
+          '<span id="luCount" class="text-[10px] font-black tracking-[0.16em] text-[#111]/30">1/' + items.length + '</span>' +
+        '</div>' +
+      '</div>';
+
+    var stage = document.getElementById('luStage');
+    var count = document.getElementById('luCount');
+
+    function render() {
+      var a = items[idx];
+      if (!a || !stage) return;
+      var inner;
+      if (a.image_url) {
+        inner = '<div class="lu-slide-img"><img src="' + esc(a.image_url) + '" alt="' + esc(a.title || 'Club update flyer') + '" loading="lazy"></div>';
+      } else {
+        var meta = slideMeta(a);
+        inner =
+          '<div class="lu-slide-text">' +
+            '<div class="min-w-0 flex-1">' +
+              '<div class="flex items-center gap-2 flex-wrap">' +
+                '<span class="text-[8.5px] font-black tracking-[0.18em] uppercase text-[#FF6A00] border border-[#FF6A00]/40 bg-[#FF6A00]/10 rounded-full px-2.5 py-1">' + esc(a.type || 'update') + '</span>' +
+                (a.is_pinned ? '<span class="text-[8.5px] font-black tracking-[0.18em] uppercase text-white/45 border border-white/15 rounded-full px-2.5 py-1">Pinned</span>' : '') +
+              '</div>' +
+              '<div class="mt-1.5 text-white font-black tracking-[-0.01em] text-[16px] sm:text-[20px] leading-[1.15] truncate">' + esc(a.title || '') + '</div>' +
+              '<div class="mt-1 text-[11px] font-semibold tracking-[0.02em] text-white/55 truncate">' + esc(meta || (a.body ? a.body : 'Ask at the front desk for details')) + '</div>' +
+            '</div>' +
+          '</div>';
+      }
+      stage.classList.add('lu-out');
+      setTimeout(function () {
+        if (!stage.isConnected) return;
+        stage.innerHTML = inner;
+        stage.classList.remove('lu-out');
+      }, 180);
+      var dots = document.querySelectorAll('#luDots .lu-dot');
+      dots.forEach(function (d) { d.style.background = Number(d.getAttribute('data-dot')) === idx ? '#FF6A00' : ''; });
+      if (count) count.textContent = (idx + 1) + '/' + items.length;
+    }
+
+    function go(step) {
+      if (!items.length) return;
+      idx = (idx + step + items.length) % items.length;
+      render();
+    }
+    function jump(i) { idx = i; render(); }
+    function start() {
+      stop();
+      timer = setInterval(function () { if (!document.getElementById('luStage')) { stop(); return; } go(1); }, 6000);
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+    var card = host.firstElementChild;
+    if (card) {
+      card.addEventListener('mouseenter', stop);
+      card.addEventListener('mouseleave', start);
+    }
+    host.querySelectorAll('[data-lu="prev"]').forEach(function (b) { b.addEventListener('click', function () { go(-1); }); });
+    host.querySelectorAll('[data-lu="next"]').forEach(function (b) { b.addEventListener('click', function () { go(1); }); });
+    host.querySelectorAll('#luDots .lu-dot').forEach(function (d) {
+      d.addEventListener('click', function () { jump(Number(d.getAttribute('data-dot'))); });
+    });
+
+    render();
+    start();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { fetchItems(mount); });
+  } else {
+    fetchItems(mount);
+  }
 })();
 </script>
 </body>
